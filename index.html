@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VitiTrack — Le suivi des travaux de vos parcelles, simplement.</title>
+  <meta name="description" content="VitiTrack est l'application SaaS pensée pour les viticulteurs et agriculteurs. Enregistrez vos interventions directement depuis le terrain, suivez vos prestations et facilitez votre facturation.">
+  <meta name="keywords" content="vititrack, suivi parcelles, viticulture, gestion agricole, facturation viticulteur, SaaS agriculture">
+  <meta name="author" content="VitiTrack">
+  <meta property="og:title" content="VitiTrack — Le suivi des travaux de vos parcelles, simplement.">
+  <meta property="og:description" content="Enregistrez vos interventions directement depuis le terrain. Suivi, historique et facturation simplifiés pour viticulteurs et agriculteurs.">
+  <meta property="og:type" content="website">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="style.css">
+
+  <!-- Favicon (inline SVG) -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍇</text></svg>">
+</head>
+<body>
+
+  <!-- ==================== NAVIGATION ==================== -->
+  <nav class="navbar" id="navbar">
+    <div class="container">
+      <a href="#" class="nav-logo" id="nav-logo">
+        <div class="nav-logo-icon">🍇</div>
+        VitiTrack
+      </a>
+
+      <div class="nav-links" id="nav-links">
+        <a href="#fonctionnalites">Fonctionnalités</a>
+        <a href="#comment-ca-marche">Comment ça marche</a>
+        <a href="dashboard.html" class="nav-dashboard-link">Tableau de bord <span class="badge-mini-pro">PRO</span></a>
+        <a href="#tarifs">Tarifs</a>
+        <a href="#faq">FAQ</a>
+        <a href="dashboard.html" class="btn btn-primary nav-cta">Accéder à l'App</a>
+      </div>
+
+      <button class="nav-toggle" id="nav-toggle" aria-label="Menu de navigation">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- ==================== HERO ==================== -->
+  <section class="hero" id="hero">
+    <div class="hero-bg">
+      <img src="assets/hero-vineyard.jpg" alt="Vignoble au coucher de soleil" loading="eager">
+    </div>
+    <div class="hero-glow"></div>
+
+    <div class="container">
+      <div class="hero-badge">
+        <span class="hero-badge-dot"></span>
+        Application disponible — Démarrez maintenant
+      </div>
+
+      <h1>
+        <span>Le suivi des travaux</span>
+        <span>de vos parcelles, <span class="text-gradient">simplement.</span></span>
+      </h1>
+
+      <p class="hero-subtitle">
+        Enregistrez chaque intervention depuis le terrain. Suivez vos prestations client par client, parcelle par parcelle. Facilitez votre facturation.
+      </p>
+
+      <div class="hero-actions">
+        <a href="dashboard.html" class="btn btn-primary btn-glow">
+          Ouvrir le Tableau de bord Pro
+          <span class="btn-icon">→</span>
+        </a>
+        <a href="#tableau-de-bord" class="btn btn-secondary">
+          Découvrir les fonctionnalités
+        </a>
+      </div>
+
+      <div class="hero-stats">
+        <div class="hero-stat">
+          <span class="hero-stat-value" data-count="1500">0</span>
+          <span class="hero-stat-label">Interventions suivies</span>
+        </div>
+        <div class="hero-stat">
+          <span class="hero-stat-value" data-count="120">0</span>
+          <span class="hero-stat-label">Viticulteurs actifs</span>
+        </div>
+        <div class="hero-stat">
+          <span class="hero-stat-value" data-count="98">0</span>
+          <span class="hero-stat-label">% de satisfaction</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== FONCTIONNALITÉS ==================== -->
+  <section class="section" id="fonctionnalites">
+    <div class="container">
+      <div class="section-header reveal">
+        <div class="badge">✦ Fonctionnalités</div>
+        <h2>Tout ce dont vous avez besoin, <span class="text-gradient">rien de superflu.</span></h2>
+        <p>VitiTrack est conçu pour simplifier le quotidien des viticulteurs et agriculteurs. Chaque fonctionnalité répond à un besoin concret du terrain.</p>
+      </div>
+
+      <div class="features-grid">
+        <div class="feature-card reveal reveal-delay-1">
+          <div class="feature-icon">📋</div>
+          <h3>Saisie rapide sur le terrain</h3>
+          <p>Enregistrez une intervention en quelques secondes : client, tâche, parcelle. L'interface est pensée pour être utilisée avec des gants de travail.</p>
+        </div>
+
+        <div class="feature-card reveal reveal-delay-2">
+          <div class="feature-icon">🗂️</div>
+          <h3>Parcelles par client</h3>
+          <p>Associez les parcelles à chaque client pour un suivi précis et sans erreur. Retrouvez instantanément la bonne parcelle au bon moment.</p>
+        </div>
+
+        <div class="feature-card reveal reveal-delay-3">
+          <div class="feature-icon">📊</div>
+          <h3>Historique centralisé</h3>
+          <p>Date, heure, utilisateur, client, tâche, parcelle et statut de facturation : chaque intervention est tracée avec précision.</p>
+        </div>
+
+        <div class="feature-card reveal reveal-delay-4">
+          <div class="feature-icon">💶</div>
+          <h3>Suivi de facturation</h3>
+          <p>Marquez vos prestations comme « À facturer », « Facturée » ou « En attente ». Préparez vos factures en un clin d'œil.</p>
+        </div>
+
+        <div class="feature-card reveal reveal-delay-5">
+          <div class="feature-icon">👥</div>
+          <h3>Multi-utilisateurs</h3>
+          <p>Chaque salarié saisit ses interventions depuis son propre appareil. Le responsable retrouve tout dans un tableau de bord unique.</p>
+        </div>
+
+        <div class="feature-card reveal reveal-delay-5">
+          <div class="feature-icon">📱</div>
+          <h3>Mobile & Desktop</h3>
+          <p>Utilisez VitiTrack aussi bien sur smartphone dans les vignes que sur ordinateur au bureau. L'interface s'adapte à votre écran.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== COMMENT ÇA MARCHE ==================== -->
+  <section class="section" id="comment-ca-marche">
+    <div class="container">
+      <div class="section-header reveal">
+        <div class="badge">⚡ Simple & rapide</div>
+        <h2>Opérationnel en <span class="text-gradient">3 étapes</span></h2>
+        <p>Pas de formation complexe, pas d'installation lourde. VitiTrack est prêt en quelques minutes.</p>
+      </div>
+
+      <div class="steps-container">
+        <div class="step-card reveal reveal-delay-1">
+          <div class="step-number"><span>1</span></div>
+          <h3>Configurez vos clients</h3>
+          <p>Ajoutez vos clients et associez-leur leurs parcelles. C'est la base de votre suivi.</p>
+        </div>
+
+        <div class="step-card reveal reveal-delay-2">
+          <div class="step-number"><span>2</span></div>
+          <h3>Enregistrez au terrain</h3>
+          <p>Depuis votre smartphone, sélectionnez le client, la tâche et la parcelle. C'est enregistré.</p>
+        </div>
+
+        <div class="step-card reveal reveal-delay-3">
+          <div class="step-number"><span>3</span></div>
+          <h3>Suivez & facturez</h3>
+          <p>Retrouvez toutes vos interventions dans le tableau de bord et préparez la facturation.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== TABLEAU DE BORD ==================== -->
+  <section class="section" id="tableau-de-bord">
+    <div class="container">
+      <div class="dashboard-layout">
+        <div class="dashboard-content reveal">
+          <div class="badge">📊 Application Tableau de bord Pro</div>
+          <h2>Toutes vos interventions, <span class="text-gradient">créées et pilotées en un clic.</span></h2>
+          <p>Le tableau de bord centralise l'ensemble de vos chantiers viticoles. Créez des interventions, filtrez par client ou parcelle et préparez votre facturation en temps réel.</p>
+
+          <div class="dashboard-features">
+            <div class="dashboard-feature-item">
+              <div class="check">✓</div>
+              <p><strong>Module de création d'intervention :</strong> Saisie express du salarié, du client et sélection dynamique de la parcelle associée.</p>
+            </div>
+            <div class="dashboard-feature-item">
+              <div class="check">✓</div>
+              <p><strong>Historique et statuts interactifs :</strong> Bascule directe en 1 clic entre « À facturer » et « Facturée ».</p>
+            </div>
+            <div class="dashboard-feature-item">
+              <div class="check">✓</div>
+              <p><strong>Calculs automatiques :</strong> Suivi des montants prévisionnels au temps passé ou au forfait hectare.</p>
+            </div>
+            <div class="dashboard-feature-item">
+              <div class="check">✓</div>
+              <p><strong>Export comptable :</strong> Fichier CSV instantané pour votre logiciel de comptabilité.</p>
+            </div>
+          </div>
+
+          <div class="dashboard-cta-group" style="margin-top: 1.75rem; display: flex; gap: 1rem; flex-wrap: wrap;">
+            <a href="dashboard.html" class="btn btn-primary btn-glow">
+              <span>Lancer le Tableau de bord</span>
+              <span class="btn-icon">↗</span>
+            </a>
+            <a href="dashboard.html" class="btn btn-secondary">
+              <span>＋ Nouvelle intervention</span>
+            </a>
+          </div>
+        </div>
+
+        <div class="dashboard-visual reveal reveal-delay-2">
+          <a href="dashboard.html" class="dashboard-visual-link" title="Cliquer pour ouvrir le tableau de bord interactif">
+            <img src="assets/dashboard-preview.jpg" alt="Aperçu du tableau de bord VitiTrack" loading="lazy">
+            <div class="dashboard-visual-overlay">
+              <span class="pulse-play-icon">▶</span>
+              <span class="overlay-text">Lancer le Tableau de bord VitiTrack</span>
+            </div>
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== SUR LE TERRAIN ==================== -->
+  <section class="section" id="terrain">
+    <div class="container">
+      <div class="terrain-layout">
+        <div class="terrain-visual reveal">
+          <img src="assets/mobile-field.jpg" alt="Utilisation de VitiTrack dans les vignes" loading="lazy">
+        </div>
+
+        <div class="terrain-content reveal reveal-delay-2">
+          <h2>Pensé pour <span class="text-gradient">le terrain.</span></h2>
+          <p>VitiTrack a été conçu en collaboration avec des viticulteurs. L'interface est optimisée pour une saisie rapide, même avec des mains sales ou des gants.</p>
+
+          <div class="terrain-highlights">
+            <div class="terrain-highlight">
+              <span class="terrain-highlight-icon">⚡</span>
+              <p>Saisie en moins de 10 secondes</p>
+            </div>
+            <div class="terrain-highlight">
+              <span class="terrain-highlight-icon">📶</span>
+              <p>Fonctionne même avec une connexion faible</p>
+            </div>
+            <div class="terrain-highlight">
+              <span class="terrain-highlight-icon">🌧️</span>
+              <p>Interface lisible en plein soleil</p>
+            </div>
+            <div class="terrain-highlight">
+              <span class="terrain-highlight-icon">🧤</span>
+              <p>Boutons larges, adaptés aux gants</p>
+            </div>
+          </div>
+
+          <a href="#contact" class="btn btn-primary">
+            Essayer gratuitement
+            <span class="btn-icon">→</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== TARIFS ==================== -->
+  <section class="section" id="tarifs">
+    <div class="container">
+      <div class="section-header reveal">
+        <div class="badge">💎 Tarifs</div>
+        <h2>Un prix juste, <span class="text-gradient">sans surprise.</span></h2>
+        <p>Choisissez la formule adaptée à votre exploitation. Tous les plans incluent un essai gratuit de 14 jours.</p>
+      </div>
+
+      <div class="pricing-grid">
+        <!-- Starter -->
+        <div class="pricing-card reveal reveal-delay-1">
+          <h3>Essentiel</h3>
+          <p class="pricing-desc">Pour les petites exploitations</p>
+          <div class="pricing-price">
+            <span class="amount">19€</span>
+            <span class="period">/ mois</span>
+          </div>
+          <ul class="pricing-features">
+            <li><span class="icon">✓</span> 1 utilisateur</li>
+            <li><span class="icon">✓</span> 5 clients</li>
+            <li><span class="icon">✓</span> 20 parcelles</li>
+            <li><span class="icon">✓</span> Historique illimité</li>
+            <li><span class="icon">✓</span> Support par email</li>
+          </ul>
+          <a href="#contact" class="btn btn-secondary">Commencer l'essai</a>
+        </div>
+
+        <!-- Pro (featured) -->
+        <div class="pricing-card featured reveal reveal-delay-2">
+          <div class="pricing-popular-badge">Le plus populaire</div>
+          <h3>Professionnel</h3>
+          <p class="pricing-desc">Pour les exploitations en croissance</p>
+          <div class="pricing-price">
+            <span class="amount">39€</span>
+            <span class="period">/ mois</span>
+          </div>
+          <ul class="pricing-features">
+            <li><span class="icon">✓</span> 5 utilisateurs</li>
+            <li><span class="icon">✓</span> Clients illimités</li>
+            <li><span class="icon">✓</span> Parcelles illimitées</li>
+            <li><span class="icon">✓</span> Suivi de facturation</li>
+            <li><span class="icon">✓</span> Export des données</li>
+            <li><span class="icon">✓</span> Support prioritaire</li>
+          </ul>
+          <a href="#contact" class="btn btn-primary">Commencer l'essai</a>
+        </div>
+
+        <!-- Enterprise -->
+        <div class="pricing-card reveal reveal-delay-3">
+          <h3>Entreprise</h3>
+          <p class="pricing-desc">Pour les grandes structures</p>
+          <div class="pricing-price">
+            <span class="amount">79€</span>
+            <span class="period">/ mois</span>
+          </div>
+          <ul class="pricing-features">
+            <li><span class="icon">✓</span> Utilisateurs illimités</li>
+            <li><span class="icon">✓</span> Clients illimités</li>
+            <li><span class="icon">✓</span> Parcelles illimitées</li>
+            <li><span class="icon">✓</span> Rôles et permissions</li>
+            <li><span class="icon">✓</span> API & intégrations</li>
+            <li><span class="icon">✓</span> Support dédié</li>
+          </ul>
+          <a href="#contact" class="btn btn-secondary">Nous contacter</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== TÉMOIGNAGES ==================== -->
+  <section class="section" id="temoignages">
+    <div class="container">
+      <div class="section-header reveal">
+        <div class="badge">💬 Témoignages</div>
+        <h2>Ils utilisent VitiTrack <span class="text-gradient">au quotidien.</span></h2>
+        <p>Découvrez ce que nos utilisateurs pensent de l'application.</p>
+      </div>
+
+      <div class="testimonials-grid">
+        <div class="testimonial-card reveal reveal-delay-1">
+          <div class="testimonial-stars">★★★★★</div>
+          <p class="testimonial-text">« Avant VitiTrack, je notais tout sur des bouts de papier. Maintenant, mes salariés enregistrent directement depuis les vignes et je retrouve tout le soir au bureau. »</p>
+          <div class="testimonial-author">
+            <div class="testimonial-avatar">JD</div>
+            <div class="testimonial-author-info">
+              <div class="name">Jean Dumont</div>
+              <div class="role">Viticulteur — Bordeaux</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="testimonial-card reveal reveal-delay-2">
+          <div class="testimonial-stars">★★★★★</div>
+          <p class="testimonial-text">« La préparation des factures me prenait une journée entière chaque mois. Avec VitiTrack, c'est fait en une heure. Un gain de temps incroyable. »</p>
+          <div class="testimonial-author">
+            <div class="testimonial-avatar">ML</div>
+            <div class="testimonial-author-info">
+              <div class="name">Marie Lambert</div>
+              <div class="role">Prestataire viticole — Bourgogne</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="testimonial-card reveal reveal-delay-3">
+          <div class="testimonial-stars">★★★★★</div>
+          <p class="testimonial-text">« L'application est simple, rapide, et fonctionne même quand le réseau est mauvais dans les parcelles. Exactement ce qu'il nous fallait. »</p>
+          <div class="testimonial-author">
+            <div class="testimonial-avatar">PR</div>
+            <div class="testimonial-author-info">
+              <div class="name">Pierre Renaud</div>
+              <div class="role">Chef d'équipe — Champagne</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== FAQ ==================== -->
+  <section class="section" id="faq">
+    <div class="container">
+      <div class="section-header reveal">
+        <div class="badge">❓ FAQ</div>
+        <h2>Questions <span class="text-gradient">fréquentes</span></h2>
+        <p>Tout ce que vous devez savoir avant de démarrer avec VitiTrack.</p>
+      </div>
+
+      <div class="faq-list">
+        <div class="faq-item reveal reveal-delay-1">
+          <button class="faq-question" id="faq-btn-1">
+            Faut-il installer quelque chose ?
+            <span class="faq-toggle">+</span>
+          </button>
+          <div class="faq-answer">
+            <div class="faq-answer-inner">
+              Non, VitiTrack est une application web accessible depuis n'importe quel navigateur. Aucune installation requise, que ce soit sur smartphone, tablette ou ordinateur. Il vous suffit de vous connecter.
+            </div>
+          </div>
+        </div>
+
+        <div class="faq-item reveal reveal-delay-2">
+          <button class="faq-question" id="faq-btn-2">
+            Est-ce que ça fonctionne sans connexion internet ?
+            <span class="faq-toggle">+</span>
+          </button>
+          <div class="faq-answer">
+            <div class="faq-answer-inner">
+              VitiTrack est optimisé pour fonctionner avec des connexions faibles (3G, réseau rural). Les interventions sont mises en file d'attente et synchronisées dès que la connexion est rétablie.
+            </div>
+          </div>
+        </div>
+
+        <div class="faq-item reveal reveal-delay-3">
+          <button class="faq-question" id="faq-btn-3">
+            Combien de temps dure l'essai gratuit ?
+            <span class="faq-toggle">+</span>
+          </button>
+          <div class="faq-answer">
+            <div class="faq-answer-inner">
+              L'essai gratuit dure 14 jours, sans engagement et sans carte bancaire. Vous avez accès à l'ensemble des fonctionnalités du plan Professionnel pendant cette période.
+            </div>
+          </div>
+        </div>
+
+        <div class="faq-item reveal reveal-delay-4">
+          <button class="faq-question" id="faq-btn-4">
+            Mes données sont-elles sécurisées ?
+            <span class="faq-toggle">+</span>
+          </button>
+          <div class="faq-answer">
+            <div class="faq-answer-inner">
+              Absolument. Vos données sont hébergées en France sur des serveurs sécurisés, conformes au RGPD. Les connexions sont chiffrées et des sauvegardes automatiques sont effectuées quotidiennement.
+            </div>
+          </div>
+        </div>
+
+        <div class="faq-item reveal reveal-delay-5">
+          <button class="faq-question" id="faq-btn-5">
+            Puis-je exporter mes données ?
+            <span class="faq-toggle">+</span>
+          </button>
+          <div class="faq-answer">
+            <div class="faq-answer-inner">
+              Oui, à partir du plan Professionnel, vous pouvez exporter l'intégralité de vos interventions au format CSV ou Excel pour les intégrer à votre logiciel de comptabilité.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== CTA FINAL ==================== -->
+  <section class="cta-section" id="contact">
+    <div class="container">
+      <div class="cta-box reveal">
+        <h2>Prêt à simplifier <span class="text-gradient">votre suivi ?</span></h2>
+        <p>Rejoignez les viticulteurs et agriculteurs qui gagnent du temps chaque jour avec VitiTrack.</p>
+        <div class="btn-group">
+          <a href="#" class="btn btn-primary">
+            Démarrer l'essai gratuit
+            <span class="btn-icon">→</span>
+          </a>
+          <a href="#" class="btn btn-secondary">
+            Demander une démo
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== FOOTER ==================== -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="#" class="nav-logo">
+            <div class="nav-logo-icon">🍇</div>
+            VitiTrack
+          </a>
+          <p>Le suivi des travaux de vos parcelles, simplement. Une application pensée par et pour les professionnels de la vigne.</p>
+        </div>
+
+        <div class="footer-col">
+          <h4>Produit</h4>
+          <a href="#fonctionnalites">Fonctionnalités</a>
+          <a href="#tarifs">Tarifs</a>
+          <a href="#tableau-de-bord">Tableau de bord</a>
+          <a href="#faq">FAQ</a>
+        </div>
+
+        <div class="footer-col">
+          <h4>Ressources</h4>
+          <a href="#">Centre d'aide</a>
+          <a href="#">Blog</a>
+          <a href="#">Documentation</a>
+          <a href="#">Changelog</a>
+        </div>
+
+        <div class="footer-col">
+          <h4>Légal</h4>
+          <a href="#">Mentions légales</a>
+          <a href="#">Politique de confidentialité</a>
+          <a href="#">CGU</a>
+          <a href="#">RGPD</a>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <p>© 2026 VitiTrack. Tous droits réservés.</p>
+        <div class="footer-socials">
+          <a href="#" class="footer-social-link" aria-label="LinkedIn">in</a>
+          <a href="#" class="footer-social-link" aria-label="Twitter">𝕏</a>
+          <a href="#" class="footer-social-link" aria-label="Facebook">f</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Script -->
+  <script src="script.js"></script>
+</body>
+</html>

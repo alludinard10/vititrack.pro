@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VitiTrack Pro — Tableau de bord & Gestion Clients</title>
+  <meta name="description" content="Tableau de bord VitiTrack pour gérants et exploitants viticoles. Base de données neutre de clients et parcelles, saisie d'interventions et facturation.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="dashboard.css">
+</head>
+<body class="dashboard-body">
+
+  <div class="app-layout">
+    <!-- ==================== SIDEBAR ==================== -->
+    <aside class="app-sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <a href="index.html" class="logo">
+          <span class="logo-icon">🍇</span>
+          <span class="logo-text">Viti<span class="logo-accent">Track</span> <span class="badge-pro">PRO</span></span>
+        </a>
+        <button class="sidebar-close-btn" id="sidebar-close" aria-label="Fermer le menu">✕</button>
+      </div>
+
+      <div class="sidebar-user">
+        <div class="user-avatar">TD</div>
+        <div class="user-info">
+          <span class="user-name">Thomas Dubois</span>
+          <span class="user-role">Gérant • ETA VitiServices</span>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-section-title">PILOTAGE</div>
+        <a href="#vue-ensemble" class="nav-item active" id="nav-btn-overview" data-view="overview">
+          <span class="nav-icon">📊</span>
+          <span class="nav-label">Tableau de bord</span>
+        </a>
+        <a href="#clients" class="nav-item" id="nav-btn-clients" data-view="clients">
+          <span class="nav-icon">🍇</span>
+          <span class="nav-label">Clients & Parcelles</span>
+          <span class="nav-badge" id="sidebar-clients-count">0</span>
+        </a>
+        <a href="#interventions" class="nav-item" id="nav-btn-interventions" data-view="interventions">
+          <span class="nav-icon">🚜</span>
+          <span class="nav-label">Interventions</span>
+          <span class="nav-badge" id="sidebar-interventions-count">0</span>
+        </a>
+        <a href="#facturation" class="nav-item" id="nav-btn-billing" data-view="billing">
+          <span class="nav-icon">💶</span>
+          <span class="nav-label">À Facturer</span>
+          <span class="nav-badge badge-warning" id="sidebar-unbilled-count">0</span>
+        </a>
+
+        <div class="nav-section-title">OUTILS & BASE</div>
+        <a href="#nouveau-client" class="nav-item" id="sidebar-add-client-btn">
+          <span class="nav-icon">＋</span>
+          <span class="nav-label">Nouveau Client</span>
+        </a>
+        <a href="#export" class="nav-item" id="sidebar-export-btn">
+          <span class="nav-icon">📥</span>
+          <span class="nav-label">Export Comptable CSV</span>
+        </a>
+        <a href="index.html" class="nav-item">
+          <span class="nav-icon">🌐</span>
+          <span class="nav-label">Site Vitrine</span>
+        </a>
+        <a href="#reset" class="nav-item text-muted" id="sidebar-reset-btn" title="Vider la base ou réinitialiser">
+          <span class="nav-icon">🗑️</span>
+          <span class="nav-label">Vider la base</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="sync-status">
+          <span class="status-indicator online"></span>
+          <span>Base de données active</span>
+        </div>
+        <span class="version-label">VitiTrack v2.5.0 • Base neutre</span>
+      </div>
+    </aside>
+
+    <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+
+    <!-- ==================== MAIN CONTENT ==================== -->
+    <main class="app-main">
+      <!-- TOPBAR -->
+      <header class="app-topbar">
+        <div class="topbar-left">
+          <button class="mobile-menu-btn" id="mobile-menu-toggle" aria-label="Ouvrir le menu">
+            <span></span>
+            <span></span>
+            <span></span>
+          </button>
+          <div>
+            <h1 class="topbar-title" id="page-title">Tableau de bord</h1>
+            <p class="topbar-subtitle" id="page-subtitle">Suivi des travaux viticoles & préparation de la facturation</p>
+          </div>
+        </div>
+
+        <div class="topbar-actions">
+          <a href="index.html" class="btn btn-ghost btn-sm">
+            <span>← Site</span>
+          </a>
+          <button class="btn btn-outline btn-sm" id="btn-export-topbar">
+            <span>📥 Export CSV</span>
+          </button>
+          <button class="btn btn-secondary btn-sm" id="topbar-add-client-btn">
+            <span>🍇 ＋ Nouveau client</span>
+          </button>
+          <button class="btn btn-primary btn-glow" id="btn-open-create-modal">
+            <span class="btn-icon">＋</span>
+            <span>Nouvelle intervention</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- DASHBOARD BODY CONTAINER -->
+      <div class="app-content">
+
+        <!-- ==================== VUE 1 : TABLEAU DE BORD (OVERVIEW) ==================== -->
+        <div class="app-view active" id="view-overview">
+
+          <!-- BANNER INFO NEUTRE -->
+          <div class="quick-banner" id="neutral-banner">
+            <div class="quick-banner-icon">💡</div>
+            <div class="quick-banner-text">
+              <strong>Base de données neutre prête.</strong> Commencez par créer vos <em>Clients & Parcelles</em>, puis consignez vos <em>Interventions</em> pour piloter votre facturation en temps réel.
+            </div>
+            <button class="banner-dismiss-btn" onclick="this.parentElement.style.display='none'">✕</button>
+          </div>
+
+          <!-- KPI SUMMARY CARDS -->
+          <section class="kpi-grid">
+            <div class="kpi-card">
+              <div class="kpi-header">
+                <span class="kpi-title">Clients & Domaines</span>
+                <span class="kpi-icon icon-purple">🍇</span>
+              </div>
+              <div class="kpi-value" id="kpi-clients-count">0</div>
+              <div class="kpi-footer">
+                <span class="badge-tag" id="kpi-parcels-count">0 parcelle(s)</span>
+                <span class="kpi-sub" id="kpi-total-surface">0.0 ha répertoriés</span>
+              </div>
+            </div>
+
+            <div class="kpi-card">
+              <div class="kpi-header">
+                <span class="kpi-title">Interventions saisies</span>
+                <span class="kpi-icon icon-green">🚜</span>
+              </div>
+              <div class="kpi-value" id="kpi-total-count">0</div>
+              <div class="kpi-footer">
+                <span class="kpi-sub" id="kpi-surface-hours">0.0 ha / 0 h travaillées</span>
+              </div>
+            </div>
+
+            <div class="kpi-card kpi-highlight-warning">
+              <div class="kpi-header">
+                <span class="kpi-title">À Facturer (En attente)</span>
+                <span class="kpi-icon icon-warning">💶</span>
+              </div>
+              <div class="kpi-value value-warning" id="kpi-unbilled-amount">0 €</div>
+              <div class="kpi-footer">
+                <span class="badge-pill pill-warning" id="kpi-unbilled-badge">0 chantier(s)</span>
+                <span class="kpi-sub">en attente de facture</span>
+              </div>
+            </div>
+
+            <div class="kpi-card">
+              <div class="kpi-header">
+                <span class="kpi-title">Déjà Facturé</span>
+                <span class="kpi-icon icon-emerald">✅</span>
+              </div>
+              <div class="kpi-value value-success" id="kpi-billed-amount">0 €</div>
+              <div class="kpi-footer">
+                <span class="badge-pill pill-success" id="kpi-billed-badge">0 chantier(s)</span>
+                <span class="kpi-sub">clôturés</span>
+              </div>
+            </div>
+          </section>
+
+          <!-- TABLE SECTION WITH FILTERS -->
+          <section class="dashboard-table-card">
+            <div class="table-header-bar">
+              <div class="table-title-group">
+                <h2 class="table-title">Journal des interventions</h2>
+                <span class="table-count-badge" id="table-results-count">0 enregistrée</span>
+              </div>
+
+              <div class="table-controls">
+                <div class="search-box">
+                  <span class="search-icon">🔍</span>
+                  <input type="text" id="filter-search" placeholder="Rechercher par client, parcelle, salarié, tâche..." aria-label="Rechercher une intervention">
+                </div>
+
+                <div class="select-wrapper">
+                  <select id="filter-client" aria-label="Filtrer par client">
+                    <option value="all">Tous les clients</option>
+                  </select>
+                </div>
+
+                <div class="select-wrapper">
+                  <select id="filter-task" aria-label="Filtrer par tâche">
+                    <option value="all">Toutes les tâches</option>
+                    <option value="Taille Guyot">Taille Guyot / Cordon</option>
+                    <option value="Ébourgeonnage">Ébourgeonnage / Épamprage</option>
+                    <option value="Palissage & Relevage">Palissage & Relevage</option>
+                    <option value="Rognage & Écimage">Rognage & Écimage</option>
+                    <option value="Traitement bio / phytosanitaire">Traitement bio / phytosanitaire</option>
+                    <option value="Travail du sol / Interceps">Travail du sol / Interceps</option>
+                    <option value="Vendanges manuelles">Vendanges manuelles</option>
+                  </select>
+                </div>
+
+                <div class="status-segmented-control">
+                  <button class="status-tab active" data-status="all">Tous</button>
+                  <button class="status-tab" data-status="À facturer">À facturer</button>
+                  <button class="status-tab" data-status="Facturée">Facturées</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- TABLE -->
+            <div class="table-responsive">
+              <table class="interventions-table" id="interventions-table">
+                <thead>
+                  <tr>
+                    <th>Date & Heure</th>
+                    <th>Salarié</th>
+                    <th>Client</th>
+                    <th>Parcelle & Surface</th>
+                    <th>Prestation viticole</th>
+                    <th>Volume / Durée</th>
+                    <th>Montant estimé</th>
+                    <th>Statut facturation</th>
+                    <th class="text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="interventions-tbody">
+                  <!-- Populated dynamically -->
+                </tbody>
+              </table>
+            </div>
+
+            <!-- TABLE EMPTY STATE -->
+            <div class="table-empty-state" id="table-empty">
+              <div class="empty-icon">🚜</div>
+              <h3>Aucune intervention enregistrée</h3>
+              <p id="table-empty-message">Votre base de données est actuellement vierge. Commencez par créer vos clients et enregistrez votre première intervention.</p>
+              <div style="display: flex; gap: 0.75rem; margin-top: 0.5rem;">
+                <button class="btn btn-secondary btn-sm" id="btn-empty-add-client">🍇 ＋ Ajouter un client</button>
+                <button class="btn btn-primary btn-sm" id="btn-empty-add-intervention">🚜 ＋ Nouvelle intervention</button>
+              </div>
+            </div>
+
+            <!-- TABLE FOOTER -->
+            <div class="table-footer">
+              <div class="table-legend">
+                <span>💡 <em>Cliquez sur le badge de statut pour basculer directement entre « À facturer » et « Facturée ».</em></span>
+              </div>
+              <div class="table-actions-bulk">
+                <button class="btn btn-outline btn-xs" id="btn-export-bottom">📥 Exporter le tableau (CSV)</button>
+                <button class="btn btn-primary btn-xs" id="btn-open-create-bottom">＋ Créer une intervention</button>
+              </div>
+            </div>
+          </section>
+
+        </div>
+
+        <!-- ==================== VUE 2 : CLIENTS & PARCELLES ==================== -->
+        <div class="app-view" id="view-clients" style="display: none;">
+
+          <div class="clients-view-header">
+            <div class="clients-view-title-group">
+              <h2 class="view-heading">Répertoire des Clients & Domaines</h2>
+              <p class="view-subheading">Base de données de vos partenaires viticoles et de leurs parcelles sous contrat</p>
+            </div>
+            <button class="btn btn-primary btn-glow" id="btn-view-add-client">
+              <span class="btn-icon">＋</span>
+              <span>Nouveau client</span>
+            </button>
+          </div>
+
+          <!-- CLIENTS METRICS BAR -->
+          <div class="clients-metrics-bar">
+            <div class="clients-metric-item">
+              <span class="metric-num" id="clients-total-count">0</span>
+              <span class="metric-desc">Domaines clients</span>
+            </div>
+            <div class="clients-metric-item">
+              <span class="metric-num" id="clients-total-parcels">0</span>
+              <span class="metric-desc">Parcelles enregistrées</span>
+            </div>
+            <div class="clients-metric-item">
+              <span class="metric-num" id="clients-total-ha">0.0 ha</span>
+              <span class="metric-desc">Superficie viticole totale</span>
+            </div>
+            <div class="clients-search-wrapper">
+              <input type="text" id="clients-search-input" placeholder="Filtrer par nom de domaine, contact ou parcelle..." aria-label="Rechercher un client">
+            </div>
+          </div>
+
+          <!-- CLIENTS GRID / LIST -->
+          <div class="clients-grid" id="clients-grid">
+            <!-- Populated dynamically by dashboard.js -->
+          </div>
+
+          <!-- EMPTY STATE FOR CLIENTS -->
+          <div class="table-empty-state" id="clients-empty-state">
+            <div class="empty-icon">🍇</div>
+            <h3>Base clients neutre et vierge</h3>
+            <p>Aucun client n'est encore enregistré dans votre base de données. Créez votre premier domaine pour commencer à y attacher des parcelles et saisir vos chantiers.</p>
+            <button class="btn btn-primary btn-sm" id="btn-create-first-client">
+              <span>🍇 ＋ Créer mon premier client</span>
+            </button>
+          </div>
+
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- ==================== MODAL 1 : CRÉATION D'INTERVENTION ==================== -->
+  <div class="modal-overlay" id="create-modal" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div class="modal-header-icon">🚜</div>
+          <div>
+            <h3 class="modal-title">Nouvelle intervention viticole</h3>
+            <p class="modal-subtitle">Enregistrement rapide des travaux de parcelle pour facturation</p>
+          </div>
+          <button class="modal-close-btn" id="modal-close-btn" aria-label="Fermer">✕</button>
+        </div>
+
+        <form id="create-intervention-form" novalidate>
+          <div class="modal-body">
+
+            <!-- LIGNE 1 : Salarié & Date -->
+            <div class="form-row">
+              <div class="form-group flex-1">
+                <label for="input-worker" class="form-label">
+                  <span>Salarié intervenant</span> <span class="required">*</span>
+                </label>
+                <div class="select-with-icon">
+                  <span class="input-icon">👤</span>
+                  <select id="input-worker" required>
+                    <option value="">Sélectionner un intervenant...</option>
+                    <option value="Thomas Roux">Thomas Roux (Chef d'équipe)</option>
+                    <option value="Lucas Petit">Lucas Petit (Opérateur vigne)</option>
+                    <option value="Julie Martin">Julie Martin (Tractoriste)</option>
+                    <option value="Nicolas Blanc">Nicolas Blanc (Saisonnier)</option>
+                    <option value="Marc Leroy">Marc Leroy (Opérateur)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-group flex-1">
+                <label for="input-datetime" class="form-label">
+                  <span>Date & Heure</span> <span class="required">*</span>
+                </label>
+                <div class="input-with-icon">
+                  <span class="input-icon">📅</span>
+                  <input type="datetime-local" id="input-datetime" required>
+                </div>
+              </div>
+            </div>
+
+            <!-- LIGNE 2 : Client & Parcelle (Dynamique avec lien direct d'ajout de client) -->
+            <div class="form-row">
+              <div class="form-group flex-1">
+                <div class="form-label-row">
+                  <label for="input-client" class="form-label">
+                    <span>Client / Domaine</span> <span class="required">*</span>
+                  </label>
+                  <button type="button" class="btn-link-action" id="btn-quick-add-client">＋ Nouveau client</button>
+                </div>
+                <div class="select-with-icon">
+                  <span class="input-icon">🏰</span>
+                  <select id="input-client" required>
+                    <option value="">Sélectionner un client...</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-group flex-1">
+                <div class="form-label-row">
+                  <label for="input-parcel" class="form-label">
+                    <span>Parcelle travaillée</span> <span class="required">*</span>
+                  </label>
+                  <button type="button" class="btn-link-action" id="btn-quick-add-parcel" style="display: none;">＋ Ajouter parcelle</button>
+                </div>
+                <div class="select-with-icon">
+                  <span class="input-icon">📍</span>
+                  <select id="input-parcel" required disabled>
+                    <option value="">Sélectionnez d'abord un client...</option>
+                  </select>
+                </div>
+                <span class="form-hint" id="parcel-hint">Sélectionnez un client pour charger ses parcelles.</span>
+              </div>
+            </div>
+
+            <!-- LIGNE 3 : Prestation / Travaux -->
+            <div class="form-row">
+              <div class="form-group flex-1">
+                <label for="input-task" class="form-label">
+                  <span>Travail réalisé / Prestation</span> <span class="required">*</span>
+                </label>
+                <div class="select-with-icon">
+                  <span class="input-icon">✂️</span>
+                  <select id="input-task" required>
+                    <option value="">Sélectionner une tâche viticole...</option>
+                    <option value="Taille Guyot">Taille Guyot (Simple/Double)</option>
+                    <option value="Taille Cordon">Taille en Cordon de Royat</option>
+                    <option value="Ébourgeonnage">Ébourgeonnage / Épamprage</option>
+                    <option value="Palissage & Relevage">Palissage & Relevage des fils</option>
+                    <option value="Rognage & Écimage">Rognage & Écimage mécanique</option>
+                    <option value="Traitement bio / phytosanitaire">Traitement bio / phytosanitaire</option>
+                    <option value="Travail du sol / Interceps">Travail du sol / Interceps</option>
+                    <option value="Effeuillage">Effeuillage manuel</option>
+                    <option value="Vendanges manuelles">Vendanges manuelles</option>
+                    <option value="Plantation & Remplacement">Plantation & Complantation</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-group flex-1">
+                <label for="input-rate-type" class="form-label">
+                  <span>Mode de facturation</span>
+                </label>
+                <div class="select-with-icon">
+                  <span class="input-icon">⚙️</span>
+                  <select id="input-rate-type">
+                    <option value="hourly">Au temps passé (Taux horaire)</option>
+                    <option value="surface">À la surface (Forfait hectare)</option>
+                    <option value="fixed">Forfait fixe global</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <!-- LIGNE 4 : Quantité & Tarif (Calcul automatique du montant) -->
+            <div class="form-row">
+              <div class="form-group flex-1">
+                <label for="input-quantity" class="form-label" id="label-quantity">
+                  <span>Durée travaillée (heures)</span> <span class="required">*</span>
+                </label>
+                <div class="input-with-icon">
+                  <span class="input-icon" id="icon-quantity">⏱️</span>
+                  <input type="number" id="input-quantity" min="0.25" step="0.25" value="4.0" placeholder="Ex: 4.5" required>
+                </div>
+              </div>
+
+              <div class="form-group flex-1">
+                <label for="input-unit-price" class="form-label" id="label-unit-price">
+                  <span>Tarif unitaire HT (€)</span>
+                </label>
+                <div class="input-with-icon">
+                  <span class="input-icon">💶</span>
+                  <input type="number" id="input-unit-price" min="0" step="1" value="38" placeholder="Ex: 38">
+                </div>
+              </div>
+
+              <div class="form-group flex-1">
+                <label class="form-label">
+                  <span>Total estimé HT</span>
+                </label>
+                <div class="calculated-preview">
+                  <span id="calculated-total-display">152,00 €</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- LIGNE 5 : Observations & Statut initial -->
+            <div class="form-row">
+              <div class="form-group flex-2">
+                <label for="input-notes" class="form-label">Observations / Notes de chantier</label>
+                <textarea id="input-notes" rows="2" placeholder="Ex: Rangs 1 à 25 taillés. Prévoir réparation amarre en bout de rangée 14..."></textarea>
+              </div>
+
+              <div class="form-group flex-1">
+                <label for="input-status" class="form-label">Statut initial</label>
+                <select id="input-status">
+                  <option value="À facturer" selected>⏳ À facturer</option>
+                  <option value="Facturée">✅ Facturée</option>
+                </select>
+                <span class="form-hint">Vous pourrez modifier ce statut d'un simple clic dans la liste.</span>
+              </div>
+            </div>
+
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-ghost" id="modal-cancel-btn">Annuler</button>
+            <button type="submit" class="btn btn-primary btn-glow" id="modal-submit-btn">
+              <span>💾 Enregistrer l'intervention</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL 2 : NOUVEAU CLIENT ==================== -->
+  <div class="modal-overlay" id="client-modal" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div class="modal-header-icon">🏰</div>
+          <div>
+            <h3 class="modal-title">Nouveau Client / Domaine Viticole</h3>
+            <p class="modal-subtitle">Ajouter un partenaire viticole dans votre base de données</p>
+          </div>
+          <button class="modal-close-btn" id="client-modal-close-btn" aria-label="Fermer">✕</button>
+        </div>
+
+        <form id="create-client-form" novalidate>
+          <div class="modal-body">
+
+            <div class="form-row">
+              <div class="form-group flex-2">
+                <label for="input-new-client-name" class="form-label">
+                  <span>Nom du Domaine / Exploitant</span> <span class="required">*</span>
+                </label>
+                <div class="input-with-icon">
+                  <span class="input-icon">🏰</span>
+                  <input type="text" id="input-new-client-name" placeholder="Ex: Domaine des Hauts Vallons" required>
+                </div>
+              </div>
+
+              <div class="form-group flex-1">
+                <label for="input-new-client-commune" class="form-label">
+                  <span>Commune / Région</span>
+                </label>
+                <div class="input-with-icon">
+                  <span class="input-icon">📍</span>
+                  <input type="text" id="input-new-client-commune" placeholder="Ex: Chablis, Bourgogne">
+                </div>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group flex-1">
+                <label for="input-new-client-contact" class="form-label">
+                  <span>Nom du Contact / Responsable</span>
+                </label>
+                <div class="input-with-icon">
+                  <span class="input-icon">👤</span>
+                  <input type="text" id="input-new-client-contact" placeholder="Ex: Jean-Luc Martin">
+                </div>
+              </div>
+
+              <div class="form-group flex-1">
+                <label for="input-new-client-phone" class="form-label">
+                  <span>Téléphone</span>
+                </label>
+                <div class="input-with-icon">
+                  <span class="input-icon">📞</span>
+                  <input type="tel" id="input-new-client-phone" placeholder="Ex: 06 12 34 56 78">
+                </div>
+              </div>
+
+              <div class="form-group flex-1">
+                <label for="input-new-client-email" class="form-label">
+                  <span>Email</span>
+                </label>
+                <div class="input-with-icon">
+                  <span class="input-icon">✉️</span>
+                  <input type="email" id="input-new-client-email" placeholder="Ex: contact@domaine.fr">
+                </div>
+              </div>
+            </div>
+
+            <!-- SECTION PARCELLE INITIALE OPTIONNELLE -->
+            <div class="modal-section-divider">
+              <span>🍇 Première parcelle associée (optionnel)</span>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group flex-2">
+                <label for="input-initial-parcel-name" class="form-label">Nom du Lieu-dit / Parcelle</label>
+                <div class="input-with-icon">
+                  <span class="input-icon">🌿</span>
+                  <input type="text" id="input-initial-parcel-name" placeholder="Ex: Les Vignes Blanches">
+                </div>
+              </div>
+
+              <div class="form-group flex-1">
+                <label for="input-initial-parcel-surface" class="form-label">Surface (ha)</label>
+                <div class="input-with-icon">
+                  <span class="input-icon">📐</span>
+                  <input type="number" id="input-initial-parcel-surface" step="0.1" min="0" placeholder="Ex: 2.5">
+                </div>
+              </div>
+
+              <div class="form-group flex-1">
+                <label for="input-initial-parcel-grape" class="form-label">Cépage</label>
+                <div class="input-with-icon">
+                  <span class="input-icon">🍇</span>
+                  <input type="text" id="input-initial-parcel-grape" placeholder="Ex: Chardonnay">
+                </div>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="input-new-client-notes" class="form-label">Observations / Notes client</label>
+              <textarea id="input-new-client-notes" rows="2" placeholder="Ex: Facturation mensuelle groupée, accès vigne par le chemin nord..."></textarea>
+            </div>
+
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-ghost" id="client-modal-cancel-btn">Annuler</button>
+            <button type="submit" class="btn btn-primary btn-glow" id="client-modal-submit-btn">
+              <span>💾 Enregistrer le client</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL 3 : AJOUTER UNE PARCELLE ==================== -->
+  <div class="modal-overlay" id="parcel-modal" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-sm">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div class="modal-header-icon">🌿</div>
+          <div>
+            <h3 class="modal-title">Ajouter une parcelle viticole</h3>
+            <p class="modal-subtitle" id="parcel-modal-client-name">Domaine : Sélectionné</p>
+          </div>
+          <button class="modal-close-btn" id="parcel-modal-close-btn" aria-label="Fermer">✕</button>
+        </div>
+
+        <form id="create-parcel-form" novalidate>
+          <input type="hidden" id="parcel-client-id">
+          <div class="modal-body">
+
+            <div class="form-group">
+              <label for="input-parcel-name" class="form-label">
+                <span>Nom de la parcelle / Lieu-dit</span> <span class="required">*</span>
+              </label>
+              <div class="input-with-icon">
+                <span class="input-icon">📍</span>
+                <input type="text" id="input-parcel-name" placeholder="Ex: Clos Saint-Pierre" required>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group flex-1">
+                <label for="input-parcel-surface" class="form-label">
+                  <span>Surface (ha)</span> <span class="required">*</span>
+                </label>
+                <div class="input-with-icon">
+                  <span class="input-icon">📐</span>
+                  <input type="number" id="input-parcel-surface" step="0.05" min="0.05" placeholder="Ex: 1.8" required>
+                </div>
+              </div>
+
+              <div class="form-group flex-1">
+                <label for="input-parcel-grape" class="form-label">
+                  <span>Cépage</span>
+                </label>
+                <div class="input-with-icon">
+                  <span class="input-icon">🍇</span>
+                  <input type="text" id="input-parcel-grape" placeholder="Ex: Pinot Noir">
+                </div>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="input-parcel-soil" class="form-label">Type de sol / Notes</label>
+              <div class="input-with-icon">
+                <span class="input-icon">🪨</span>
+                <input type="text" id="input-parcel-soil" placeholder="Ex: Calcaire kimméridgien, forte pente">
+              </div>
+            </div>
+
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-ghost" id="parcel-modal-cancel-btn">Annuler</button>
+            <button type="submit" class="btn btn-primary btn-glow" id="parcel-modal-submit-btn">
+              <span>💾 Enregistrer la parcelle</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL 4 : DÉTAIL INTERVENTION ==================== -->
+  <div class="modal-overlay" id="detail-modal" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-sm">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div class="modal-header-icon">📋</div>
+          <div>
+            <h3 class="modal-title">Détail de l'intervention</h3>
+            <p class="modal-subtitle" id="detail-id">Intervention #VT-000</p>
+          </div>
+          <button class="modal-close-btn" id="detail-close-btn" aria-label="Fermer">✕</button>
+        </div>
+
+        <div class="modal-body" id="detail-body">
+          <!-- Populated dynamically -->
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost" id="detail-dismiss-btn">Fermer</button>
+          <button type="button" class="btn btn-primary btn-sm" id="detail-toggle-status-btn">Changer le statut</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION CONTAINER -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <script src="dashboard.js"></script>
+</body>
+</html>
