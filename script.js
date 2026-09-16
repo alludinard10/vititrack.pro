@@ -224,8 +224,32 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
-  if (navLoginBtn) navLoginBtn.addEventListener('click', openLoginModal);
-  if (heroLoginBtn) heroLoginBtn.addEventListener('click', openLoginModal);
+  // ========== ROUTING & AUTH HANDLERS ==========
+  const directToAppOrLogin = (e) => {
+    e.preventDefault();
+    const storedUser = localStorage.getItem('vititrack_auth_user');
+    if (storedUser) {
+      try {
+        const parsed = JSON.parse(storedUser);
+        if (parsed && (parsed.email || parsed.id)) {
+          window.location.href = 'dashboard.html';
+          return;
+        }
+      } catch (err) {}
+    }
+    window.location.href = 'login.html';
+  };
+
+  const navDashboardLink = document.querySelector('.nav-dashboard-link');
+  const navCta = document.querySelector('.nav-cta');
+  const heroPrimaryBtn = document.querySelector('.hero-actions .btn-primary');
+  const previewLinks = document.querySelectorAll('.dashboard-cta-group a, .dashboard-visual-link');
+
+  if (navDashboardLink) navDashboardLink.addEventListener('click', directToAppOrLogin);
+  if (navCta) navCta.addEventListener('click', directToAppOrLogin);
+  if (heroPrimaryBtn) heroPrimaryBtn.addEventListener('click', directToAppOrLogin);
+  previewLinks.forEach(link => link.addEventListener('click', directToAppOrLogin));
+
   if (loginModalClose) loginModalClose.addEventListener('click', closeLoginModal);
 
   if (loginModal) {

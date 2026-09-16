@@ -3495,16 +3495,8 @@ async function checkAuthUser() {
   }
 
   if (!user) {
-    user = {
-      email: "exploitant@domaineludinard.fr",
-      domainName: "Domaine Ludinard-Clair",
-      fullName: "Alexandre Ludinard",
-      role: "Gérant Exploitant",
-      loggedInAt: new Date().toISOString()
-    };
-    try {
-      localStorage.setItem("vititrack_auth_user", JSON.stringify(user));
-    } catch (e) {}
+    window.location.href = "login.html";
+    return;
   }
 
   const topbarUserName = document.getElementById("user-topbar-name");

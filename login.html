@@ -541,6 +541,16 @@
       hideAlert();
     });
 
+    // Check URL parameters or hash to activate registration tab if requested
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      const tabParam = urlParams.get("tab");
+      const hash = window.location.hash.toLowerCase();
+      if (tabParam === "signup" || tabParam === "register" || hash.includes("signup") || hash.includes("register")) {
+        tabRegister.click();
+      }
+    } catch (e) {}
+
     // Password Visibility Toggles
     function setupPasswordToggle(btnId, inputId) {
       const btn = document.getElementById(btnId);
