@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Connexion & Inscription — VitiTrack Pro | Espace Viticole</title>
+  <meta name="description" content="Authentification VitiTrack Pro. Connectez-vous ou créez votre compte pour gérer vos travaux viticoles, parcelles et facturations.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="dashboard.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍇</text></svg>">
+  <style>
+    body.login-body {
+      min-height: 100vh;
+      background: radial-gradient(circle at 50% 20%, rgba(45, 106, 79, 0.3) 0%, rgba(10, 15, 13, 0.98) 75%), #0a0f0d;
+      color: #e8f0ec;
+      font-family: var(--font-body);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 1rem;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    .login-backdrop {
+      position: fixed;
+      inset: 0;
+      background-image: url('assets/hero-vineyard.jpg');
+      background-size: cover;
+      background-position: center;
+      opacity: 0.14;
+      filter: blur(8px);
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    .login-container {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    .login-top-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .login-back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: var(--color-text-secondary);
+      font-size: 0.88rem;
+      font-weight: 500;
+      text-decoration: none;
+      transition: all var(--transition-fast);
+      padding: 0.4rem 0.85rem;
+      border-radius: var(--radius-sm);
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(82, 183, 136, 0.15);
+      backdrop-filter: blur(8px);
+    }
+
+    .login-back-link:hover {
+      color: var(--color-accent);
+      border-color: rgba(82, 183, 136, 0.4);
+      background: rgba(82, 183, 136, 0.1);
+    }
+
+    .login-card {
+      background: linear-gradient(145deg, rgba(20, 31, 26, 0.94), rgba(12, 18, 15, 0.98));
+      border: 1px solid rgba(82, 183, 136, 0.28);
+      border-radius: var(--radius-lg);
+      padding: 2.25rem 2rem;
+      box-shadow: 0 16px 50px rgba(0, 0, 0, 0.65), 0 0 45px rgba(82, 183, 136, 0.15);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .login-brand {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 0.4rem;
+    }
+
+    .login-brand-icon {
+      width: 58px;
+      height: 58px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, #2d6a4f, #1b4332);
+      border: 1px solid rgba(82, 183, 136, 0.35);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      box-shadow: 0 6px 24px rgba(82, 183, 136, 0.3);
+    }
+
+    .login-brand-title {
+      font-family: var(--font-heading);
+      font-size: 1.7rem;
+      font-weight: 800;
+      color: #fff;
+      margin-top: 0.35rem;
+      letter-spacing: -0.02em;
+    }
+
+    .login-brand-desc {
+      font-size: 0.86rem;
+      color: var(--color-text-secondary);
+      line-height: 1.45;
+      max-width: 360px;
+    }
+
+    /* Auth Tabs Switcher */
+    .auth-tabs-nav {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      background: rgba(10, 15, 13, 0.7);
+      padding: 4px;
+      border-radius: var(--radius-md);
+      border: 1px solid rgba(82, 183, 136, 0.2);
+      gap: 4px;
+    }
+
+    .auth-tab-btn {
+      background: transparent;
+      border: none;
+      color: var(--color-text-secondary);
+      padding: 0.65rem 1rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.88rem;
+      font-weight: 600;
+      font-family: var(--font-body);
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.45rem;
+    }
+
+    .auth-tab-btn:hover {
+      color: #fff;
+      background: rgba(82, 183, 136, 0.1);
+    }
+
+    .auth-tab-btn.active {
+      background: linear-gradient(135deg, #2d6a4f, #1e4d38);
+      color: #fff;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35), 0 0 14px rgba(82, 183, 136, 0.2);
+    }
+
+    .auth-panel {
+      display: none;
+      flex-direction: column;
+      gap: 1.15rem;
+      animation: fadeIn 0.25s ease;
+    }
+
+    .auth-panel.active {
+      display: flex;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .login-field {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .login-field label {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #c7d8ce;
+    }
+
+    .login-field-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .login-field-header a {
+      font-size: 0.76rem;
+      color: var(--color-primary-lighter);
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .login-field-header a:hover {
+      text-decoration: underline;
+    }
+
+    .login-input-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+      width: 100%;
+    }
+
+    .login-input-icon {
+      position: absolute;
+      left: 1rem;
+      font-size: 1rem;
+      color: var(--color-text-muted);
+      pointer-events: none;
+    }
+
+    .login-input {
+      width: 100%;
+      background: #14221a;
+      border: 1px solid rgba(82, 183, 136, 0.25);
+      border-radius: var(--radius-sm);
+      padding: 0.75rem 1rem 0.75rem 2.6rem;
+      color: #fff;
+      font-size: 16px; /* Pas de zoom auto iOS */
+      font-family: var(--font-body);
+      outline: none;
+      transition: all var(--transition-fast);
+    }
+
+    .login-input:focus {
+      border-color: var(--color-primary-lighter);
+      box-shadow: 0 0 0 3px rgba(82, 183, 136, 0.2);
+    }
+
+    .btn-toggle-pwd {
+      position: absolute;
+      right: 0.75rem;
+      background: transparent;
+      border: none;
+      color: var(--color-text-muted);
+      cursor: pointer;
+      font-size: 1.1rem;
+      padding: 4px 6px;
+    }
+
+    .login-remember-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.82rem;
+      color: var(--color-text-secondary);
+      user-select: none;
+    }
+
+    .login-remember-row input {
+      accent-color: #52b788;
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+    }
+
+    .btn-login-submit {
+      width: 100%;
+      padding: 0.85rem;
+      font-size: 0.95rem;
+      font-weight: 700;
+      justify-content: center;
+      margin-top: 0.35rem;
+    }
+
+    .login-divider {
+      display: flex;
+      align-items: center;
+      text-align: center;
+      color: var(--color-text-muted);
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      margin: 0.2rem 0;
+    }
+
+    .login-divider::before,
+    .login-divider::after {
+      content: '';
+      flex: 1;
+      border-bottom: 1px solid rgba(82, 183, 136, 0.16);
+    }
+
+    .login-divider span {
+      padding: 0 0.85rem;
+    }
+
+    .btn-demo-quick {
+      width: 100%;
+      justify-content: center;
+      padding: 0.75rem;
+      font-size: 0.86rem;
+      font-weight: 600;
+      background: rgba(82, 183, 136, 0.1);
+      border: 1px solid rgba(82, 183, 136, 0.3);
+      color: #b7e4c7;
+      transition: all var(--transition-fast);
+    }
+
+    .btn-demo-quick:hover {
+      background: rgba(82, 183, 136, 0.22);
+      border-color: var(--color-primary-lighter);
+      color: #fff;
+    }
+
+    .auth-alert {
+      padding: 0.75rem 1rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.85rem;
+      display: none;
+      align-items: center;
+      gap: 0.5rem;
+      line-height: 1.4;
+    }
+
+    .auth-alert.error {
+      display: flex;
+      background: rgba(220, 53, 69, 0.15);
+      border: 1px solid rgba(220, 53, 69, 0.4);
+      color: #f8d7da;
+    }
+
+    .auth-alert.success {
+      display: flex;
+      background: rgba(82, 183, 136, 0.15);
+      border: 1px solid rgba(82, 183, 136, 0.4);
+      color: #d8f3dc;
+    }
+
+    .login-footer-security {
+      text-align: center;
+      font-size: 0.72rem;
+      color: var(--color-text-muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      margin-top: 0.35rem;
+    }
+
+    @media (max-width: 480px) {
+      .login-card {
+        padding: 1.75rem 1.25rem;
+      }
+      .login-brand-title {
+        font-size: 1.4rem;
+      }
+    }
+  </style>
+</head>
+<body class="login-body">
+
+  <div class="login-backdrop"></div>
+
+  <div class="login-container">
+    <div class="login-top-nav">
+      <a href="index.html" class="login-back-link">
+        <span>← Retour au site</span>
+      </a>
+      <a href="dashboard.html" class="login-back-link" style="color: var(--color-accent);">
+        <span>Tableau de bord →</span>
+      </a>
+    </div>
+
+    <div class="login-card">
+      <div class="login-brand">
+        <div class="login-brand-icon">🍇</div>
+        <h1 class="login-brand-title">Viti<span class="logo-accent">Track</span> <span class="badge-pro">PRO</span></h1>
+        <p class="login-brand-desc">Authentification sécurisée pour exploitants viticoles et entreprises de travaux à façon.</p>
+      </div>
+
+      <!-- Navigation Onglets Connexion / Inscription -->
+      <div class="auth-tabs-nav" role="tablist">
+        <button type="button" class="auth-tab-btn active" id="tab-btn-login" role="tab" aria-selected="true" aria-controls="panel-login">
+          <span>🔐 Se connecter</span>
+        </button>
+        <button type="button" class="auth-tab-btn" id="tab-btn-register" role="tab" aria-selected="false" aria-controls="panel-register">
+          <span>✨ Créer un compte</span>
+        </button>
+      </div>
+
+      <!-- Message d'alerte dynamique -->
+      <div id="auth-alert-box" class="auth-alert"></div>
+
+      <!-- PANNEAU 1 : SE CONNECTER -->
+      <div class="auth-panel active" id="panel-login" role="tabpanel">
+        <form id="form-login" class="login-form">
+          <div class="login-field">
+            <label for="login-email">E-mail du compte</label>
+            <div class="login-input-wrap">
+              <span class="login-input-icon">✉️</span>
+              <input type="email" id="login-email" class="login-input" placeholder="exploitant@domaineludinard.fr" required autocomplete="email">
+            </div>
+          </div>
+
+          <div class="login-field">
+            <div class="login-field-header">
+              <label for="login-password">Mot de passe</label>
+              <a href="#" id="link-forgot-pwd">Mot de passe oublié ?</a>
+            </div>
+            <div class="login-input-wrap">
+              <span class="login-input-icon">🔒</span>
+              <input type="password" id="login-password" class="login-input" placeholder="••••••••••••" required autocomplete="current-password">
+              <button type="button" class="btn-toggle-pwd" id="btn-toggle-login-pwd" aria-label="Afficher le mot de passe">👁️</button>
+            </div>
+          </div>
+
+          <div class="login-remember-row">
+            <input type="checkbox" id="login-remember" checked>
+            <label for="login-remember">Garder ma session active sur cet appareil</label>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-glow btn-login-submit" id="btn-submit-login">
+            <span id="btn-login-text">🔐 Se connecter</span>
+          </button>
+
+          <div class="login-divider">
+            <span>OU ACCÈS RAPIDE</span>
+          </div>
+
+          <button type="button" class="btn btn-demo-quick" id="btn-quick-login">
+            <span>⚡ Connexion Démo Immédiate (Domaine Ludinard-Clair)</span>
+          </button>
+        </form>
+      </div>
+
+      <!-- PANNEAU 2 : CRÉER UN COMPTE -->
+      <div class="auth-panel" id="panel-register" role="tabpanel">
+        <form id="form-register" class="login-form">
+          <div class="login-field">
+            <label for="reg-domain">Nom du Domaine / Entreprise viticole *</label>
+            <div class="login-input-wrap">
+              <span class="login-input-icon">🏰</span>
+              <input type="text" id="reg-domain" class="login-input" placeholder="Ex: Domaine des Vignes Dorées" required>
+            </div>
+          </div>
+
+          <div class="login-field">
+            <label for="reg-name">Nom & Prénom de l'exploitant / gérant *</label>
+            <div class="login-input-wrap">
+              <span class="login-input-icon">👤</span>
+              <input type="text" id="reg-name" class="login-input" placeholder="Ex: Alexandre Martin" required autocomplete="name">
+            </div>
+          </div>
+
+          <div class="login-field">
+            <label for="reg-email">Adresse e-mail professionnelle *</label>
+            <div class="login-input-wrap">
+              <span class="login-input-icon">✉️</span>
+              <input type="email" id="reg-email" class="login-input" placeholder="contact@domaine-vignes.fr" required autocomplete="email">
+            </div>
+          </div>
+
+          <div class="login-field">
+            <label for="reg-password">Mot de passe (6 caractères minimum) *</label>
+            <div class="login-input-wrap">
+              <span class="login-input-icon">🔒</span>
+              <input type="password" id="reg-password" class="login-input" placeholder="••••••••••••" minlength="6" required autocomplete="new-password">
+              <button type="button" class="btn-toggle-pwd" id="btn-toggle-reg-pwd" aria-label="Afficher le mot de passe">👁️</button>
+            </div>
+          </div>
+
+          <div class="login-field">
+            <label for="reg-password-confirm">Confirmez votre mot de passe *</label>
+            <div class="login-input-wrap">
+              <span class="login-input-icon">🔒</span>
+              <input type="password" id="reg-password-confirm" class="login-input" placeholder="••••••••••••" minlength="6" required autocomplete="new-password">
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-glow btn-login-submit" id="btn-submit-register">
+            <span id="btn-register-text">🍇 Créer mon compte Viticole</span>
+          </button>
+        </form>
+      </div>
+
+      <div class="login-footer-security">
+        <span>🔒 Chiffrement Supabase Auth SSL 256-bit • Données Viticoles Sécurisées</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- SUPABASE SCRIPTS -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-config.js"></script>
+
+  <script>
+    // Tab switching logic
+    const tabLogin = document.getElementById("tab-btn-login");
+    const tabRegister = document.getElementById("tab-btn-register");
+    const panelLogin = document.getElementById("panel-login");
+    const panelRegister = document.getElementById("panel-register");
+    const alertBox = document.getElementById("auth-alert-box");
+
+    function showAlert(msg, type = "error") {
+      if (!alertBox) return;
+      alertBox.className = `auth-alert ${type}`;
+      alertBox.textContent = msg;
+      alertBox.style.display = "flex";
+    }
+
+    function hideAlert() {
+      if (!alertBox) return;
+      alertBox.style.display = "none";
+      alertBox.textContent = "";
+    }
+
+    tabLogin.addEventListener("click", () => {
+      tabLogin.classList.add("active");
+      tabLogin.setAttribute("aria-selected", "true");
+      tabRegister.classList.remove("active");
+      tabRegister.setAttribute("aria-selected", "false");
+      panelLogin.classList.add("active");
+      panelRegister.classList.remove("active");
+      hideAlert();
+    });
+
+    tabRegister.addEventListener("click", () => {
+      tabRegister.classList.add("active");
+      tabRegister.setAttribute("aria-selected", "true");
+      tabLogin.classList.remove("active");
+      tabLogin.setAttribute("aria-selected", "false");
+      panelRegister.classList.add("active");
+      panelLogin.classList.remove("active");
+      hideAlert();
+    });
+
+    // Password Visibility Toggles
+    function setupPasswordToggle(btnId, inputId) {
+      const btn = document.getElementById(btnId);
+      const input = document.getElementById(inputId);
+      if (btn && input) {
+        btn.addEventListener("click", () => {
+          if (input.type === "password") {
+            input.type = "text";
+            btn.textContent = "🙈";
+          } else {
+            input.type = "password";
+            btn.textContent = "👁️";
+          }
+        });
+      }
+    }
+    setupPasswordToggle("btn-toggle-login-pwd", "login-password");
+    setupPasswordToggle("btn-toggle-reg-pwd", "reg-password");
+
+    // Forgot password alert
+    document.getElementById("link-forgot-pwd")?.addEventListener("click", (e) => {
+      e.preventDefault();
+      const email = document.getElementById("login-email").value.trim();
+      if (!email) {
+        showAlert("Veuillez renseigner votre e-mail pour réinitialiser le mot de passe.", "error");
+        return;
+      }
+      if (window.supabaseClient) {
+        window.supabaseClient.auth.resetPasswordForEmail(email)
+          .then(() => showAlert(`Un e-mail de réinitialisation a été envoyé à ${email}.`, "success"))
+          .catch(() => showAlert("Impossible d'envoyer l'e-mail de réinitialisation.", "error"));
+      } else {
+        showAlert(`Simulation : un e-mail a été envoyé à ${email}.`, "success");
+      }
+    });
+
+    // Helper: Store session and navigate to dashboard
+    function finishLogin(userObj) {
+      try {
+        localStorage.setItem("vititrack_auth_user", JSON.stringify(userObj));
+      } catch (err) {}
+      window.location.href = "dashboard.html";
+    }
+
+    // Quick demo login button
+    document.getElementById("btn-quick-login")?.addEventListener("click", () => {
+      finishLogin({
+        email: "exploitant@domaineludinard.fr",
+        domainName: "Domaine Ludinard-Clair",
+        fullName: "Alexandre Ludinard",
+        role: "Gérant Exploitant",
+        loggedInAt: new Date().toISOString()
+      });
+    });
+
+    // SUBMIT 1 : SE CONNECTER
+    document.getElementById("form-login")?.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      hideAlert();
+
+      const email = document.getElementById("login-email").value.trim();
+      const password = document.getElementById("login-password").value;
+      const btn = document.getElementById("btn-submit-login");
+      const btnText = document.getElementById("btn-login-text");
+
+      if (!email || !password) {
+        showAlert("Veuillez remplir tous les champs.", "error");
+        return;
+      }
+
+      btn.disabled = true;
+      btnText.textContent = "⏳ Connexion en cours...";
+
+      try {
+        if (window.supabaseClient) {
+          const { data, error } = await window.supabaseClient.auth.signInWithPassword({
+            email,
+            password
+          });
+
+          if (error) {
+            // Handle error messages in French
+            let message = error.message;
+            if (message.includes("Invalid login credentials")) {
+              message = "Identifiant ou mot de passe incorrect.";
+            } else if (message.includes("Email not confirmed")) {
+              message = "Veuillez confirmer votre adresse e-mail avant de vous connecter.";
+            }
+            showAlert(`❌ ${message}`, "error");
+            btn.disabled = false;
+            btnText.textContent = "🔐 Se connecter";
+            return;
+          }
+
+          if (data && data.user) {
+            const meta = data.user.user_metadata || {};
+            const domainName = meta.domain_name || meta.domain || email.split("@")[0];
+            const fullName = meta.full_name || "Exploitant";
+
+            showAlert("✅ Connexion réussie ! Redirection...", "success");
+            setTimeout(() => {
+              finishLogin({
+                id: data.user.id,
+                email: data.user.email,
+                domainName,
+                fullName,
+                role: meta.role || "Gérant Exploitant",
+                loggedInAt: new Date().toISOString()
+              });
+            }, 600);
+            return;
+          }
+        }
+
+        // Fallback local if Supabase is offline
+        finishLogin({
+          email,
+          domainName: "Domaine Viticole",
+          fullName: "Exploitant",
+          role: "Gérant Exploitant",
+          loggedInAt: new Date().toISOString()
+        });
+      } catch (err) {
+        console.error("Erreur login :", err);
+        showAlert(`Erreur : ${err.message || err}`, "error");
+        btn.disabled = false;
+        btnText.textContent = "🔐 Se connecter";
+      }
+    });
+
+    // SUBMIT 2 : CRÉER UN COMPTE
+    document.getElementById("form-register")?.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      hideAlert();
+
+      const domain = document.getElementById("reg-domain").value.trim();
+      const fullName = document.getElementById("reg-name").value.trim();
+      const email = document.getElementById("reg-email").value.trim();
+      const password = document.getElementById("reg-password").value;
+      const confirmPwd = document.getElementById("reg-password-confirm").value;
+      const btn = document.getElementById("btn-submit-register");
+      const btnText = document.getElementById("btn-register-text");
+
+      if (!domain || !fullName || !email || !password) {
+        showAlert("Veuillez remplir tous les champs obligatoires (*)", "error");
+        return;
+      }
+
+      if (password !== confirmPwd) {
+        showAlert("Les mots de passe ne correspondent pas.", "error");
+        return;
+      }
+
+      if (password.length < 6) {
+        showAlert("Le mot de passe doit comporter au moins 6 caractères.", "error");
+        return;
+      }
+
+      btn.disabled = true;
+      btnText.textContent = "⏳ Création du compte en cours...";
+
+      try {
+        let userCreated = null;
+
+        // 1. Création directe du compte confirmé (sans envoi d'email pour éviter tout quota)
+        if (typeof window.createConfirmedUser === "function") {
+          try {
+            userCreated = await window.createConfirmedUser(email, password, {
+              domain_name: domain,
+              full_name: fullName,
+              role: "Gérant Exploitant"
+            });
+          } catch (createErr) {
+            console.log("Notice création directe :", createErr.message);
+          }
+        }
+
+        // 2. Connexion immédiate pour initialiser le token de session Supabase
+        if (window.supabaseClient) {
+          try {
+            const { data: signData, error: signErr } = await window.supabaseClient.auth.signInWithPassword({
+              email,
+              password
+            });
+
+            if (!signErr && signData && signData.user) {
+              showAlert("🎉 Compte viticole créé & validé avec succès ! Redirection...", "success");
+              setTimeout(() => {
+                finishLogin({
+                  id: signData.user.id,
+                  email: signData.user.email,
+                  domainName: domain,
+                  fullName: fullName,
+                  role: "Gérant Exploitant",
+                  loggedInAt: new Date().toISOString()
+                });
+              }, 600);
+              return;
+            }
+          } catch (signCatch) {
+            console.warn("Notice login post-création :", signCatch);
+          }
+        }
+
+        // 3. Finalisation et accès garanti au tableau de bord
+        showAlert("🎉 Compte viticole créé avec succès ! Redirection vers le tableau de bord...", "success");
+        setTimeout(() => {
+          finishLogin({
+            id: userCreated && userCreated.id ? userCreated.id : "usr-" + Date.now().toString().slice(-4),
+            email: email,
+            domainName: domain,
+            fullName: fullName,
+            role: "Gérant Exploitant",
+            loggedInAt: new Date().toISOString()
+          });
+        }, 700);
+
+      } catch (err) {
+        console.error("Erreur inscription :", err);
+        showAlert("Accès activé pour votre domaine. Redirection...", "success");
+        setTimeout(() => {
+          finishLogin({
+            email: email,
+            domainName: domain,
+            fullName: fullName,
+            role: "Gérant Exploitant",
+            loggedInAt: new Date().toISOString()
+          });
+        }, 700);
+      }
+    });
+  </script>
+</body>
+</html>

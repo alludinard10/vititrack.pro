@@ -197,6 +197,88 @@ document.addEventListener('DOMContentLoaded', () => {
   // ========== TYPING EFFECT ON HERO BADGE ==========
   // Subtle pulse animation already handled by CSS
 
+  // ========== LOGIN MODAL HANDLERS ==========
+  const loginModal = document.getElementById('login-modal');
+  const navLoginBtn = document.getElementById('nav-login-btn');
+  const heroLoginBtn = document.getElementById('hero-login-btn');
+  const loginModalClose = document.getElementById('login-modal-close');
+  const landingLoginForm = document.getElementById('landing-login-form');
+  const modalBtnDemo = document.getElementById('modal-btn-demo');
+  const modalPwdToggle = document.getElementById('modal-pwd-toggle');
+  const modalLoginPwd = document.getElementById('modal-login-pwd');
+
+  const openLoginModal = (e) => {
+    if (e) e.preventDefault();
+    if (loginModal) {
+      loginModal.classList.add('open');
+      loginModal.setAttribute('aria-hidden', 'false');
+      document.body.style.overflow = 'hidden';
+    }
+  };
+
+  const closeLoginModal = () => {
+    if (loginModal) {
+      loginModal.classList.remove('open');
+      loginModal.setAttribute('aria-hidden', 'true');
+      document.body.style.overflow = '';
+    }
+  };
+
+  if (navLoginBtn) navLoginBtn.addEventListener('click', openLoginModal);
+  if (heroLoginBtn) heroLoginBtn.addEventListener('click', openLoginModal);
+  if (loginModalClose) loginModalClose.addEventListener('click', closeLoginModal);
+
+  if (loginModal) {
+    loginModal.addEventListener('click', (e) => {
+      if (e.target === loginModal) closeLoginModal();
+    });
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && loginModal && loginModal.classList.contains('open')) {
+      closeLoginModal();
+    }
+  });
+
+  if (modalPwdToggle && modalLoginPwd) {
+    modalPwdToggle.addEventListener('click', () => {
+      if (modalLoginPwd.type === 'password') {
+        modalLoginPwd.type = 'text';
+        modalPwdToggle.textContent = '🙈';
+      } else {
+        modalLoginPwd.type = 'password';
+        modalPwdToggle.textContent = '👁️';
+      }
+    });
+  }
+
+  const authenticateAndRedirect = (email, domain) => {
+    const user = {
+      email: email || 'exploitant@domaineludinard.fr',
+      domainName: domain || 'Domaine Ludinard-Clair',
+      role: 'Gérant Exploitant',
+      loggedInAt: new Date().toISOString()
+    };
+    try {
+      localStorage.setItem('vititrack_auth_user', JSON.stringify(user));
+    } catch (err) {}
+    window.location.href = 'dashboard.html';
+  };
+
+  if (landingLoginForm) {
+    landingLoginForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const email = document.getElementById('modal-login-email')?.value.trim();
+      authenticateAndRedirect(email, 'Domaine Ludinard-Clair');
+    });
+  }
+
+  if (modalBtnDemo) {
+    modalBtnDemo.addEventListener('click', () => {
+      authenticateAndRedirect('exploitant@domaineludinard.fr', 'Domaine Ludinard-Clair');
+    });
+  }
+
   // ========== PRELOAD INITIAL STATE ==========
   // Trigger initial checks
   handleNavbarScroll();

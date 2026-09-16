@@ -35,9 +35,12 @@
       <div class="nav-links" id="nav-links">
         <a href="#fonctionnalites">Fonctionnalités</a>
         <a href="#comment-ca-marche">Comment ça marche</a>
-        <a href="dashboard.html" class="nav-dashboard-link">Tableau de bord <span class="badge-mini-pro">PRO</span></a>
         <a href="#tarifs">Tarifs</a>
         <a href="#faq">FAQ</a>
+        <a href="dashboard.html" class="nav-dashboard-link">Tableau de bord <span class="badge-mini-pro">PRO</span></a>
+        <a href="login.html" class="nav-login-link" id="nav-login-btn">
+          <span>👤 Connexion / Inscription</span>
+        </a>
         <a href="dashboard.html" class="btn btn-primary nav-cta">Accéder à l'App</a>
       </div>
 
@@ -76,8 +79,8 @@
           Ouvrir le Tableau de bord Pro
           <span class="btn-icon">→</span>
         </a>
-        <a href="#tableau-de-bord" class="btn btn-secondary">
-          Découvrir les fonctionnalités
+        <a href="login.html" class="btn btn-secondary hero-login-btn" id="hero-login-btn">
+          <span>👤 Connexion / Créer un compte</span>
         </a>
       </div>
 
@@ -528,6 +531,71 @@
       </div>
     </div>
   </footer>
+
+  <!-- ==================== MODAL DE CONNEXION RAPIDE ==================== -->
+  <div class="auth-modal-overlay" id="login-modal" aria-hidden="true">
+    <div class="auth-modal-dialog">
+      <div class="auth-modal-header">
+        <div class="auth-brand-badge">
+          <span class="auth-brand-icon">🍇</span>
+          <span class="auth-brand-name">Viti<span class="logo-accent">Track</span> <span class="badge-mini-pro">PRO</span></span>
+        </div>
+        <button type="button" class="auth-modal-close" id="login-modal-close" aria-label="Fermer">✕</button>
+      </div>
+
+      <div class="auth-modal-body">
+        <div class="auth-header-text">
+          <h3>Espace Connexion</h3>
+          <p>Accédez à votre gestionnaire de parcelles et facturation viticole</p>
+        </div>
+
+        <form id="landing-login-form" class="auth-dialog-form">
+          <div class="auth-form-group">
+            <label for="modal-login-email">Identifiant ou E-mail du domaine</label>
+            <div class="auth-input-container">
+              <span class="auth-field-icon">👤</span>
+              <input type="email" id="modal-login-email" placeholder="exploitant@domaineludinard.fr" value="exploitant@domaineludinard.fr" required>
+            </div>
+          </div>
+
+          <div class="auth-form-group">
+            <div class="auth-label-row">
+              <label for="modal-login-pwd">Mot de passe</label>
+              <a href="#" class="auth-forgot-pwd" id="modal-forgot-link">Oublié ?</a>
+            </div>
+            <div class="auth-input-container">
+              <span class="auth-field-icon">🔒</span>
+              <input type="password" id="modal-login-pwd" placeholder="••••••••••••" value="vititrack2026" required>
+              <button type="button" class="auth-pwd-toggle" id="modal-pwd-toggle" aria-label="Afficher le mot de passe">👁️</button>
+            </div>
+          </div>
+
+          <div class="auth-check-row">
+            <label>
+              <input type="checkbox" id="modal-login-remember" checked>
+              <span>Rester connecté sur cet appareil</span>
+            </label>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-glow auth-btn-submit" id="modal-btn-submit">
+            <span>🔐 Se connecter</span>
+          </button>
+
+          <div class="auth-separator">
+            <span>OU</span>
+          </div>
+
+          <button type="button" class="btn btn-secondary auth-btn-demo" id="modal-btn-demo">
+            <span>⚡ Connexion instantanée (Gérant Démo)</span>
+          </button>
+        </form>
+
+        <div class="auth-security-footer">
+          <span>🔒 Chiffrement SSL • Données sécurisées • Hébergement France</span>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- Script -->
   <script src="script.js"></script>

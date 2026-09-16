@@ -3,3 +3,5 @@ Thumbs.db
 *.log
 .gemini/
 .agents/
+.env
+.env.*
