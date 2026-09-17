@@ -28,7 +28,7 @@ serve(async (req: Request) => {
     // 1. Authentification de l'utilisateur
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
-      return new Response(JSON.stringify({ error: "Non autorisé" }), {
+      return new Response(JSON.stringify({ error: "Non autorisé : token manquant" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -36,20 +36,17 @@ serve(async (req: Request) => {
 
     const token = authHeader.replace(/^Bearer\s+/i, "").trim();
     if (!token) {
-      return new Response(JSON.stringify({ error: "Non autorisé" }), {
+      return new Response(JSON.stringify({ error: "Non autorisé : token vide" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: `Bearer ${token}` } },
-      auth: { persistSession: false },
-    });
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    const adminSupabase = createClient(supabaseUrl, supabaseServiceKey);
+    const { data: { user }, error: authError } = await adminSupabase.auth.getUser(token);
 
     if (authError || !user) {
-      return new Response(JSON.stringify({ error: "Session expirée" }), {
+      return new Response(JSON.stringify({ error: "Session expirée", details: authError?.message }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

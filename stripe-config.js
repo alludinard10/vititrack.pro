@@ -7,30 +7,41 @@
   const SUPABASE_FUNCTIONS_URL = `${window.SUPABASE_URL || "https://zygxjkckwaskukhnltck.supabase.co"}/functions/v1`;
 
   /**
-   * Obtient et rafraîchit si nécessaire la session Supabase active.
+   * Récupère une session Supabase active et valide (avec rafraîchissement automatique si expiré).
    */
-  async function getActiveValidSession() {
-    if (!window.supabaseClient) return null;
-    try {
-      const { data: sessData } = await window.supabaseClient.auth.getSession();
-      let session = sessData?.session;
+  async function getValidSession() {
+    if (!window.supabaseClient) {
+      console.warn("⚠️ [VitiTrack Stripe] supabaseClient non disponible.");
+      return null;
+    }
 
-      // Si la session est expirée ou expire dans moins de 2 minutes, la rafraîchir
-      if (session && session.expires_at && (session.expires_at * 1000 < Date.now() + 120000)) {
-        const { data: refData, error: refErr } = await window.supabaseClient.auth.refreshSession();
-        if (!refErr && refData?.session) {
-          session = refData.session;
+    try {
+      // 1. Récupération de la session courante
+      const { data, error } = await window.supabaseClient.auth.getSession();
+      if (error) {
+        console.warn("⚠️ [VitiTrack Stripe] Erreur getSession :", error.message);
+      }
+
+      let activeSession = data?.session;
+
+      // 2. Vérification de l'expiration du JWT (si expiré ou expire dans moins de 60 secondes)
+      const nowSec = Math.floor(Date.now() / 1000);
+      const isExpiredOrNear = activeSession && activeSession.expires_at && (activeSession.expires_at - nowSec < 60);
+
+      if (!activeSession || isExpiredOrNear) {
+        console.log("🔄 [VitiTrack Stripe] Rafraîchissement de la session Supabase...");
+        const { data: refreshData, error: refreshError } = await window.supabaseClient.auth.refreshSession();
+        if (!refreshError && refreshData?.session?.access_token) {
+          activeSession = refreshData.session;
+          console.log("✅ [VitiTrack Stripe] Session rafraîchie avec succès.");
+        } else if (refreshError) {
+          console.warn("⚠️ [VitiTrack Stripe] Impossible de rafraîchir :", refreshError.message);
         }
       }
 
-      if (!session) {
-        const { data: refData } = await window.supabaseClient.auth.refreshSession();
-        session = refData?.session || null;
-      }
-
-      return session;
-    } catch (e) {
-      console.warn("⚠️ [VitiTrack Stripe] Erreur récupération session :", e);
+      return activeSession;
+    } catch (err) {
+      console.error("❌ [VitiTrack Stripe] Exception lors de getValidSession :", err);
       return null;
     }
   }
@@ -40,20 +51,20 @@
    * @param {'basic' | 'pro' | 'enterprise'} planId
    */
   async function startStripeCheckout(planId = "pro") {
-    // 1. Vérifier si un utilisateur est connecté avec une session valide
-    const session = await getActiveValidSession();
+    // 1. Vérifier si un utilisateur a une session active valide
+    const session = await getValidSession();
 
     if (!session || !session.access_token) {
-      // Si pas connecté, sauvegarder le plan souhaité et avertir
+      // Si pas connecté, sauvegarder le plan souhaité et rediriger vers login
       try {
         localStorage.setItem("vititrack_pending_plan", planId);
       } catch (e) {}
       if (typeof showToast === "function") {
-        showToast("Veuillez vous connecter avec votre compte pour souscrire.", "warning");
+        showToast("Veuillez vous connecter pour activer votre abonnement.", "warning");
       }
       setTimeout(() => {
         window.location.href = `login.html?redirect=checkout&plan=${encodeURIComponent(planId)}`;
-      }, 500);
+      }, 700);
       return;
     }
 
@@ -77,6 +88,9 @@
       const data = await response.json();
 
       if (!response.ok || !data.url) {
+        if (response.status === 401) {
+          throw new Error("Votre session a expiré. Veuillez vous reconnecter.");
+        }
         throw new Error(data.error || "Impossible de créer la session de paiement.");
       }
 
@@ -96,7 +110,7 @@
    * Ouvre le portail client Stripe (gestion CB, factures, résiliation).
    */
   async function openCustomerPortal() {
-    const session = await getActiveValidSession();
+    const session = await getValidSession();
 
     if (!session || !session.access_token) {
       window.location.href = "login.html";

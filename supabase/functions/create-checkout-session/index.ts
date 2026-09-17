@@ -55,22 +55,21 @@ serve(async (req: Request) => {
 
     const token = authHeader.replace(/^Bearer\s+/i, "").trim();
     if (!token) {
-      return new Response(JSON.stringify({ error: "Non autorisé : format Bearer manquant" }), {
+      return new Response(JSON.stringify({ error: "Non autorisé : token vide" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Le client Supabase valide le token directement auprès du service Auth
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: `Bearer ${token}` } },
-      auth: { persistSession: false },
-    });
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    // 2. Client Supabase avec privilèges de service pour la validation auth et gestion Stripe
+    const adminSupabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Validation du token JWT avec Supabase Auth (on passe explicitement le token)
+    const { data: { user }, error: authError } = await adminSupabase.auth.getUser(token);
 
     if (authError || !user) {
-      console.error("❌ [Checkout] Erreur auth getUser :", authError?.message || "Utilisateur introuvable");
-      return new Response(JSON.stringify({ error: "Session invalide ou expirée" }), {
+      console.error("❌ [create-checkout-session] Auth error:", authError?.message || "Utilisateur introuvable");
+      return new Response(JSON.stringify({ error: "Session invalide ou expirée", details: authError?.message }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -78,9 +77,6 @@ serve(async (req: Request) => {
 
     const { planId = "pro", returnUrl } = await req.json();
     const plan = PLAN_CONFIG[planId] || PLAN_CONFIG.pro;
-
-    // 2. Client Supabase avec privilèges de service pour la gestion Stripe
-    const adminSupabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // 3. Vérifier si un stripe_customer_id existe déjà pour cet utilisateur
     const { data: subData } = await adminSupabase
@@ -154,10 +150,6 @@ serve(async (req: Request) => {
       line_items: lineItems,
       allow_promotion_codes: true,
       billing_address_collection: "required",
-      customer_update: {
-        name: "auto",
-        address: "auto",
-      },
       tax_id_collection: { enabled: true }, // Collecte numéro TVA intracommunautaire pour facturation viticole
       subscription_data: {
         metadata: {
