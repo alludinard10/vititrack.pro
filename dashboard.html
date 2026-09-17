@@ -132,6 +132,13 @@
           <span class="nav-badge badge-warning" id="sidebar-unbilled-count">0</span>
         </a>
 
+        <div class="nav-section-title">ABONNEMENT STRIPE</div>
+        <a href="javascript:void(0)" class="nav-item" id="sidebar-sub-btn" onclick="openSubscriptionModal(); closeSidebar(); return false;" title="Gérer mon abonnement et mes factures">
+          <span class="nav-icon">💳</span>
+          <span class="nav-label">Mon Abonnement</span>
+          <span class="nav-badge badge-success" id="sidebar-plan-badge">Pro</span>
+        </a>
+
         <div class="nav-section-title">OUTILS & BASE</div>
         <a href="javascript:void(0)" class="nav-item" id="sidebar-add-service-btn" onclick="openServiceModal(); closeSidebar(); return false;">
           <span class="nav-icon">＋</span>
@@ -1466,6 +1473,135 @@
     </div>
   </div>
 
+  <!-- ==================== MODAL 8 : MON ABONNEMENT STRIPE ==================== -->
+  <div class="modal-overlay" id="subscription-modal" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div class="modal-header-icon" style="background: rgba(82, 183, 136, 0.15); color: #52b788; border-color: rgba(82, 183, 136, 0.3);">💳</div>
+          <div>
+            <h3 class="modal-title">Mon Abonnement VitiTrack Pro</h3>
+            <p class="modal-subtitle">Gestion de votre formule mensuelle, factures et paiements Stripe sécurisés</p>
+          </div>
+          <button class="modal-close-btn" id="subscription-modal-close-btn" onclick="closeSubscriptionModal()" aria-label="Fermer">✕</button>
+        </div>
+
+        <div class="modal-body">
+          <!-- CARTE RÉCAPITULATIVE FORMULE ACTIVE -->
+          <div class="sub-current-card" id="sub-current-card">
+            <div class="sub-current-header">
+              <div>
+                <span class="sub-current-tag">FORMULE ACTUELLE</span>
+                <h4 class="sub-current-title" id="sub-current-name">Formule Professionnel</h4>
+                <div class="sub-current-price" id="sub-current-price">49,00 € HT <span class="sub-period">/ mois</span></div>
+              </div>
+              <div class="sub-status-pill" id="sub-status-pill">
+                <span class="sub-status-dot"></span>
+                <span id="sub-status-label">Abonnement Actif</span>
+              </div>
+            </div>
+
+            <div class="sub-current-details">
+              <div class="sub-detail-item">
+                <span class="sub-detail-label">Période en cours jusqu'au :</span>
+                <span class="sub-detail-value" id="sub-current-date">—</span>
+              </div>
+              <div class="sub-detail-item">
+                <span class="sub-detail-label">Identifiant client Stripe :</span>
+                <span class="sub-detail-value" id="sub-customer-id">En attente</span>
+              </div>
+            </div>
+
+            <div class="sub-portal-action">
+              <button type="button" class="btn btn-outline w-full" id="btn-open-portal" onclick="window.VitiTrackStripe?.openPortal()">
+                <span>💳 Gérer ma carte bancaire & Mes factures (Portail Stripe)</span>
+              </button>
+              <span class="form-hint" style="text-align: center; display: block; margin-top: 0.4rem;">
+                Accès direct au portail officiel Stripe pour modifier votre carte bancaire ou télécharger vos factures avec TVA.
+              </span>
+            </div>
+          </div>
+
+          <!-- SÉLECTION DES 3 FORMULES D'ABONNEMENT -->
+          <div class="sub-plans-section">
+            <h4 class="sub-section-title">Changer ou souscrire à une formule</h4>
+            <div class="sub-plans-grid">
+              
+              <!-- Plan Basic -->
+              <div class="sub-plan-card" id="card-plan-basic">
+                <div class="sub-plan-header">
+                  <h5>Basic</h5>
+                  <span class="sub-plan-target">Petits domaines & Démarrages</span>
+                  <div class="sub-plan-cost">29€ <span>HT/mois</span></div>
+                </div>
+                <ul class="sub-plan-perks">
+                  <li>✓ Jusqu'à 5 clients</li>
+                  <li>✓ Jusqu'à 10 parcelles</li>
+                  <li>✓ Suivi des chantiers en direct</li>
+                  <li>✓ Historique complet</li>
+                </ul>
+                <button type="button" class="btn btn-secondary btn-sm w-full" onclick="window.VitiTrackStripe?.startCheckout('basic')">
+                  <span>Choisir Basic (29€)</span>
+                </button>
+              </div>
+
+              <!-- Plan Pro (Featured) -->
+              <div class="sub-plan-card featured" id="card-plan-pro">
+                <div class="sub-popular-tag">Le plus populaire</div>
+                <div class="sub-plan-header">
+                  <h5>Professionnel</h5>
+                  <span class="sub-plan-target">Exploitations & Prestataires actifs</span>
+                  <div class="sub-plan-cost">49€ <span>HT/mois</span></div>
+                </div>
+                <ul class="sub-plan-perks">
+                  <li>✓ 5 à 15 clients</li>
+                  <li>✓ 10 à 20 parcelles</li>
+                  <li>✓ Suivi facturation & TVA</li>
+                  <li>✓ Export comptable CSV</li>
+                  <li>✓ Support prioritaire 7j/7</li>
+                </ul>
+                <button type="button" class="btn btn-primary btn-glow btn-sm w-full" onclick="window.VitiTrackStripe?.startCheckout('pro')">
+                  <span>Choisir Professionnel (49€)</span>
+                </button>
+              </div>
+
+              <!-- Plan Entreprise -->
+              <div class="sub-plan-card" id="card-plan-enterprise">
+                <div class="sub-plan-header">
+                  <h5>Entreprise</h5>
+                  <span class="sub-plan-target">Grands domaines & Structures</span>
+                  <div class="sub-plan-cost">99€ <span>HT/mois</span></div>
+                </div>
+                <ul class="sub-plan-perks">
+                  <li>✓ Clients illimités</li>
+                  <li>✓ Parcelles illimitées</li>
+                  <li>✓ Suivi facturation & TVA</li>
+                  <li>✓ Sync Cloud continue</li>
+                  <li>✓ Accompagnement prioritaire</li>
+                </ul>
+                <button type="button" class="btn btn-secondary btn-sm w-full" onclick="window.VitiTrackStripe?.startCheckout('enterprise')">
+                  <span>Choisir Entreprise (99€)</span>
+                </button>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- SÉCURITÉ STRIPE -->
+          <div class="sub-security-box">
+            <span class="sub-security-icon">🔒</span>
+            <span>Paiements cryptés et 100% sécurisés par <strong>Stripe</strong>. Vos coordonnées bancaires ne transitent jamais sur nos serveurs.</span>
+          </div>
+
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost" id="sub-modal-close-btn" onclick="closeSubscriptionModal()">Fermer</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- ==================== BARRE DE NAVIGATION INFÉRIEURE (MOBILE / SMARTPHONE) ==================== -->
   <nav class="mobile-bottom-nav" id="mobile-bottom-nav" aria-label="Navigation mobile">
     <button type="button" class="mobile-nav-item active" id="mobile-nav-overview" data-view="overview" onclick="switchView('overview')" aria-label="Tableau de bord">
@@ -1498,6 +1634,7 @@
   <!-- SUPABASE CDN & CONFIG -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js"></script>
+  <script src="stripe-config.js"></script>
   <script src="dashboard.js"></script>
 </body>
 </html>

@@ -229,6 +229,23 @@ Sur les écrans de smartphone (< 650px et < 768px) :
 - Pour **tous les autres travaux viticoles** (taille, palissage, rognage, effeuillage, traitements, vendanges...), le taux de TVA standard est de **20%**.
 - L'application calcule et affiche dynamiquement les montants HT et TTC avec le taux adéquat via la fonction globale `getTvaRate()`.
 
+### Règle 8 : Architecture Stripe & Abonnements Mensuels (Zéro Clé Secrète Frontend)
+- **Sécurité absolue** : Aucune clé secrète Stripe (`sk_live_...`, `sk_test_...`) ni clé secrète de webhook (`whsec_...`) ne doit JAMAIS figurer dans le code frontend ou le dépôt Git.
+- **Backend Serveur (Supabase Edge Functions)** :
+  - `create-checkout-session` : génère la session Stripe Checkout sécurisée en mode abonnement (`mode: 'subscription'`).
+  - `stripe-webhook` : écoute les webhooks Stripe (`checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.payment_succeeded`), valide la signature cryptographique et synchronise la table `subscriptions`.
+  - `customer-portal` : génère la session du portail client Stripe pour la gestion de carte bancaire, téléchargement des factures avec TVA et résiliation en 1 clic.
+- **Base de données relationnelle Supabase** :
+  - Table `subscriptions` partitionnée par utilisateur avec RLS stricte (`auth.uid() = user_id`).
+  - Table `payment_invoices` pour l'historique des quittances et factures acquittées.
+- **Formules d'abonnements** :
+  - **Basic (29 € HT / mois)** : jusqu'à 5 clients et 10 parcelles.
+  - **Professionnel (49 € HT / mois)** : 5 à 15 clients et 10 à 20 parcelles.
+  - **Entreprise (99 € HT / mois)** : Clients et parcelles illimités.
+- **Module Frontend (`stripe-config.js`)** :
+  - Expose `window.VitiTrackStripe` (`startCheckout`, `openPortal`, `getSubscription`, `handleReturn`).
+  - Modal 8 intégrée dans `dashboard.html` (`#subscription-modal`) avec récapitulatif du forfait actif et accès portail.
+
 ---
 
 ## 6. Instructions pour les Futurs Modèles IA & Développeurs

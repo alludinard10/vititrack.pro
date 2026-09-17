@@ -348,3 +348,16 @@ document.addEventListener('DOMContentLoaded', () => {
   highlightNav();
 
 });
+
+// ========== STRIPE SUBSCRIPTION HANDLER ==========
+function handlePlanSelect(planId) {
+  if (window.VitiTrackStripe && typeof window.VitiTrackStripe.startCheckout === "function") {
+    window.VitiTrackStripe.startCheckout(planId);
+  } else {
+    try {
+      localStorage.setItem("vititrack_pending_plan", planId);
+    } catch (e) {}
+    window.location.href = `login.html?plan=${encodeURIComponent(planId)}`;
+  }
+}
+window.handlePlanSelect = handlePlanSelect;

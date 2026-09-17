@@ -584,7 +584,19 @@
       try {
         localStorage.setItem("vititrack_auth_user", JSON.stringify(userObj));
       } catch (err) {}
-      window.location.href = "dashboard.html";
+
+      const urlParams = new URLSearchParams(window.location.search);
+      let plan = urlParams.get("plan");
+      try {
+        if (!plan) plan = localStorage.getItem("vititrack_pending_plan");
+        if (plan) localStorage.removeItem("vititrack_pending_plan");
+      } catch (e) {}
+
+      if (plan) {
+        window.location.href = `dashboard.html?checkout_plan=${encodeURIComponent(plan)}`;
+      } else {
+        window.location.href = "dashboard.html";
+      }
     }
 
     // SUBMIT 1 : SE CONNECTER

@@ -247,7 +247,20 @@ function initDashboard() {
   }
 
   // Vérification d'authentification asynchrone sans bloquer l'interactivité
-  checkAuthUser().catch(err => {
+  checkAuthUser().then(() => {
+    // Chargement de l'abonnement Stripe
+    if (typeof loadUserSubscription === "function") loadUserSubscription();
+
+    // Vérification d'un paiement en attente depuis la landing page ou login
+    const urlParams = new URLSearchParams(window.location.search);
+    const checkoutPlan = urlParams.get("checkout_plan");
+    if (checkoutPlan && window.VitiTrackStripe) {
+      const cleanUrl = new URL(window.location.href);
+      cleanUrl.searchParams.delete("checkout_plan");
+      window.history.replaceState({}, document.title, cleanUrl.pathname + (cleanUrl.search || ""));
+      window.VitiTrackStripe.startCheckout(checkoutPlan);
+    }
+  }).catch(err => {
     console.warn("Notice vérification utilisateur :", err);
   });
 
@@ -1136,6 +1149,7 @@ function setupEventListeners() {
   setupModalCloser("service-modal", "service-modal-close-btn", "service-modal-cancel-btn", closeServiceModal);
   setupModalCloser("planned-modal", "planned-modal-close-btn", "planned-modal-cancel-btn", closePlannedModal);
   setupModalCloser("client-dossier-modal", "dossier-modal-close-btn", null, closeClientDossier);
+  setupModalCloser("subscription-modal", "subscription-modal-close-btn", "sub-modal-close-btn", closeSubscriptionModal);
 
   // Forms Submissions
   const clientForm = document.getElementById("create-client-form");
@@ -3995,4 +4009,84 @@ window.closeSidebar = function() {
   if (sidebar) sidebar.classList.remove("open");
   if (backdrop) backdrop.classList.remove("active");
 };
+
+// ==================== MON ABONNEMENT STRIPE ====================
+let currentSubscription = null;
+
+async function loadUserSubscription() {
+  if (window.VitiTrackStripe && typeof window.VitiTrackStripe.getSubscription === "function") {
+    currentSubscription = await window.VitiTrackStripe.getSubscription();
+    updateSubscriptionUI(currentSubscription);
+  }
+}
+
+function updateSubscriptionUI(sub) {
+  const planBadge = document.getElementById("sidebar-plan-badge");
+  const nameEl = document.getElementById("sub-current-name");
+  const priceEl = document.getElementById("sub-current-price");
+  const pillEl = document.getElementById("sub-status-pill");
+  const labelEl = document.getElementById("sub-status-label");
+  const dateEl = document.getElementById("sub-current-date");
+  const custEl = document.getElementById("sub-customer-id");
+
+  if (!sub || sub.status === "incomplete" || sub.status === "canceled") {
+    if (planBadge) {
+      planBadge.textContent = "Essai";
+      planBadge.className = "nav-badge badge-warning";
+    }
+    if (nameEl) nameEl.textContent = "Période d'évaluation / Essai";
+    if (priceEl) priceEl.innerHTML = "0,00 € HT <span class=\"sub-period\">/ 14 jours</span>";
+    if (pillEl) pillEl.className = "sub-status-pill warning";
+    if (labelEl) labelEl.textContent = sub?.status === "canceled" ? "Abonnement Résilié" : "Essai Gratuit";
+    if (dateEl) dateEl.textContent = "Souscription requise pour continuer";
+    if (custEl) custEl.textContent = sub?.stripe_customer_id || "En attente";
+    return;
+  }
+
+  const planTitles = {
+    basic: { name: "Formule Basic (jusqu'à 5 clients, 10 parcelles)", price: "29,00 € HT" },
+    pro: { name: "Formule Professionnel (5 à 15 clients, 10 à 20 parcelles)", price: "49,00 € HT" },
+    enterprise: { name: "Formule Entreprise (Clients & Parcelles illimités)", price: "99,00 € HT" }
+  };
+  const planInfo = planTitles[sub.plan_id] || { name: sub.plan_name || "Formule Active", price: `${sub.plan_price_ht || 49},00 € HT` };
+
+  if (planBadge) {
+    planBadge.textContent = sub.plan_id === "basic" ? "Basic" : (sub.plan_id === "enterprise" ? "Entreprise" : "Pro");
+    planBadge.className = "nav-badge badge-success";
+  }
+  if (nameEl) nameEl.textContent = planInfo.name;
+  if (priceEl) priceEl.innerHTML = `${planInfo.price} <span class="sub-period">/ mois</span>`;
+  if (pillEl) pillEl.className = "sub-status-pill";
+  if (labelEl) labelEl.textContent = "Abonnement Actif ✅";
+  if (dateEl) {
+    dateEl.textContent = sub.current_period_end ? formatDateTime(sub.current_period_end).date : "Renouvellement mensuel";
+  }
+  if (custEl) custEl.textContent = sub.stripe_customer_id || "Actif";
+}
+
+function openSubscriptionModal() {
+  const modal = document.getElementById("subscription-modal");
+  if (modal) {
+    modal.classList.add("open");
+    modal.setAttribute("aria-hidden", "false");
+    lockBodyScroll();
+    const modalBody = modal.querySelector(".modal-body");
+    if (modalBody) modalBody.scrollTop = 0;
+  }
+  loadUserSubscription();
+}
+
+function closeSubscriptionModal() {
+  const modal = document.getElementById("subscription-modal");
+  if (modal) {
+    modal.classList.remove("open");
+    modal.setAttribute("aria-hidden", "true");
+    unlockBodyScroll();
+  }
+}
+
+window.openSubscriptionModal = openSubscriptionModal;
+window.closeSubscriptionModal = closeSubscriptionModal;
+window.updateSubscriptionUI = updateSubscriptionUI;
+window.loadUserSubscription = loadUserSubscription;
 

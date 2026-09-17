@@ -317,7 +317,7 @@
             <li><span class="icon">✓</span> Historique illimité</li>
             <li><span class="icon">✓</span> Support par email</li>
           </ul>
-          <a href="#contact" class="btn btn-secondary">Commencer l'essai</a>
+          <button type="button" class="btn btn-secondary w-full" onclick="handlePlanSelect('basic')" title="S'abonner à la formule Basic">Choisir Basic (29€/m)</button>
         </div>
 
         <!-- Professionnel (featured) -->
@@ -336,7 +336,7 @@
             <li><span class="icon">✓</span> Export comptable CSV</li>
             <li><span class="icon">✓</span> Support prioritaire 7j/7</li>
           </ul>
-          <a href="#contact" class="btn btn-primary">Commencer l'essai</a>
+          <button type="button" class="btn btn-primary w-full" onclick="handlePlanSelect('pro')" title="S'abonner à la formule Professionnel">Choisir Professionnel (49€/m)</button>
         </div>
 
         <!-- Entreprise -->
@@ -354,7 +354,7 @@
             <li><span class="icon">✓</span> Synchronisation Cloud continue</li>
             <li><span class="icon">✓</span> Accompagnement dédié & prioritaire</li>
           </ul>
-          <a href="#contact" class="btn btn-secondary">Nous contacter</a>
+          <button type="button" class="btn btn-secondary w-full" onclick="handlePlanSelect('enterprise')" title="S'abonner à la formule Entreprise">Choisir Entreprise (99€/m)</button>
         </div>
       </div>
     </div>
@@ -606,7 +606,10 @@
     </div>
   </div>
 
-  <!-- Script -->
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-config.js"></script>
+  <script src="stripe-config.js"></script>
   <script src="script.js"></script>
 </body>
 </html>
