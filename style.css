@@ -274,6 +274,8 @@ p {
   align-items: center;
   justify-content: space-between;
   width: 100%;
+  max-width: 1400px;
+  padding: 0 var(--space-md);
 }
 
 .nav-logo {
@@ -285,6 +287,7 @@ p {
   font-size: 1.35rem;
   color: var(--color-text);
   z-index: 1001;
+  flex-shrink: 0;
 }
 
 .nav-logo-icon {
@@ -301,21 +304,28 @@ p {
 .nav-links {
   display: flex;
   align-items: center;
-  gap: 2rem;
+  gap: clamp(0.6rem, 1.1vw, 1.4rem);
+  flex-wrap: nowrap;
 }
 
 .nav-links a {
-  font-size: 0.95rem;
+  display: inline-flex;
+  align-items: center;
+  height: 38px;
+  font-size: clamp(0.82rem, 0.9vw, 0.92rem);
   font-weight: 500;
   color: var(--color-text-secondary);
   transition: color var(--transition-fast);
   position: relative;
+  white-space: nowrap !important;
+  line-height: 1;
+  flex-shrink: 0;
 }
 
 .nav-links a::after {
   content: '';
   position: absolute;
-  bottom: -4px;
+  bottom: 2px;
   left: 0;
   width: 0;
   height: 2px;
@@ -333,8 +343,16 @@ p {
 }
 
 .nav-cta {
-  padding: 0.6rem 1.4rem !important;
-  font-size: 0.9rem !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  height: 38px !important;
+  padding: 0 1.2rem !important;
+  font-size: clamp(0.82rem, 0.9vw, 0.9rem) !important;
+  border-radius: var(--radius-sm) !important;
+  white-space: nowrap !important;
+  line-height: 1 !important;
+  flex-shrink: 0;
 }
 
 .nav-toggle {
@@ -1329,7 +1347,7 @@ p {
   }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   .nav-links {
     position: fixed;
     inset: 0;
@@ -1348,11 +1366,15 @@ p {
 
   .nav-links a {
     font-size: 1.3rem;
+    height: auto;
   }
 
   .nav-toggle {
     display: flex;
   }
+}
+
+@media (max-width: 768px) {
 
   .features-grid,
   .steps-container,
@@ -1462,7 +1484,10 @@ p {
 .nav-dashboard-link {
   display: inline-flex;
   align-items: center;
-  gap: 2px;
+  height: 38px;
+  gap: 5px;
+  white-space: nowrap !important;
+  line-height: 1;
 }
 
 .dashboard-visual-link {
@@ -1527,17 +1552,22 @@ p {
 /* ---------- Navigation Login Link ---------- */
 .nav-login-link {
   display: inline-flex !important;
-  align-items: center;
+  align-items: center !important;
+  justify-content: center !important;
+  height: 38px !important;
   gap: 0.45rem;
   color: var(--color-accent) !important;
   font-weight: 600 !important;
-  font-size: 0.88rem !important;
-  padding: 0.5rem 1rem !important;
+  font-size: clamp(0.82rem, 0.9vw, 0.88rem) !important;
+  padding: 0 0.9rem !important;
   border-radius: var(--radius-sm);
   border: 1px solid rgba(82, 183, 136, 0.35);
   background: rgba(82, 183, 136, 0.1);
   transition: all var(--transition-fast) !important;
   cursor: pointer;
+  white-space: nowrap !important;
+  line-height: 1 !important;
+  flex-shrink: 0;
 }
 
 .nav-login-link:hover {
