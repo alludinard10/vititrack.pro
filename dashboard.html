@@ -40,6 +40,19 @@
         </div>
       </div>
 
+      <!-- Thème Mode Nuit / Mode Jour -->
+      <div class="sidebar-theme-panel">
+        <span class="sidebar-theme-title">Ambiance visuelle</span>
+        <div class="sidebar-theme-switch">
+          <button type="button" class="theme-pill-choice active" id="choice-dark" data-theme-target="dark" title="Mode Nuit (Sombre)">
+            <span>🌙</span> Nuit
+          </button>
+          <button type="button" class="theme-pill-choice" id="choice-light" data-theme-target="light" title="Mode Jour (Lumineux)">
+            <span>☀️</span> Jour
+          </button>
+        </div>
+      </div>
+
       <nav class="sidebar-nav">
         <div class="nav-section-title">PILOTAGE</div>
         <a href="#vue-ensemble" class="nav-item active" id="nav-btn-overview" data-view="overview">
@@ -97,7 +110,7 @@
           <span class="nav-label">Vider la base</span>
         </a>
         <div class="sidebar-theme-item">
-          <button type="button" class="sidebar-theme-btn" id="sidebar-theme-toggle" onclick="toggleTheme()" aria-label="Basculer Mode Jour / Mode Nuit">
+          <button type="button" class="sidebar-theme-btn" id="sidebar-theme-toggle" aria-label="Basculer Mode Jour / Mode Nuit">
             <span class="theme-icon" id="sidebar-theme-icon">☀️</span>
             <span class="theme-label" id="sidebar-theme-text">Mode Jour</span>
           </button>
@@ -140,11 +153,19 @@
         </div>
 
         <div class="topbar-actions">
-          <button type="button" class="btn-theme-toggle" id="theme-toggle-btn" onclick="toggleTheme()" aria-label="Basculer Mode Jour / Mode Nuit" title="Basculer Mode Jour / Mode Nuit">
-            <span class="theme-icon-dark" id="theme-icon-dark">☀️</span>
-            <span class="theme-icon-light" id="theme-icon-light" style="display: none;">🌙</span>
-            <span class="theme-toggle-label">Mode Jour</span>
-          </button>
+          <!-- Switch Thème Jour / Nuit Exécutif -->
+          <div class="theme-switch-wrapper" title="Basculer entre Mode Jour et Mode Nuit">
+            <button type="button" class="theme-mode-pill" id="theme-toggle-btn" aria-label="Basculer Mode Jour / Mode Nuit">
+              <span class="theme-pill-seg active" id="seg-dark">
+                <span class="seg-icon">🌙</span>
+                <span class="seg-text">Nuit</span>
+              </span>
+              <span class="theme-pill-seg" id="seg-light">
+                <span class="seg-icon">☀️</span>
+                <span class="seg-text">Jour</span>
+              </span>
+            </button>
+          </div>
           <a href="index.html" class="btn btn-ghost btn-sm" title="Retour au site public">
             <span>← Site</span>
           </a>
@@ -245,6 +266,10 @@
                   <span class="table-count-badge" id="table-results-count">0 enregistrée</span>
                 </div>
                 <div class="table-header-actions">
+                  <button type="button" class="btn btn-outline btn-xs btn-theme-quick" id="btn-theme-quick-table" title="Basculer entre Mode Jour et Mode Nuit">
+                    <span id="quick-theme-icon">☀️</span>
+                    <span id="quick-theme-text">Mode Jour</span>
+                  </button>
                   <button class="btn btn-outline btn-xs" id="btn-export-table-top" title="Exporter au format CSV">
                     <span>📥 Exporter CSV</span>
                   </button>

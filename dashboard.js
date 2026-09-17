@@ -3565,31 +3565,46 @@ function applyTheme(theme, save = true) {
     } catch (e) {}
   }
 
-  // Update topbar button
-  const iconDark = document.getElementById("theme-icon-dark");
-  const iconLight = document.getElementById("theme-icon-light");
-  const labelEl = document.querySelector("#theme-toggle-btn .theme-toggle-label");
-  const topbarBtn = document.getElementById("theme-toggle-btn");
-
-  if (currentTheme === "light") {
-    if (iconDark) iconDark.style.display = "none";
-    if (iconLight) iconLight.style.display = "inline-block";
-    if (labelEl) labelEl.textContent = "Mode Nuit";
-    if (topbarBtn) {
-      topbarBtn.setAttribute("title", "Basculer en Mode Nuit");
-      topbarBtn.setAttribute("aria-label", "Basculer en Mode Nuit");
-    }
-  } else {
-    if (iconDark) iconDark.style.display = "inline-block";
-    if (iconLight) iconLight.style.display = "none";
-    if (labelEl) labelEl.textContent = "Mode Jour";
-    if (topbarBtn) {
-      topbarBtn.setAttribute("title", "Basculer en Mode Jour");
-      topbarBtn.setAttribute("aria-label", "Basculer en Mode Jour");
+  // 1. Topbar switch segments
+  const segDark = document.getElementById("seg-dark");
+  const segLight = document.getElementById("seg-light");
+  if (segDark && segLight) {
+    if (currentTheme === "light") {
+      segLight.classList.add("active");
+      segDark.classList.remove("active");
+    } else {
+      segDark.classList.add("active");
+      segLight.classList.remove("active");
     }
   }
 
-  // Update sidebar button
+  // 2. Sidebar top choices
+  const choiceDark = document.getElementById("choice-dark");
+  const choiceLight = document.getElementById("choice-light");
+  if (choiceDark && choiceLight) {
+    if (currentTheme === "light") {
+      choiceLight.classList.add("active");
+      choiceDark.classList.remove("active");
+    } else {
+      choiceDark.classList.add("active");
+      choiceLight.classList.remove("active");
+    }
+  }
+
+  // 3. Tableau de bord quick button
+  const quickThemeIcon = document.getElementById("quick-theme-icon");
+  const quickThemeText = document.getElementById("quick-theme-text");
+  if (quickThemeIcon && quickThemeText) {
+    if (currentTheme === "light") {
+      quickThemeIcon.textContent = "🌙";
+      quickThemeText.textContent = "Mode Nuit";
+    } else {
+      quickThemeIcon.textContent = "☀️";
+      quickThemeText.textContent = "Mode Jour";
+    }
+  }
+
+  // 4. Legacy sidebar item support
   const sidebarIcon = document.getElementById("sidebar-theme-icon");
   const sidebarText = document.getElementById("sidebar-theme-text");
   if (sidebarIcon && sidebarText) {
@@ -3613,20 +3628,56 @@ function initTheme() {
   const theme = getStoredTheme();
   applyTheme(theme, false);
 
+  // Topbar switch button
   const topbarBtn = document.getElementById("theme-toggle-btn");
   if (topbarBtn && !topbarBtn.dataset.bound) {
     topbarBtn.dataset.bound = "true";
     topbarBtn.addEventListener("click", (e) => {
       e.preventDefault();
+      e.stopPropagation();
       toggleTheme();
     });
   }
 
+  // Sidebar top panel choices
+  const choiceDark = document.getElementById("choice-dark");
+  if (choiceDark && !choiceDark.dataset.bound) {
+    choiceDark.dataset.bound = "true";
+    choiceDark.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      applyTheme("dark", true);
+    });
+  }
+
+  const choiceLight = document.getElementById("choice-light");
+  if (choiceLight && !choiceLight.dataset.bound) {
+    choiceLight.dataset.bound = "true";
+    choiceLight.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      applyTheme("light", true);
+    });
+  }
+
+  // Quick button in table header
+  const quickTableBtn = document.getElementById("btn-theme-quick-table");
+  if (quickTableBtn && !quickTableBtn.dataset.bound) {
+    quickTableBtn.dataset.bound = "true";
+    quickTableBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      toggleTheme();
+    });
+  }
+
+  // Legacy lower sidebar button
   const sidebarBtn = document.getElementById("sidebar-theme-toggle");
   if (sidebarBtn && !sidebarBtn.dataset.bound) {
     sidebarBtn.dataset.bound = "true";
     sidebarBtn.addEventListener("click", (e) => {
       e.preventDefault();
+      e.stopPropagation();
       toggleTheme();
     });
   }

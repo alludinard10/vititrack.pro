@@ -3514,37 +3514,188 @@
 }
 
 /* ================================================================
-   BOUTON DE BASCULE DE THÈME (JOUR / NUIT)
+   BOUTON ET CONTRÔLES DE THÈME (JOUR / NUIT)
    ================================================================ */
-.btn-theme-toggle {
+
+/* ---------- Topbar Theme Switch Pill ---------- */
+.theme-switch-wrapper {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.theme-mode-pill {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  padding: 0.42rem 0.75rem;
-  border-radius: var(--radius-sm);
-  background: rgba(82, 183, 136, 0.1);
-  border: 1px solid rgba(82, 183, 136, 0.25);
-  color: #e5ece8;
-  font-size: 0.82rem;
-  font-weight: 600;
+  background: rgba(18, 32, 25, 0.85);
+  border: 1px solid rgba(82, 183, 136, 0.28);
+  border-radius: 999px;
+  padding: 3px;
   cursor: pointer;
   transition: all var(--transition-fast);
-  white-space: nowrap;
   user-select: none;
+  gap: 2px;
 }
 
-.btn-theme-toggle:hover {
-  background: rgba(82, 183, 136, 0.2);
-  border-color: rgba(82, 183, 136, 0.45);
-  transform: translateY(-1px);
+.theme-mode-pill:hover {
+  border-color: rgba(82, 183, 136, 0.6);
+  box-shadow: 0 0 14px rgba(82, 183, 136, 0.2);
 }
 
-.theme-icon-dark,
-.theme-icon-light {
-  font-size: 0.95rem;
+.theme-pill-seg {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #8da497;
+  transition: all var(--transition-fast);
   line-height: 1;
 }
 
+.theme-pill-seg.active {
+  background: linear-gradient(135deg, #2d6a4f, #1b4332);
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="light"] .theme-mode-pill {
+  background: #e4ece7;
+  border: 1px solid rgba(45, 106, 79, 0.25);
+}
+
+[data-theme="light"] .theme-pill-seg {
+  color: #4a6657;
+}
+
+[data-theme="light"] .theme-pill-seg.active {
+  background: #ffffff;
+  color: #1b4332;
+  box-shadow: 0 2px 8px rgba(27, 67, 50, 0.15);
+}
+
+@media (max-width: 650px) {
+  .theme-pill-seg {
+    padding: 0.3rem 0.45rem;
+    font-size: 0.75rem;
+  }
+}
+
+/* ---------- Sidebar Theme Panel (En haut du menu) ---------- */
+.sidebar-theme-panel {
+  margin: 0.5rem 1.15rem 1rem 1.15rem;
+  padding: 0.75rem 0.85rem;
+  background: rgba(82, 183, 136, 0.06);
+  border: 1px solid rgba(82, 183, 136, 0.18);
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.sidebar-theme-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #8da497;
+}
+
+.sidebar-theme-switch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.35rem;
+  background: rgba(10, 16, 13, 0.65);
+  padding: 3px;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(82, 183, 136, 0.14);
+}
+
+.theme-pill-choice {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.45rem;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  border: none;
+  background: transparent;
+  color: #8da497;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.theme-pill-choice:hover {
+  color: #ffffff;
+}
+
+.theme-pill-choice.active {
+  background: #2d6a4f;
+  color: #ffffff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="light"] .sidebar-theme-panel {
+  background: rgba(45, 106, 79, 0.05);
+  border-color: rgba(45, 106, 79, 0.18);
+}
+
+[data-theme="light"] .sidebar-theme-title {
+  color: #4a6657;
+}
+
+[data-theme="light"] .sidebar-theme-switch {
+  background: #e4ece7;
+  border-color: rgba(45, 106, 79, 0.18);
+}
+
+[data-theme="light"] .theme-pill-choice {
+  color: #4a6657;
+}
+
+[data-theme="light"] .theme-pill-choice.active {
+  background: #ffffff;
+  color: #1b4332;
+  box-shadow: 0 2px 6px rgba(27, 67, 50, 0.15);
+}
+
+/* ---------- Table Header Quick Theme Button ---------- */
+.btn-theme-quick {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.65rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  background: rgba(82, 183, 136, 0.08);
+  border: 1px solid rgba(82, 183, 136, 0.22);
+  color: #c0d4c8;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btn-theme-quick:hover {
+  background: rgba(82, 183, 136, 0.18);
+  color: #ffffff;
+}
+
+[data-theme="light"] .btn-theme-quick {
+  background: #ffffff;
+  border-color: rgba(45, 106, 79, 0.25);
+  color: #1b4332;
+}
+
+[data-theme="light"] .btn-theme-quick:hover {
+  background: #f0f7f3;
+  border-color: rgba(45, 106, 79, 0.45);
+}
+
+/* ---------- Legacy Sidebar Item Support ---------- */
 .sidebar-theme-item {
   margin-top: auto;
   padding: 0.75rem 1rem 1.25rem 1rem;
