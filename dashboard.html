@@ -10,13 +10,85 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="dashboard.css">
+  <!-- Bulletproof Immediate Theme Initializer & Controller -->
   <script>
+    window.applyTheme = function(theme, save) {
+      if (save === undefined) save = true;
+      var activeTheme = (theme === 'light') ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', activeTheme);
+      if (document.body) {
+        document.body.setAttribute('data-theme', activeTheme);
+      }
+      if (save) {
+        try { localStorage.setItem('vititrack_theme', activeTheme); } catch (e) {}
+      }
+
+      // Update Topbar pill
+      var segDark = document.getElementById('seg-dark');
+      var segLight = document.getElementById('seg-light');
+      if (segDark && segLight) {
+        if (activeTheme === 'light') {
+          segLight.classList.add('active');
+          segDark.classList.remove('active');
+        } else {
+          segDark.classList.add('active');
+          segLight.classList.remove('active');
+        }
+      }
+
+      // Update Sidebar top choices
+      var choiceDark = document.getElementById('choice-dark');
+      var choiceLight = document.getElementById('choice-light');
+      if (choiceDark && choiceLight) {
+        if (activeTheme === 'light') {
+          choiceLight.classList.add('active');
+          choiceDark.classList.remove('active');
+        } else {
+          choiceDark.classList.add('active');
+          choiceLight.classList.remove('active');
+        }
+      }
+
+      // Update Table header quick button
+      var quickIcon = document.getElementById('quick-theme-icon');
+      var quickText = document.getElementById('quick-theme-text');
+      if (quickIcon && quickText) {
+        quickIcon.textContent = (activeTheme === 'light') ? '🌙' : '☀️';
+        quickText.textContent = (activeTheme === 'light') ? 'Mode Nuit' : 'Mode Jour';
+      }
+
+      // Update Legacy sidebar items
+      var sideIcon = document.getElementById('sidebar-theme-icon');
+      var sideText = document.getElementById('sidebar-theme-text');
+      if (sideIcon && sideText) {
+        sideIcon.textContent = (activeTheme === 'light') ? '🌙' : '☀️';
+        sideText.textContent = (activeTheme === 'light') ? 'Mode Nuit' : 'Mode Jour';
+      }
+    };
+
+    var _lastToggleTime = 0;
+    window.toggleTheme = function() {
+      var now = Date.now();
+      if (now - _lastToggleTime < 250) return;
+      _lastToggleTime = now;
+      var current = document.documentElement.getAttribute('data-theme') || 'dark';
+      var target = (current === 'light') ? 'dark' : 'light';
+      window.applyTheme(target, true);
+    };
+
+    // Apply immediately to avoid any visual flicker
     (function() {
       try {
-        const theme = localStorage.getItem('vititrack_theme') || 'dark';
-        document.documentElement.setAttribute('data-theme', theme);
+        var saved = localStorage.getItem('vititrack_theme') || 'dark';
+        document.documentElement.setAttribute('data-theme', saved);
       } catch (e) {}
     })();
+
+    // Synchronize buttons as soon as DOM is ready
+    document.addEventListener('DOMContentLoaded', function() {
+      var saved = document.documentElement.getAttribute('data-theme') || 'dark';
+      window.applyTheme(saved, false);
+    });
   </script>
 </head>
 <body class="dashboard-body">
@@ -44,10 +116,10 @@
       <div class="sidebar-theme-panel">
         <span class="sidebar-theme-title">Ambiance visuelle</span>
         <div class="sidebar-theme-switch">
-          <button type="button" class="theme-pill-choice active" id="choice-dark" data-theme-target="dark" title="Mode Nuit (Sombre)">
+          <button type="button" class="theme-pill-choice active" id="choice-dark" onclick="applyTheme('dark')" data-theme-target="dark" title="Mode Nuit (Sombre)">
             <span>🌙</span> Nuit
           </button>
-          <button type="button" class="theme-pill-choice" id="choice-light" data-theme-target="light" title="Mode Jour (Lumineux)">
+          <button type="button" class="theme-pill-choice" id="choice-light" onclick="applyTheme('light')" data-theme-target="light" title="Mode Jour (Lumineux)">
             <span>☀️</span> Jour
           </button>
         </div>
@@ -110,7 +182,7 @@
           <span class="nav-label">Vider la base</span>
         </a>
         <div class="sidebar-theme-item">
-          <button type="button" class="sidebar-theme-btn" id="sidebar-theme-toggle" aria-label="Basculer Mode Jour / Mode Nuit">
+          <button type="button" class="sidebar-theme-btn" id="sidebar-theme-toggle" onclick="toggleTheme()" aria-label="Basculer Mode Jour / Mode Nuit">
             <span class="theme-icon" id="sidebar-theme-icon">☀️</span>
             <span class="theme-label" id="sidebar-theme-text">Mode Jour</span>
           </button>
@@ -155,7 +227,7 @@
         <div class="topbar-actions">
           <!-- Switch Thème Jour / Nuit Exécutif -->
           <div class="theme-switch-wrapper" title="Basculer entre Mode Jour et Mode Nuit">
-            <button type="button" class="theme-mode-pill" id="theme-toggle-btn" aria-label="Basculer Mode Jour / Mode Nuit">
+            <button type="button" class="theme-mode-pill" id="theme-toggle-btn" onclick="toggleTheme()" aria-label="Basculer Mode Jour / Mode Nuit">
               <span class="theme-pill-seg active" id="seg-dark">
                 <span class="seg-icon">🌙</span>
                 <span class="seg-text">Nuit</span>
@@ -266,7 +338,7 @@
                   <span class="table-count-badge" id="table-results-count">0 enregistrée</span>
                 </div>
                 <div class="table-header-actions">
-                  <button type="button" class="btn btn-outline btn-xs btn-theme-quick" id="btn-theme-quick-table" title="Basculer entre Mode Jour et Mode Nuit">
+                  <button type="button" class="btn btn-outline btn-xs btn-theme-quick" id="btn-theme-quick-table" onclick="toggleTheme()" title="Basculer entre Mode Jour et Mode Nuit">
                     <span id="quick-theme-icon">☀️</span>
                     <span id="quick-theme-text">Mode Jour</span>
                   </button>

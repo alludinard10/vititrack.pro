@@ -3558,6 +3558,9 @@ function getStoredTheme() {
 function applyTheme(theme, save = true) {
   const currentTheme = theme === "light" ? "light" : "dark";
   document.documentElement.setAttribute("data-theme", currentTheme);
+  if (document.body) {
+    document.body.setAttribute("data-theme", currentTheme);
+  }
 
   if (save) {
     try {
@@ -3618,7 +3621,11 @@ function applyTheme(theme, save = true) {
   }
 }
 
+let _lastToggleTime = 0;
 function toggleTheme() {
+  const now = Date.now();
+  if (now - _lastToggleTime < 250) return;
+  _lastToggleTime = now;
   const current = document.documentElement.getAttribute("data-theme") || "dark";
   const target = current === "light" ? "dark" : "light";
   applyTheme(target, true);
