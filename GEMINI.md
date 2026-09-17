@@ -221,6 +221,7 @@ Sur les écrans de smartphone (< 650px et < 768px) :
 - La saisie de plage de dates (`.date-range-inputs`) s'organise en grille 50/50 équilibrée.
 - Les grilles de métriques (dans le dossier client notamment) restent parfaitement symétriques (la 5ème carte s'étend sur 2 colonnes `grid-column: span 2`).
 - Les boutons d'action des cartes clients partagent exactement la même ligne et hauteur.
+- **Header / Topbar Mobile (< 768px)** : Tous les contrôles du bandeau supérieur adoptent une disposition compacte 100% icônes (`🌙/☀️` mode jour/nuit sans texte, `🌐` retour site, `📥` export CSV, `🍇` nouveau client, `👤` profil avec `🔄` changer de compte et `🚪` déconnexion en icônes seules, `＋` nouvelle intervention) afin de garantir qu'aucun élément ne soit tronqué ou débordant sur les écrans d'iPhone (375px à 430px).
 - **Modales & Défilement iOS Safari** : Toutes les modales utilisent une hauteur dynamique `92dvh`, une chaîne flexbox complète (`.modal-dialog > .modal-content > form > .modal-body`), un scrolling natif WebKit fluide (`-webkit-overflow-scrolling: touch`) et un espacement de sécurité (`env(safe-area-inset-bottom)`) pour garantir un défilement complet sans blocage jusqu'au bouton de validation.
 
 ### Règle 7 : Fiscalité Viticole — TVA à 5% (Charrues) vs 20% (Autres Travaux)

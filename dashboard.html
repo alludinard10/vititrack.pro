@@ -208,26 +208,31 @@
               </span>
             </button>
           </div>
-          <a href="index.html" class="btn btn-ghost btn-sm" title="Retour au site public">
-            <span>← Site</span>
+          <a href="index.html" class="btn btn-ghost btn-sm btn-topbar-item" title="Retour au site public">
+            <span class="btn-text-desktop">← Site</span>
+            <span class="btn-text-mobile">🌐</span>
           </a>
-          <button class="btn btn-outline btn-sm" id="btn-export-topbar" onclick="exportCSV()">
-            <span>📥 Export CSV</span>
+          <button class="btn btn-outline btn-sm btn-topbar-item" id="btn-export-topbar" onclick="exportCSV()" title="Exporter en CSV">
+            <span class="btn-text-desktop">📥 Export CSV</span>
+            <span class="btn-text-mobile">📥</span>
           </button>
-          <button class="btn btn-secondary btn-sm" id="topbar-add-client-btn" onclick="openClientModal()" title="Ajouter un nouveau domaine ou client">
+          <button class="btn btn-secondary btn-sm btn-topbar-item" id="topbar-add-client-btn" onclick="openClientModal()" title="Ajouter un nouveau domaine ou client">
             <span class="btn-icon">🍇</span>
             <span class="btn-text-desktop">Nouveau client</span>
-            <span class="btn-text-mobile">Client</span>
           </button>
           <div class="user-topbar-profile" id="user-topbar-profile">
-            <span class="user-topbar-avatar">👤</span>
+            <span class="user-topbar-avatar" title="Profil connecté">👤</span>
             <span class="user-topbar-name" id="user-topbar-name">Domaine Viticole</span>
-            <a href="login.html" class="btn-topbar-switch" id="btn-topbar-switch" title="Changer de compte ou s'inscrire">🔄 Compte</a>
+            <a href="login.html" class="btn-topbar-switch" id="btn-topbar-switch" title="Changer de compte ou s'inscrire">
+              <span class="btn-text-desktop">🔄 Compte</span>
+              <span class="btn-text-mobile">🔄</span>
+            </a>
             <button type="button" class="btn-topbar-logout" id="btn-topbar-logout" onclick="handleLogout()" title="Déconnexion de l'espace">
-              <span>🚪 Déconnexion</span>
+              <span class="btn-text-desktop">🚪 Déconnexion</span>
+              <span class="btn-text-mobile">🚪</span>
             </button>
           </div>
-          <button class="btn btn-primary btn-glow" id="btn-open-create-modal" onclick="openCreateModal()">
+          <button class="btn btn-primary btn-glow btn-sm btn-topbar-item" id="btn-open-create-modal" onclick="openCreateModal()" title="Saisir une nouvelle intervention">
             <span class="btn-icon">＋</span>
             <span class="btn-text-desktop">Nouvelle intervention</span>
             <span class="btn-text-mobile">Saisie</span>
