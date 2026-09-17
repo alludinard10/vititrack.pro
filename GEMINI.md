@@ -180,11 +180,20 @@ doivent **TOUJOURS** être sur le **même niveau horizontal** (même ligne, mêm
 ### Règle 3 : Filtrage par Date dans le Dossier Client
 Lorsque l'utilisateur consulte la fiche complète d'un client via "Voir toutes les données", la barre de sélection de date "À partir de quand" doit filtrer les interventions (`item.datetime >= dateFrom`) et mettre à jour les KPIs financiers de la période correspondante sans altérer l'intégrité de la base de données globale.
 
-### Règle 4 : Palette Graphique & Glassmorphism
-L'application utilise une identité visuelle "Executive Viti-Dark" :
-- **Arrière-plans sombres profonds** : `#0d1511`, `#111d17`, `#16241e`.
-- **Verts émeraude viticoles** : `#2d6a4f` (primaire sombre), `#52b788` (primaire), `#74c69d` (accent clair).
-- **Accents financiers** : Or/ambre pour "À facturer", vert menthe pour "Facturée", rouge corail `#ff6b6b` pour les alertes/suppressions.
+### Règle 4 : Bivalence Graphique — Mode Nuit & Mode Jour (Viti-Light)
+L'application propose deux thèmes haut de gamme avec bascule instantanée sans rechargement :
+- **Mode Nuit (Par défaut - "Executive Viti-Dark")** :
+  - Strictement conservé à 100% pour préserver l'identité d'origine.
+  - Arrière-plans sombres profonds : `#0d1511`, `#111d17`, `#16241e`.
+  - Verts émeraude viticoles : `#2d6a4f`, `#52b788`, `#74c69d`.
+  - Accents financiers : Or/ambre pour "À facturer", vert menthe pour "Facturée", rouge corail `#ff6b6b`.
+- **Mode Jour ("Viti-Light")** :
+  - Conçu pour une lisibilité maximale en plein soleil sur smartphone dans les vignes.
+  - Fond global clair et lumineux : `#f3f7f4`, cartes en blanc pur `#ffffff`.
+  - Typographie à fort contraste vert forêt et fusain : `#14241d`, `#2d4a3e`.
+  - Bordures nettes et badges viticoles pastel haut de gamme.
+  - Switch accessible via la topbar (desktop/mobile), le menu latéral (tiroir) et la barre de navigation du site vitrine.
+
 ### Règle 5 : Isolation Multi-Utilisateurs & Tableau de Bord Initial Vierge (Nu)
 - **Isolation stricte par compte (`user_id`)** : Chaque utilisateur (ou domaine exploitant) possède sa propre partition de base de données. Aucune donnée d'un compte ne doit fuiter ou être visible par un autre compte (`eq("user_id", getAuthUserId())` dans Supabase et clés localStorage partitionnées `_user_<id>`).
 - **Nouveau compte = Tableau de bord vierge à 100% (Nu)** :
@@ -195,6 +204,13 @@ L'application utilise une identité visuelle "Executive Viti-Dark" :
   - `services = []` (0 prestation dans le catalogue, avec option d'import rapide des 15 prestations types au besoin)
   - `plannedWorks = []` (0 travail planifié)
 - **Seul le compte de démonstration** conserve les données de démonstration (Château Grand Chêne).
+
+### Règle 6 : Alignement & Recentrage Mobile "de A à Z"
+Sur les écrans de smartphone (< 650px et < 768px) :
+- Tous les contrôles de filtrage (`.select-client-wrap`, `.select-task-wrap`, `.select-date-wrap`, `.search-input-wrap`) occupent rigoureusement **100% de la largeur** pour éviter tout décalage d'axe.
+- La saisie de plage de dates (`.date-range-inputs`) s'organise en grille 50/50 équilibrée.
+- Les grilles de métriques (dans le dossier client notamment) restent parfaitement symétriques (la 5ème carte s'étend sur 2 colonnes `grid-column: span 2`).
+- Les boutons d'action des cartes clients partagent exactement la même ligne et hauteur.
 
 ---
 
@@ -217,6 +233,7 @@ Lorsqu'une demande de modification ou d'ajout est formulée sur ce projet :
    - `vititrack_services` : catalogue des prestations.
    - `vititrack_planned_works` : travaux programmés.
    - `vititrack_auth_user` : profil utilisateur connecté.
+   - `vititrack_theme` : thème actif de l'interface (`'dark'` ou `'light'`).
 
 ---
 *Ce document est la référence maîtresse du projet Vititrack Pro. Tout changement architectural majeur doit y être consigné.*

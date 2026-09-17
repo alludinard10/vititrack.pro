@@ -21,6 +21,20 @@
 
   <!-- Favicon (inline SVG) -->
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍇</text></svg>">
+
+  <!-- Immediate Theme Initializer to avoid flash -->
+  <script>
+    (function() {
+      try {
+        const theme = localStorage.getItem('vititrack_theme');
+        if (theme === 'light') {
+          document.documentElement.setAttribute('data-theme', 'light');
+        } else {
+          document.documentElement.setAttribute('data-theme', 'dark');
+        }
+      } catch (e) {}
+    })();
+  </script>
 </head>
 <body>
 
@@ -44,11 +58,16 @@
         <a href="login.html" class="btn btn-primary nav-cta">Accéder à l'App</a>
       </div>
 
-      <button class="nav-toggle" id="nav-toggle" aria-label="Menu de navigation">
-        <span></span>
-        <span></span>
-        <span></span>
-      </button>
+      <div class="nav-actions-group">
+        <button type="button" class="theme-toggle-btn" id="theme-toggle-btn" aria-label="Basculer Mode Jour / Mode Nuit" title="Basculer Mode Jour / Mode Nuit">
+          <span id="theme-icon">☀️</span>
+        </button>
+        <button class="nav-toggle" id="nav-toggle" aria-label="Menu de navigation">
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+      </div>
     </div>
   </nav>
 

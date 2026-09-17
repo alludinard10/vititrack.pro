@@ -303,6 +303,51 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // ========== THEME TOGGLE (JOUR / NUIT) ==========
+  const themeToggleBtn = document.getElementById('theme-toggle-btn');
+  const themeIcon = document.getElementById('theme-icon');
+
+  const updateThemeUI = (theme) => {
+    if (themeIcon) {
+      themeIcon.textContent = theme === 'light' ? '🌙' : '☀️';
+    }
+    if (themeToggleBtn) {
+      themeToggleBtn.setAttribute('title', theme === 'light' ? 'Basculer en Mode Nuit' : 'Basculer en Mode Jour');
+      themeToggleBtn.setAttribute('aria-label', theme === 'light' ? 'Basculer en Mode Nuit' : 'Basculer en Mode Jour');
+    }
+  };
+
+  const getSavedTheme = () => {
+    try {
+      const saved = localStorage.getItem('vititrack_theme');
+      if (saved === 'light' || saved === 'dark') return saved;
+    } catch (e) {}
+    return 'dark';
+  };
+
+  const setPageTheme = (theme, save = true) => {
+    const activeTheme = theme === 'light' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', activeTheme);
+    if (save) {
+      try {
+        localStorage.setItem('vititrack_theme', activeTheme);
+      } catch (e) {}
+    }
+    updateThemeUI(activeTheme);
+  };
+
+  // Init theme UI
+  const currentTheme = getSavedTheme();
+  setPageTheme(currentTheme, false);
+
+  if (themeToggleBtn) {
+    themeToggleBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      const current = document.documentElement.getAttribute('data-theme') || 'dark';
+      setPageTheme(current === 'light' ? 'dark' : 'light', true);
+    });
+  }
+
   // ========== PRELOAD INITIAL STATE ==========
   // Trigger initial checks
   handleNavbarScroll();

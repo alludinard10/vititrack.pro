@@ -181,6 +181,7 @@ let pendingInterventionFormState = null;
 
 // ==================== INITIALIZATION ====================
 document.addEventListener("DOMContentLoaded", async () => {
+  initTheme();
   await checkAuthUser();
   loadDatabase();
   setupEventListeners();
@@ -3544,3 +3545,94 @@ async function handleLogout() {
     window.location.href = "login.html";
   }
 }
+
+// ==================== THEME MANAGEMENT (JOUR / NUIT) ====================
+function getStoredTheme() {
+  try {
+    const saved = localStorage.getItem("vititrack_theme");
+    if (saved === "light" || saved === "dark") return saved;
+  } catch (e) {}
+  return "dark"; // Default: Dark theme (Executive Viti-Dark 100% untouched)
+}
+
+function applyTheme(theme, save = true) {
+  const currentTheme = theme === "light" ? "light" : "dark";
+  document.documentElement.setAttribute("data-theme", currentTheme);
+
+  if (save) {
+    try {
+      localStorage.setItem("vititrack_theme", currentTheme);
+    } catch (e) {}
+  }
+
+  // Update topbar button
+  const iconDark = document.getElementById("theme-icon-dark");
+  const iconLight = document.getElementById("theme-icon-light");
+  const labelEl = document.querySelector("#theme-toggle-btn .theme-toggle-label");
+  const topbarBtn = document.getElementById("theme-toggle-btn");
+
+  if (currentTheme === "light") {
+    if (iconDark) iconDark.style.display = "none";
+    if (iconLight) iconLight.style.display = "inline-block";
+    if (labelEl) labelEl.textContent = "Mode Nuit";
+    if (topbarBtn) {
+      topbarBtn.setAttribute("title", "Basculer en Mode Nuit");
+      topbarBtn.setAttribute("aria-label", "Basculer en Mode Nuit");
+    }
+  } else {
+    if (iconDark) iconDark.style.display = "inline-block";
+    if (iconLight) iconLight.style.display = "none";
+    if (labelEl) labelEl.textContent = "Mode Jour";
+    if (topbarBtn) {
+      topbarBtn.setAttribute("title", "Basculer en Mode Jour");
+      topbarBtn.setAttribute("aria-label", "Basculer en Mode Jour");
+    }
+  }
+
+  // Update sidebar button
+  const sidebarIcon = document.getElementById("sidebar-theme-icon");
+  const sidebarText = document.getElementById("sidebar-theme-text");
+  if (sidebarIcon && sidebarText) {
+    if (currentTheme === "light") {
+      sidebarIcon.textContent = "🌙";
+      sidebarText.textContent = "Mode Nuit";
+    } else {
+      sidebarIcon.textContent = "☀️";
+      sidebarText.textContent = "Mode Jour";
+    }
+  }
+}
+
+function toggleTheme() {
+  const current = document.documentElement.getAttribute("data-theme") || "dark";
+  const target = current === "light" ? "dark" : "light";
+  applyTheme(target, true);
+}
+
+function initTheme() {
+  const theme = getStoredTheme();
+  applyTheme(theme, false);
+
+  const topbarBtn = document.getElementById("theme-toggle-btn");
+  if (topbarBtn && !topbarBtn.dataset.bound) {
+    topbarBtn.dataset.bound = "true";
+    topbarBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      toggleTheme();
+    });
+  }
+
+  const sidebarBtn = document.getElementById("sidebar-theme-toggle");
+  if (sidebarBtn && !sidebarBtn.dataset.bound) {
+    sidebarBtn.dataset.bound = "true";
+    sidebarBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      toggleTheme();
+    });
+  }
+}
+
+window.applyTheme = applyTheme;
+window.toggleTheme = toggleTheme;
+window.initTheme = initTheme;
+

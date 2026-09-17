@@ -10,6 +10,14 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="dashboard.css">
+  <script>
+    (function() {
+      try {
+        const theme = localStorage.getItem('vititrack_theme') || 'dark';
+        document.documentElement.setAttribute('data-theme', theme);
+      } catch (e) {}
+    })();
+  </script>
 </head>
 <body class="dashboard-body">
 
@@ -88,6 +96,12 @@
           <span class="nav-icon">🗑️</span>
           <span class="nav-label">Vider la base</span>
         </a>
+        <div class="sidebar-theme-item">
+          <button type="button" class="sidebar-theme-btn" id="sidebar-theme-toggle" onclick="toggleTheme()" aria-label="Basculer Mode Jour / Mode Nuit">
+            <span class="theme-icon" id="sidebar-theme-icon">☀️</span>
+            <span class="theme-label" id="sidebar-theme-text">Mode Jour</span>
+          </button>
+        </div>
       </nav>
 
       <div class="sidebar-footer">
@@ -126,6 +140,11 @@
         </div>
 
         <div class="topbar-actions">
+          <button type="button" class="btn-theme-toggle" id="theme-toggle-btn" onclick="toggleTheme()" aria-label="Basculer Mode Jour / Mode Nuit" title="Basculer Mode Jour / Mode Nuit">
+            <span class="theme-icon-dark" id="theme-icon-dark">☀️</span>
+            <span class="theme-icon-light" id="theme-icon-light" style="display: none;">🌙</span>
+            <span class="theme-toggle-label">Mode Jour</span>
+          </button>
           <a href="index.html" class="btn btn-ghost btn-sm" title="Retour au site public">
             <span>← Site</span>
           </a>
