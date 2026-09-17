@@ -8,8 +8,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
-  <link rel="stylesheet" href="dashboard.css">
+  <link rel="stylesheet" href="style.css?v=2.2">
+  <link rel="stylesheet" href="dashboard.css?v=2.2">
   <!-- Bulletproof Immediate Theme Initializer & Controller -->
   <script>
     window.applyTheme = function(theme, save) {
@@ -49,13 +49,6 @@
         }
       }
 
-      // Update Table header quick button
-      var quickIcon = document.getElementById('quick-theme-icon');
-      var quickText = document.getElementById('quick-theme-text');
-      if (quickIcon && quickText) {
-        quickIcon.textContent = (activeTheme === 'light') ? '🌙' : '☀️';
-        quickText.textContent = (activeTheme === 'light') ? 'Mode Nuit' : 'Mode Jour';
-      }
 
       // Update Legacy sidebar items
       var sideIcon = document.getElementById('sidebar-theme-icon');
@@ -66,11 +59,11 @@
       }
     };
 
-    var _lastToggleTime = 0;
+    var _themeLastToggleTimestamp = 0;
     window.toggleTheme = function() {
       var now = Date.now();
-      if (now - _lastToggleTime < 250) return;
-      _lastToggleTime = now;
+      if (now - _themeLastToggleTimestamp < 250) return;
+      _themeLastToggleTimestamp = now;
       var current = document.documentElement.getAttribute('data-theme') || 'dark';
       var target = (current === 'light') ? 'dark' : 'light';
       window.applyTheme(target, true);
@@ -98,10 +91,10 @@
     <aside class="app-sidebar" id="sidebar">
       <div class="sidebar-header">
         <a href="index.html" class="logo">
-          <span class="logo-icon">🍇</span>
+          <img src="assets/logo-circle.png" alt="Logo VitiTrack Pro" class="brand-logo-img">
           <span class="logo-text">Viti<span class="logo-accent">Track</span> <span class="badge-pro">PRO</span></span>
         </a>
-        <button class="sidebar-close-btn" id="sidebar-close" aria-label="Fermer le menu">✕</button>
+        <button class="sidebar-close-btn" id="sidebar-close" onclick="closeSidebar()" aria-label="Fermer le menu">✕</button>
       </div>
 
       <div class="sidebar-user">
@@ -112,60 +105,47 @@
         </div>
       </div>
 
-      <!-- Thème Mode Nuit / Mode Jour -->
-      <div class="sidebar-theme-panel">
-        <span class="sidebar-theme-title">Ambiance visuelle</span>
-        <div class="sidebar-theme-switch">
-          <button type="button" class="theme-pill-choice active" id="choice-dark" onclick="applyTheme('dark')" data-theme-target="dark" title="Mode Nuit (Sombre)">
-            <span>🌙</span> Nuit
-          </button>
-          <button type="button" class="theme-pill-choice" id="choice-light" onclick="applyTheme('light')" data-theme-target="light" title="Mode Jour (Lumineux)">
-            <span>☀️</span> Jour
-          </button>
-        </div>
-      </div>
-
       <nav class="sidebar-nav">
         <div class="nav-section-title">PILOTAGE</div>
-        <a href="#vue-ensemble" class="nav-item active" id="nav-btn-overview" data-view="overview">
+        <a href="javascript:void(0)" class="nav-item active" id="nav-btn-overview" data-view="overview" onclick="switchView('overview'); closeSidebar(); return false;">
           <span class="nav-icon">📊</span>
           <span class="nav-label">Tableau de bord</span>
         </a>
-        <a href="#clients" class="nav-item" id="nav-btn-clients" data-view="clients">
+        <a href="javascript:void(0)" class="nav-item" id="nav-btn-clients" data-view="clients" onclick="switchView('clients'); closeSidebar(); return false;">
           <span class="nav-icon">🍇</span>
           <span class="nav-label">Clients & Parcelles</span>
           <span class="nav-badge" id="sidebar-clients-count">0</span>
         </a>
-        <a href="#prestations" class="nav-item" id="nav-btn-services" data-view="services">
+        <a href="javascript:void(0)" class="nav-item" id="nav-btn-services" data-view="services" onclick="switchView('services'); closeSidebar(); return false;">
           <span class="nav-icon">✂️</span>
           <span class="nav-label">Prestations & Travaux</span>
           <span class="nav-badge" id="sidebar-services-count">0</span>
         </a>
-        <a href="#interventions" class="nav-item" id="nav-btn-interventions" data-view="interventions">
+        <a href="javascript:void(0)" class="nav-item" id="nav-btn-interventions" data-view="interventions" onclick="switchView('interventions'); closeSidebar(); return false;">
           <span class="nav-icon">🚜</span>
           <span class="nav-label">Interventions</span>
           <span class="nav-badge" id="sidebar-interventions-count">0</span>
         </a>
-        <a href="#facturation" class="nav-item" id="nav-btn-billing" data-view="billing">
+        <a href="javascript:void(0)" class="nav-item" id="nav-btn-billing" data-view="billing" onclick="switchView('billing'); closeSidebar(); return false;">
           <span class="nav-icon">💶</span>
           <span class="nav-label">À Facturer</span>
           <span class="nav-badge badge-warning" id="sidebar-unbilled-count">0</span>
         </a>
 
         <div class="nav-section-title">OUTILS & BASE</div>
-        <a href="#nouvelle-prestation" class="nav-item" id="sidebar-add-service-btn">
+        <a href="javascript:void(0)" class="nav-item" id="sidebar-add-service-btn" onclick="openServiceModal(); closeSidebar(); return false;">
           <span class="nav-icon">＋</span>
           <span class="nav-label">Nouvelle Prestation</span>
         </a>
-        <a href="#nouveau-travail" class="nav-item" id="sidebar-add-planned-btn">
+        <a href="javascript:void(0)" class="nav-item" id="sidebar-add-planned-btn" onclick="openPlannedModal(); closeSidebar(); return false;">
           <span class="nav-icon">📌</span>
           <span class="nav-label">Planifier un travail</span>
         </a>
-        <a href="#nouveau-client" class="nav-item" id="sidebar-add-client-btn">
+        <a href="javascript:void(0)" class="nav-item" id="sidebar-add-client-btn" onclick="openClientModal(); closeSidebar(); return false;">
           <span class="nav-icon">＋</span>
           <span class="nav-label">Nouveau Client</span>
         </a>
-        <a href="#export" class="nav-item" id="sidebar-export-btn">
+        <a href="javascript:void(0)" class="nav-item" id="sidebar-export-btn" onclick="exportCSV(); closeSidebar(); return false;">
           <span class="nav-icon">📥</span>
           <span class="nav-label">Export Comptable CSV</span>
         </a>
@@ -173,20 +153,14 @@
           <span class="nav-icon">🌐</span>
           <span class="nav-label">Site Vitrine</span>
         </a>
-        <a href="#sync-supabase" class="nav-item" id="sidebar-sync-supabase-btn" title="Synchroniser avec la base de données Supabase Cloud">
+        <a href="javascript:void(0)" class="nav-item" id="sidebar-sync-supabase-btn" title="Synchroniser avec la base de données Supabase Cloud">
           <span class="nav-icon">☁️</span>
           <span class="nav-label">Sync Supabase Cloud</span>
         </a>
-        <a href="#reset" class="nav-item text-muted" id="sidebar-reset-btn" title="Vider la base ou réinitialiser">
+        <a href="javascript:void(0)" class="nav-item text-muted" id="sidebar-reset-btn" title="Vider la base ou réinitialiser">
           <span class="nav-icon">🗑️</span>
           <span class="nav-label">Vider la base</span>
         </a>
-        <div class="sidebar-theme-item">
-          <button type="button" class="sidebar-theme-btn" id="sidebar-theme-toggle" onclick="toggleTheme()" aria-label="Basculer Mode Jour / Mode Nuit">
-            <span class="theme-icon" id="sidebar-theme-icon">☀️</span>
-            <span class="theme-label" id="sidebar-theme-text">Mode Jour</span>
-          </button>
-        </div>
       </nav>
 
       <div class="sidebar-footer">
@@ -218,10 +192,6 @@
             <span></span>
             <span></span>
           </button>
-          <div>
-            <h1 class="topbar-title" id="page-title">Tableau de bord</h1>
-            <p class="topbar-subtitle" id="page-subtitle">Suivi des travaux viticoles & préparation de la facturation</p>
-          </div>
         </div>
 
         <div class="topbar-actions">
@@ -241,21 +211,23 @@
           <a href="index.html" class="btn btn-ghost btn-sm" title="Retour au site public">
             <span>← Site</span>
           </a>
-          <button class="btn btn-outline btn-sm" id="btn-export-topbar">
+          <button class="btn btn-outline btn-sm" id="btn-export-topbar" onclick="exportCSV()">
             <span>📥 Export CSV</span>
           </button>
-          <button class="btn btn-secondary btn-sm" id="topbar-add-client-btn">
-            <span>🍇 ＋ Nouveau client</span>
+          <button class="btn btn-secondary btn-sm" id="topbar-add-client-btn" onclick="openClientModal()" title="Ajouter un nouveau domaine ou client">
+            <span class="btn-icon">🍇</span>
+            <span class="btn-text-desktop">Nouveau client</span>
+            <span class="btn-text-mobile">Client</span>
           </button>
           <div class="user-topbar-profile" id="user-topbar-profile">
             <span class="user-topbar-avatar">👤</span>
             <span class="user-topbar-name" id="user-topbar-name">Domaine Viticole</span>
             <a href="login.html" class="btn-topbar-switch" id="btn-topbar-switch" title="Changer de compte ou s'inscrire">🔄 Compte</a>
-            <button type="button" class="btn-topbar-logout" id="btn-topbar-logout" title="Déconnexion de l'espace">
+            <button type="button" class="btn-topbar-logout" id="btn-topbar-logout" onclick="handleLogout()" title="Déconnexion de l'espace">
               <span>🚪 Déconnexion</span>
             </button>
           </div>
-          <button class="btn btn-primary btn-glow" id="btn-open-create-modal">
+          <button class="btn btn-primary btn-glow" id="btn-open-create-modal" onclick="openCreateModal()">
             <span class="btn-icon">＋</span>
             <span class="btn-text-desktop">Nouvelle intervention</span>
             <span class="btn-text-mobile">Saisie</span>
@@ -273,14 +245,18 @@
           <div class="quick-banner" id="neutral-banner">
             <div class="quick-banner-icon">💡</div>
             <div class="quick-banner-text">
-              <strong>Base de données neutre prête.</strong> Commencez par créer vos <em>Clients & Parcelles</em>, puis consignez vos <em>Interventions</em> pour piloter votre facturation en temps réel.
+              <strong>Base de données prête.</strong> Commencez par créer vos 
+              <button type="button" class="banner-quick-link" onclick="openClientModal()" title="Créer un client / domaine">🍇 Clients & Parcelles</button>, 
+              puis consignez vos 
+              <button type="button" class="banner-quick-link" onclick="openCreateModal()" title="Saisir une nouvelle intervention">🚜 Interventions</button> 
+              pour piloter votre facturation en temps réel.
             </div>
-            <button class="banner-dismiss-btn" onclick="this.parentElement.style.display='none'">✕</button>
+            <button class="banner-dismiss-btn" onclick="this.parentElement.style.display='none'" aria-label="Masquer la bannière">✕</button>
           </div>
 
           <!-- KPI SUMMARY CARDS -->
           <section class="kpi-grid">
-            <div class="kpi-card">
+            <div class="kpi-card" id="kpi-card-clients">
               <div class="kpi-header">
                 <span class="kpi-title">Clients & Domaines</span>
                 <span class="kpi-icon icon-purple">🍇</span>
@@ -290,9 +266,13 @@
                 <span class="badge-tag" id="kpi-parcels-count">0 parcelle(s)</span>
                 <span class="kpi-sub" id="kpi-total-surface">0.0000 ha répertoriés</span>
               </div>
+              <div class="kpi-card-action-bar">
+                <button type="button" class="kpi-quick-btn" onclick="openClientModal()" title="Ajouter un client directement">＋ Nouveau client</button>
+                <a href="javascript:void(0)" class="kpi-arrow-nav" onclick="switchView('clients'); return false;" title="Accéder au répertoire">Clients & Parcelles ➔</a>
+              </div>
             </div>
 
-            <div class="kpi-card">
+            <div class="kpi-card" id="kpi-card-interventions">
               <div class="kpi-header">
                 <span class="kpi-title">Interventions saisies</span>
                 <span class="kpi-icon icon-green">🚜</span>
@@ -301,29 +281,41 @@
               <div class="kpi-footer">
                 <span class="kpi-sub" id="kpi-surface-hours">0.0000 ha / 0 h travaillées</span>
               </div>
+              <div class="kpi-card-action-bar">
+                <button type="button" class="kpi-quick-btn" onclick="openCreateModal()" title="Saisir une nouvelle intervention">＋ Saisie rapide</button>
+                <a href="javascript:void(0)" class="kpi-arrow-nav" onclick="switchView('interventions'); return false;" title="Voir le journal">Journal ➔</a>
+              </div>
             </div>
 
-            <div class="kpi-card kpi-highlight-warning">
+            <div class="kpi-card kpi-highlight-warning" id="kpi-card-unbilled">
               <div class="kpi-header">
                 <span class="kpi-title">À Facturer (En attente)</span>
                 <span class="kpi-icon icon-warning">💶</span>
               </div>
-              <div class="kpi-value value-warning" id="kpi-unbilled-amount">0 €</div>
+              <div class="kpi-value value-warning" id="kpi-unbilled-amount">0 € HT</div>
+              <div class="kpi-sub-ttc" id="kpi-unbilled-ttc" style="font-size: 0.92rem; font-weight: 700; color: #ffd166; margin-top: 2px;">0 € TTC</div>
               <div class="kpi-footer">
                 <span class="badge-pill pill-warning" id="kpi-unbilled-badge">0 chantier(s)</span>
                 <span class="kpi-sub">en attente de facture</span>
               </div>
+              <div class="kpi-card-action-bar">
+                <button type="button" class="kpi-quick-btn" onclick="switchView('billing')" title="Voir les chantiers à facturer">Voir à facturer ➔</button>
+              </div>
             </div>
 
-            <div class="kpi-card">
+            <div class="kpi-card" id="kpi-card-billed">
               <div class="kpi-header">
                 <span class="kpi-title">Déjà Facturé</span>
                 <span class="kpi-icon icon-emerald">✅</span>
               </div>
-              <div class="kpi-value value-success" id="kpi-billed-amount">0 €</div>
+              <div class="kpi-value value-success" id="kpi-billed-amount">0 € HT</div>
+              <div class="kpi-sub-ttc" id="kpi-billed-ttc" style="font-size: 0.92rem; font-weight: 700; color: #52b788; margin-top: 2px;">0 € TTC</div>
               <div class="kpi-footer">
                 <span class="badge-pill pill-success" id="kpi-billed-badge">0 chantier(s)</span>
                 <span class="kpi-sub">clôturés</span>
+              </div>
+              <div class="kpi-card-action-bar">
+                <button type="button" class="kpi-quick-btn" onclick="filterByStatus('Facturée'); renderTable(); scrollToInterventions();" title="Voir les chantiers clôturés">Voir clôturés ➔</button>
               </div>
             </div>
           </section>
@@ -338,14 +330,10 @@
                   <span class="table-count-badge" id="table-results-count">0 enregistrée</span>
                 </div>
                 <div class="table-header-actions">
-                  <button type="button" class="btn btn-outline btn-xs btn-theme-quick" id="btn-theme-quick-table" onclick="toggleTheme()" title="Basculer entre Mode Jour et Mode Nuit">
-                    <span id="quick-theme-icon">☀️</span>
-                    <span id="quick-theme-text">Mode Jour</span>
-                  </button>
-                  <button class="btn btn-outline btn-xs" id="btn-export-table-top" title="Exporter au format CSV">
+                  <button class="btn btn-outline btn-xs" id="btn-export-table-top" onclick="exportCSV()" title="Exporter au format CSV">
                     <span>📥 Exporter CSV</span>
                   </button>
-                  <button class="btn btn-primary btn-xs btn-glow" id="btn-create-table-top">
+                  <button class="btn btn-primary btn-xs btn-glow" id="btn-create-table-top" onclick="openCreateModal()">
                     <span class="btn-icon">＋</span>
                     <span>Nouvelle intervention</span>
                   </button>
@@ -463,7 +451,8 @@
                     <th>Parcelle & Surface</th>
                     <th>Prestation viticole</th>
                     <th>Volume / Durée</th>
-                    <th>Montant estimé</th>
+                    <th>Montant estimé Hors Taxe</th>
+                    <th>Montant estimé TTC</th>
                     <th>Statut facturation</th>
                     <th class="text-right">Actions</th>
                   </tr>
@@ -479,9 +468,9 @@
               <div class="empty-icon">🚜</div>
               <h3>Aucune intervention enregistrée</h3>
               <p id="table-empty-message">Votre base de données est actuellement vierge. Commencez par créer vos clients et enregistrez votre première intervention.</p>
-              <div style="display: flex; gap: 0.75rem; margin-top: 0.5rem;">
-                <button class="btn btn-secondary btn-sm" id="btn-empty-add-client">🍇 ＋ Ajouter un client</button>
-                <button class="btn btn-primary btn-sm" id="btn-empty-add-intervention">🚜 ＋ Nouvelle intervention</button>
+              <div style="display: flex; gap: 0.75rem; margin-top: 0.5rem; flex-wrap: wrap; justify-content: center;">
+                <button type="button" class="btn btn-secondary btn-sm" id="btn-empty-add-client" onclick="openClientModal()">🍇 ＋ Ajouter un client</button>
+                <button type="button" class="btn btn-primary btn-sm" id="btn-empty-add-intervention" onclick="openCreateModal()">🚜 ＋ Nouvelle intervention</button>
               </div>
             </div>
 
@@ -491,8 +480,8 @@
                 <span>💡 <em>Cliquez sur le badge de statut pour basculer directement entre « À facturer » et « Facturée ».</em></span>
               </div>
               <div class="table-actions-bulk">
-                <button class="btn btn-outline btn-xs" id="btn-export-bottom">📥 Exporter le tableau (CSV)</button>
-                <button class="btn btn-primary btn-xs" id="btn-open-create-bottom">＋ Créer une intervention</button>
+                <button class="btn btn-outline btn-xs" id="btn-export-bottom" onclick="exportCSV()">📥 Exporter le tableau (CSV)</button>
+                <button class="btn btn-primary btn-xs" id="btn-open-create-bottom" onclick="openCreateModal()">＋ Créer une intervention</button>
               </div>
             </div>
           </section>
@@ -507,7 +496,7 @@
               <h2 class="view-heading">Répertoire des Clients & Domaines</h2>
               <p class="view-subheading">Base de données de vos partenaires viticoles et de leurs parcelles sous contrat</p>
             </div>
-            <button class="btn btn-primary btn-glow" id="btn-view-add-client">
+            <button class="btn btn-primary btn-glow" id="btn-view-add-client" onclick="openClientModal()">
               <span class="btn-icon">＋</span>
               <span>Nouveau client</span>
             </button>
@@ -542,7 +531,7 @@
             <div class="empty-icon">🍇</div>
             <h3>Base clients neutre et vierge</h3>
             <p>Aucun client n'est encore enregistré dans votre base de données. Créez votre premier domaine pour commencer à y attacher des parcelles et saisir vos chantiers.</p>
-            <button class="btn btn-primary btn-sm" id="btn-create-first-client">
+            <button class="btn btn-primary btn-sm" id="btn-create-first-client" onclick="openClientModal()">
               <span>🍇 ＋ Créer mon premier client</span>
             </button>
           </div>
@@ -558,11 +547,11 @@
               <p class="view-subheading">Toutes les prestations viticoles que votre équipe peut réaliser, tarifs par défaut et suivi des travaux à faire.</p>
             </div>
             <div class="services-view-actions">
-              <button class="btn btn-secondary btn-sm" id="btn-view-add-planned">
+              <button class="btn btn-secondary btn-sm" id="btn-view-add-planned" onclick="openPlannedModal()">
                 <span class="btn-icon">📌</span>
                 <span>Planifier un travail</span>
               </button>
-              <button class="btn btn-primary btn-glow btn-sm" id="btn-view-add-service">
+              <button class="btn btn-primary btn-glow btn-sm" id="btn-view-add-service" onclick="openServiceModal()">
                 <span class="btn-icon">＋</span>
                 <span>Nouvelle prestation</span>
               </button>
@@ -775,7 +764,7 @@
                   <label for="input-client" class="form-label">
                     <span>Client / Domaine</span> <span class="required">*</span>
                   </label>
-                  <button type="button" class="btn-link-action" id="btn-quick-add-client">＋ Nouveau client</button>
+                  <button type="button" class="btn-link-action" id="btn-quick-add-client" onclick="openClientModal()">＋ Nouveau client</button>
                 </div>
                 <select id="input-client" class="form-select-simple" required>
                   <option value="">Sélectionner un client...</option>
@@ -1354,11 +1343,13 @@
             </div>
             <div class="dossier-metric-card">
               <span class="dossier-metric-label">À facturer</span>
-              <span class="dossier-metric-val value-warning" id="dossier-unbilled-total">0 €</span>
+              <span class="dossier-metric-val value-warning" id="dossier-unbilled-total">0 € HT</span>
+              <span class="dossier-metric-sub" id="dossier-unbilled-ttc" style="font-size: 0.8rem; font-weight: 700; color: #ffd166; margin-top: 2px;">0 € TTC</span>
             </div>
             <div class="dossier-metric-card">
               <span class="dossier-metric-label">Déjà facturé</span>
-              <span class="dossier-metric-val value-success" id="dossier-billed-total">0 €</span>
+              <span class="dossier-metric-val value-success" id="dossier-billed-total">0 € HT</span>
+              <span class="dossier-metric-sub" id="dossier-billed-ttc" style="font-size: 0.8rem; font-weight: 700; color: #52b788; margin-top: 2px;">0 € TTC</span>
             </div>
           </div>
 
@@ -1435,6 +1426,7 @@
                     <th>Salarié</th>
                     <th>Volume / Durée</th>
                     <th>Montant HT</th>
+                    <th>Montant TTC</th>
                     <th>Statut</th>
                   </tr>
                 </thead>
@@ -1486,25 +1478,25 @@
 
   <!-- ==================== BARRE DE NAVIGATION INFÉRIEURE (MOBILE / SMARTPHONE) ==================== -->
   <nav class="mobile-bottom-nav" id="mobile-bottom-nav" aria-label="Navigation mobile">
-    <button type="button" class="mobile-nav-item active" id="mobile-nav-overview" data-view="overview" aria-label="Tableau de bord">
+    <button type="button" class="mobile-nav-item active" id="mobile-nav-overview" data-view="overview" onclick="switchView('overview')" aria-label="Tableau de bord">
       <span class="mobile-nav-icon">📊</span>
       <span class="mobile-nav-label">Tableau</span>
     </button>
-    <button type="button" class="mobile-nav-item" id="mobile-nav-clients" data-view="clients" aria-label="Répertoire clients">
+    <button type="button" class="mobile-nav-item" id="mobile-nav-clients" data-view="clients" onclick="switchView('clients')" aria-label="Répertoire clients">
       <span class="mobile-nav-icon">🏰</span>
       <span class="mobile-nav-label">Clients</span>
     </button>
-    <button type="button" class="mobile-nav-item mobile-nav-action-center" id="mobile-nav-create" aria-label="Saisir une intervention">
+    <button type="button" class="mobile-nav-item mobile-nav-action-center" id="mobile-nav-create" onclick="openCreateModal()" aria-label="Saisir une intervention">
       <div class="mobile-action-circle">
         <span>＋</span>
       </div>
       <span class="mobile-nav-label">Saisie</span>
     </button>
-    <button type="button" class="mobile-nav-item" id="mobile-nav-services" data-view="services" aria-label="Catalogue et travaux">
+    <button type="button" class="mobile-nav-item" id="mobile-nav-services" data-view="services" onclick="switchView('services')" aria-label="Catalogue et travaux">
       <span class="mobile-nav-icon">✂️</span>
       <span class="mobile-nav-label">Prestations</span>
     </button>
-    <button type="button" class="mobile-nav-item" id="mobile-nav-menu" aria-label="Menu et options">
+    <button type="button" class="mobile-nav-item" id="mobile-nav-menu" onclick="toggleSidebar()" aria-label="Menu et options">
       <span class="mobile-nav-icon">☰</span>
       <span class="mobile-nav-label">Menu</span>
     </button>

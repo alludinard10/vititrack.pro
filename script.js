@@ -293,13 +293,7 @@ document.addEventListener('DOMContentLoaded', () => {
     landingLoginForm.addEventListener('submit', (e) => {
       e.preventDefault();
       const email = document.getElementById('modal-login-email')?.value.trim();
-      authenticateAndRedirect(email, 'Domaine Ludinard-Clair');
-    });
-  }
-
-  if (modalBtnDemo) {
-    modalBtnDemo.addEventListener('click', () => {
-      authenticateAndRedirect('exploitant@domaineludinard.fr', 'Domaine Ludinard-Clair');
+      authenticateAndRedirect(email, 'Domaine Viticole');
     });
   }
 

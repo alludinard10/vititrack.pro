@@ -42,6 +42,18 @@
   border-bottom: 1px solid rgba(82, 183, 136, 0.08);
 }
 
+.brand-logo-img {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: contain;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  background: #ffffff;
+  display: inline-block;
+  vertical-align: middle;
+}
+
 .badge-pro {
   font-size: 0.65rem;
   font-weight: 800;
@@ -336,6 +348,14 @@
 
 .sidebar-backdrop {
   display: none;
+  pointer-events: none;
+}
+
+.sidebar-backdrop:not(.active) {
+  display: none !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
 }
 
 /* ---------- Main App & Topbar ---------- */
@@ -624,9 +644,130 @@
   color: #e9c46a;
 }
 
-.pill-success {
+/* ---------- Interactive KPI Cards & Quick Actions ---------- */
+.kpi-card-clickable {
+  cursor: pointer;
+  user-select: none;
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.22s ease, box-shadow 0.22s ease;
+}
+
+.kpi-card-clickable:hover {
+  transform: translateY(-4px);
+  border-color: rgba(82, 183, 136, 0.45);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45), 0 0 25px rgba(82, 183, 136, 0.18);
+}
+
+.kpi-card-clickable:active {
+  transform: translateY(-1px);
+}
+
+.kpi-card-action-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 0.35rem;
+  padding-top: 0.45rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.kpi-quick-btn {
+  background: rgba(82, 183, 136, 0.15);
+  border: 1px solid rgba(82, 183, 136, 0.3);
+  color: var(--color-primary-lighter);
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.kpi-quick-btn:hover {
+  background: var(--color-primary);
+  color: #fff;
+  border-color: var(--color-primary-lighter);
+  box-shadow: 0 2px 8px rgba(82, 183, 136, 0.3);
+}
+
+.kpi-arrow-nav {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  transition: all 0.2s ease;
+  letter-spacing: 0.02em;
+}
+
+.kpi-card-clickable:hover .kpi-arrow-nav {
+  color: var(--color-primary-lighter);
+  transform: translateX(3px);
+}
+
+.badge-interactive {
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.badge-interactive:hover {
+  background: rgba(82, 183, 136, 0.25);
+  color: #fff;
+  border-color: var(--color-primary-lighter);
+}
+
+/* ---------- Banner Quick Links ---------- */
+.banner-quick-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
   background: rgba(82, 183, 136, 0.2);
-  color: #52b788;
+  color: var(--color-primary-lighter);
+  border: 1px solid rgba(82, 183, 136, 0.35);
+  border-radius: var(--radius-full);
+  padding: 0.15rem 0.6rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  vertical-align: middle;
+  margin: 0 0.2rem;
+  transition: all 0.18s ease;
+  text-decoration: none;
+}
+
+.banner-quick-link:hover {
+  background: rgba(82, 183, 136, 0.35);
+  color: #fff;
+  border-color: var(--color-primary-lighter);
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgba(82, 183, 136, 0.25);
+}
+
+/* ---------- Clickable Table Headers ---------- */
+.th-clickable {
+  cursor: pointer;
+  user-select: none;
+  transition: color 0.18s ease, background-color 0.18s ease;
+}
+
+.th-clickable:hover {
+  color: var(--color-primary-lighter) !important;
+}
+
+.th-link-badge {
+  display: inline-block;
+  font-size: 0.65rem;
+  font-weight: 600;
+  background: rgba(82, 183, 136, 0.15);
+  color: var(--color-primary-lighter);
+  border: 1px solid rgba(82, 183, 136, 0.25);
+  padding: 1px 5px;
+  border-radius: 4px;
+  margin-left: 0.35rem;
+  vertical-align: middle;
+  transition: all 0.18s ease;
+}
+
+.th-clickable:hover .th-link-badge {
+  background: var(--color-primary);
+  color: #fff;
 }
 
 .app-view {
@@ -1145,6 +1286,16 @@
   font-size: 0.95rem;
 }
 
+.amount-ttc {
+  color: var(--color-accent-light, #74c69d);
+}
+
+.kpi-sub-ttc {
+  font-size: 0.92rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
 /* Status Badge - Interactive Toggle */
 .status-pill-toggle {
   display: inline-flex;
@@ -1268,19 +1419,30 @@
   inset: 0;
   background: rgba(5, 10, 8, 0.75);
   backdrop-filter: blur(8px);
-  display: flex;
+  -webkit-backdrop-filter: blur(8px);
+  display: none;
   align-items: center;
   justify-content: center;
   z-index: 1000;
   padding: 1.5rem;
   opacity: 0;
   visibility: hidden;
-  transition: all var(--transition-base);
+  pointer-events: none;
+  transition: opacity var(--transition-base), visibility var(--transition-base);
+}
+
+.modal-overlay:not(.open) {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
 }
 
 .modal-overlay.open {
-  opacity: 1;
-  visibility: visible;
+  display: flex !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
 }
 
 .modal-dialog {
@@ -1605,6 +1767,7 @@
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
     z-index: 95;
+    pointer-events: auto;
   }
 
   .mobile-menu-btn {
@@ -1620,9 +1783,20 @@
   }
 
   .topbar-actions .btn-ghost,
-  .topbar-actions .btn-outline,
-  .topbar-actions .btn-secondary {
+  .topbar-actions .btn-outline {
     display: none;
+  }
+
+  .topbar-actions .btn-secondary:not(#topbar-add-client-btn) {
+    display: none;
+  }
+
+  .topbar-actions #topbar-add-client-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.38rem 0.75rem;
+    font-size: 0.8rem;
   }
 
   .app-content {
@@ -2781,8 +2955,8 @@
 }
 
 .client-card-footer-btns .btn-client-intervention {
-  background: var(--gradient-accent);
-  color: #fff;
+  background: linear-gradient(135deg, #2d6a4f, #1b4332);
+  color: #ffffff;
   border: 1px solid rgba(82, 183, 136, 0.4);
   transition: all var(--transition-fast);
   cursor: pointer;
@@ -3663,37 +3837,6 @@
   box-shadow: 0 2px 6px rgba(27, 67, 50, 0.15);
 }
 
-/* ---------- Table Header Quick Theme Button ---------- */
-.btn-theme-quick {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.35rem 0.65rem;
-  font-size: 0.78rem;
-  font-weight: 600;
-  border-radius: var(--radius-sm);
-  background: rgba(82, 183, 136, 0.08);
-  border: 1px solid rgba(82, 183, 136, 0.22);
-  color: #c0d4c8;
-  cursor: pointer;
-  transition: all var(--transition-fast);
-}
-
-.btn-theme-quick:hover {
-  background: rgba(82, 183, 136, 0.18);
-  color: #ffffff;
-}
-
-[data-theme="light"] .btn-theme-quick {
-  background: #ffffff;
-  border-color: rgba(45, 106, 79, 0.25);
-  color: #1b4332;
-}
-
-[data-theme="light"] .btn-theme-quick:hover {
-  background: #f0f7f3;
-  border-color: rgba(45, 106, 79, 0.45);
-}
 
 /* ---------- Legacy Sidebar Item Support ---------- */
 .sidebar-theme-item {
@@ -3895,6 +4038,60 @@ body[data-theme="light"],
   color: #1b4332 !important;
 }
 
+[data-theme="light"] .kpi-card-clickable:hover {
+  border-color: rgba(45, 106, 79, 0.4) !important;
+  box-shadow: 0 10px 25px rgba(20, 36, 29, 0.08) !important;
+}
+
+[data-theme="light"] .kpi-card-action-bar {
+  border-top-color: rgba(0, 0, 0, 0.06) !important;
+}
+
+[data-theme="light"] .kpi-quick-btn {
+  background: rgba(45, 106, 79, 0.08) !important;
+  border-color: rgba(45, 106, 79, 0.25) !important;
+  color: #1b4332 !important;
+}
+
+[data-theme="light"] .kpi-quick-btn:hover {
+  background: #2d6a4f !important;
+  color: #ffffff !important;
+}
+
+[data-theme="light"] .kpi-arrow-nav {
+  color: #607d6f !important;
+}
+
+[data-theme="light"] .kpi-card-clickable:hover .kpi-arrow-nav {
+  color: #1b4332 !important;
+}
+
+[data-theme="light"] .banner-quick-link {
+  background: rgba(45, 106, 79, 0.1) !important;
+  border-color: rgba(45, 106, 79, 0.28) !important;
+  color: #1b4332 !important;
+}
+
+[data-theme="light"] .banner-quick-link:hover {
+  background: #2d6a4f !important;
+  color: #ffffff !important;
+}
+
+[data-theme="light"] .th-clickable:hover {
+  color: #1b4332 !important;
+}
+
+[data-theme="light"] .th-link-badge {
+  background: rgba(45, 106, 79, 0.08) !important;
+  border-color: rgba(45, 106, 79, 0.25) !important;
+  color: #1b4332 !important;
+}
+
+[data-theme="light"] .th-clickable:hover .th-link-badge {
+  background: #2d6a4f !important;
+  color: #ffffff !important;
+}
+
 [data-theme="light"] .dashboard-table-card,
 [data-theme="light"] .table-card {
   background: #ffffff !important;
@@ -3989,8 +4186,12 @@ body[data-theme="light"],
   color: #1b4332 !important;
 }
 
-[data-theme="light"] .dashboard-table-wrapper {
+[data-theme="light"] .dashboard-table-wrapper,
+[data-theme="light"] .table-responsive,
+[data-theme="light"] .interventions-table,
+[data-theme="light"] .interventions-table tbody {
   background: #ffffff !important;
+  background-color: #ffffff !important;
 }
 
 [data-theme="light"] .interventions-table th {
@@ -4000,6 +4201,10 @@ body[data-theme="light"],
   border-bottom: 1px solid rgba(45, 106, 79, 0.14) !important;
 }
 
+/* Lignes et cellules des tableaux en Mode Jour */
+[data-theme="light"] .interventions-table tbody tr,
+[data-theme="light"] .interventions-table tbody tr td,
+[data-theme="light"] .interventions-table tr,
 [data-theme="light"] .interventions-table td {
   background: #ffffff !important;
   background-color: #ffffff !important;
@@ -4007,25 +4212,184 @@ body[data-theme="light"],
   border-bottom: 1px solid rgba(45, 106, 79, 0.08) !important;
 }
 
+[data-theme="light"] .interventions-table tbody tr:hover,
+[data-theme="light"] .interventions-table tbody tr:hover td,
 [data-theme="light"] .interventions-table tr:hover td {
-  background: #f6faf7 !important;
-  background-color: #f6faf7 !important;
+  background: #f4faf6 !important;
+  background-color: #f4faf6 !important;
 }
 
+/* Typographie & données des cellules en Mode Jour */
+[data-theme="light"] .interventions-table .date-main,
+[data-theme="light"] .date-main {
+  color: #14241d !important;
+  font-weight: 700 !important;
+}
+
+[data-theme="light"] .interventions-table .time-sub,
+[data-theme="light"] .time-sub,
+[data-theme="light"] .date-sub {
+  color: #557062 !important;
+}
+
+[data-theme="light"] .interventions-table .worker-badge,
 [data-theme="light"] .worker-badge {
-  background: rgba(45, 106, 79, 0.1) !important;
-  color: #1b4332 !important;
-  border-color: rgba(45, 106, 79, 0.2) !important;
+  color: #14241d !important;
 }
 
+[data-theme="light"] .interventions-table .worker-badge span,
+[data-theme="light"] .worker-badge span {
+  color: #14241d !important;
+}
+
+[data-theme="light"] .worker-avatar-mini {
+  background: #eef5f1 !important;
+  color: #1b4332 !important;
+  border: 1px solid rgba(45, 106, 79, 0.25) !important;
+  font-weight: 700 !important;
+}
+
+[data-theme="light"] .interventions-table .client-name,
+[data-theme="light"] .client-name {
+  color: #14241d !important;
+  font-weight: 700 !important;
+}
+
+[data-theme="light"] .interventions-table .parcel-name,
+[data-theme="light"] .parcel-name {
+  color: #244234 !important;
+  font-weight: 600 !important;
+}
+
+[data-theme="light"] .parcel-details {
+  color: #557062 !important;
+}
+
+[data-theme="light"] .interventions-table .task-tag,
+[data-theme="light"] .task-tag {
+  background: #eef5f1 !important;
+  background-color: #eef5f1 !important;
+  border: 1px solid rgba(45, 106, 79, 0.22) !important;
+  color: #1b4332 !important;
+  font-weight: 600 !important;
+}
+
+[data-theme="light"] .interventions-table .volume-value,
+[data-theme="light"] .volume-value {
+  color: #14241d !important;
+  font-weight: 600 !important;
+}
+
+[data-theme="light"] .interventions-table .amount-value,
+[data-theme="light"] .amount-value {
+  color: #14241d !important;
+  font-weight: 800 !important;
+}
+
+[data-theme="light"] .amount-ttc {
+  color: #1b6a42 !important;
+}
+
+/* Badges de Statut Facturation */
+[data-theme="light"] .status-pill-toggle.status-unbilled,
+[data-theme="light"] .status-pill-toggle.status-pending {
+  background: #fff8e6 !important;
+  background-color: #fff8e6 !important;
+  color: #9c6c06 !important;
+  border: 1px solid rgba(212, 163, 115, 0.5) !important;
+  font-weight: 700 !important;
+}
+
+[data-theme="light"] .status-pill-toggle.status-unbilled:hover,
+[data-theme="light"] .status-pill-toggle.status-pending:hover {
+  background: #ffefc4 !important;
+  background-color: #ffefc4 !important;
+}
+
+[data-theme="light"] .status-pill-toggle.status-billed {
+  background: #eaf6ee !important;
+  background-color: #eaf6ee !important;
+  color: #1b4332 !important;
+  border: 1px solid rgba(45, 106, 79, 0.3) !important;
+  font-weight: 700 !important;
+}
+
+[data-theme="light"] .status-pill-toggle.status-billed:hover {
+  background: #dcf0e2 !important;
+  background-color: #dcf0e2 !important;
+}
+
+/* Boutons d'action dans le tableau */
+[data-theme="light"] .action-btn {
+  background: #f0f7f3 !important;
+  background-color: #f0f7f3 !important;
+  border: 1px solid rgba(45, 106, 79, 0.22) !important;
+  color: #244234 !important;
+}
+
+[data-theme="light"] .action-btn:hover {
+  background: #e1efe7 !important;
+  background-color: #e1efe7 !important;
+  color: #14241d !important;
+  border-color: rgba(45, 106, 79, 0.4) !important;
+}
+
+[data-theme="light"] .action-btn.delete-btn {
+  background: #fff0f0 !important;
+  background-color: #fff0f0 !important;
+  border: 1px solid #ffd6d6 !important;
+  color: #d90429 !important;
+}
+
+[data-theme="light"] .action-btn.delete-btn:hover {
+  background: #ffe0e0 !important;
+  background-color: #ffe0e0 !important;
+  border-color: #ffb8b8 !important;
+}
+
+/* Pied de tableau */
 [data-theme="light"] .table-footer {
   background: #fafcfb !important;
+  background-color: #fafcfb !important;
   border-top: 1px solid rgba(45, 106, 79, 0.1) !important;
   color: #557062 !important;
 }
 
 [data-theme="light"] .table-legend em {
   color: #1b4332 !important;
+}
+
+/* Travaux à faire & Prestations */
+[data-theme="light"] .planned-card-header {
+  background: #f8faf9 !important;
+  border-bottom: 1px solid rgba(45, 106, 79, 0.12) !important;
+}
+
+[data-theme="light"] .planned-card-title {
+  color: #14241d !important;
+}
+
+[data-theme="light"] .planned-card-subtitle {
+  color: #557062 !important;
+}
+
+[data-theme="light"] .btn-convert-work {
+  background: #2d6a4f !important;
+  background-color: #2d6a4f !important;
+  border: 1px solid #1b4332 !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+}
+
+[data-theme="light"] .btn-convert-work:hover {
+  background: #1b4332 !important;
+  background-color: #1b4332 !important;
+}
+
+[data-theme="light"] .badge-planned-status {
+  background: #fff8e6 !important;
+  color: #9c6c06 !important;
+  border: 1px solid rgba(212, 163, 115, 0.4) !important;
 }
 
 /* Clients View Light Theme */
@@ -4062,67 +4426,195 @@ body[data-theme="light"],
 }
 
 [data-theme="light"] .client-card {
-  background: #ffffff;
-  border: 1px solid rgba(45, 106, 79, 0.14);
-  box-shadow: 0 4px 20px rgba(18, 38, 28, 0.05);
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  border: 1px solid rgba(45, 106, 79, 0.16) !important;
+  box-shadow: 0 4px 20px rgba(18, 38, 28, 0.05) !important;
 }
 
 [data-theme="light"] .client-card:hover {
-  border-color: rgba(45, 106, 79, 0.38);
-  box-shadow: 0 8px 28px rgba(18, 38, 28, 0.08);
+  border-color: rgba(45, 106, 79, 0.4) !important;
+  box-shadow: 0 8px 28px rgba(18, 38, 28, 0.09) !important;
 }
 
-[data-theme="light"] .client-card-name {
-  color: #14241d;
+/* Nom des structures / domaines viticoles */
+[data-theme="light"] .domain-name,
+[data-theme="light"] .client-card .domain-name,
+[data-theme="light"] .client-card-name,
+[data-theme="light"] .client-title-row h3 {
+  color: #14241d !important;
+  font-weight: 700 !important;
 }
 
+[data-theme="light"] .domain-commune,
+[data-theme="light"] .client-card .domain-commune,
 [data-theme="light"] .client-card-commune {
-  color: #4a6657;
+  color: #2d6a4f !important;
+  font-weight: 600 !important;
 }
 
-[data-theme="light"] .client-card-contact,
-[data-theme="light"] .client-card-phone,
-[data-theme="light"] .client-card-email {
-  color: #3b574a;
+/* Badges d'en-tête de carte client */
+[data-theme="light"] .client-card-header .badge-tag {
+  background: #eef5f1 !important;
+  color: #1b4332 !important;
+  border: 1px solid rgba(45, 106, 79, 0.2) !important;
+  font-weight: 600 !important;
 }
 
-[data-theme="light"] .client-card-notes {
-  background: #f6faf7;
-  border-left-color: var(--color-primary);
-  color: #405e4f;
+[data-theme="light"] .badge-interventions {
+  background: rgba(45, 106, 79, 0.12) !important;
+  color: #1b4332 !important;
+  border: 1px solid rgba(45, 106, 79, 0.25) !important;
+  font-weight: 700 !important;
 }
 
+/* Coordonnées & métadonnées du client */
+[data-theme="light"] .client-card-meta {
+  background: #f4faf6 !important;
+  color: #244234 !important;
+  border: 1px solid rgba(45, 106, 79, 0.12) !important;
+}
+
+[data-theme="light"] .client-card-meta strong {
+  color: #14241d !important;
+}
+
+[data-theme="light"] .client-meta-line {
+  color: #244234 !important;
+}
+
+/* Boutons du bas de carte client */
+[data-theme="light"] .client-card-footer-btns .btn-client-intervention {
+  background: #2d6a4f !important;
+  background-color: #2d6a4f !important;
+  color: #ffffff !important;
+  border: 1px solid #1b4332 !important;
+  box-shadow: 0 2px 8px rgba(45, 106, 79, 0.25) !important;
+  font-weight: 700 !important;
+}
+
+[data-theme="light"] .client-card-footer-btns .btn-client-intervention span {
+  color: #ffffff !important;
+}
+
+[data-theme="light"] .client-card-footer-btns .btn-client-intervention:hover {
+  background: #1b4332 !important;
+  background-color: #1b4332 !important;
+  box-shadow: 0 4px 14px rgba(27, 67, 50, 0.35) !important;
+}
+
+[data-theme="light"] .client-card-footer-btns .btn-view-dossier {
+  background: #f0f7f3 !important;
+  background-color: #f0f7f3 !important;
+  color: #1b4332 !important;
+  border: 1px solid rgba(45, 106, 79, 0.25) !important;
+  font-weight: 600 !important;
+}
+
+[data-theme="light"] .client-card-footer-btns .btn-view-dossier span {
+  color: #1b4332 !important;
+}
+
+[data-theme="light"] .client-card-footer-btns .btn-view-dossier:hover {
+  background: #e1efe7 !important;
+  color: #0f281e !important;
+}
+
+/* Accordéon parcelles associées */
 [data-theme="light"] .client-parcels-accordion {
-  background: #f7faf8;
-  border-color: rgba(45, 106, 79, 0.12);
+  background: #f8faf9 !important;
+  border: 1px solid rgba(45, 106, 79, 0.16) !important;
 }
 
-[data-theme="light"] .client-parcels-accordion summary {
-  color: #2b4739;
+[data-theme="light"] .client-parcels-accordion[open] {
+  background: #ffffff !important;
+  border-color: rgba(45, 106, 79, 0.28) !important;
+  box-shadow: 0 4px 16px rgba(18, 38, 28, 0.05) !important;
 }
 
-[data-theme="light"] .client-parcel-item {
-  background: #ffffff;
-  border-color: rgba(45, 106, 79, 0.1);
+[data-theme="light"] .parcels-accordion-summary {
+  color: #1b4332 !important;
 }
 
-[data-theme="light"] .client-parcel-name {
-  color: #14241d;
+[data-theme="light"] .parcels-dropdown-header {
+  background: #eef5f1 !important;
+  color: #244234 !important;
+  border-bottom: 1px solid rgba(45, 106, 79, 0.12) !important;
 }
 
-[data-theme="light"] .client-parcel-meta {
-  color: #557062;
+[data-theme="light"] .parcel-item {
+  background: #ffffff !important;
+  border-bottom: 1px solid rgba(45, 106, 79, 0.08) !important;
 }
 
-[data-theme="light"] .btn-card-dossier {
-  background: rgba(45, 106, 79, 0.08);
-  border-color: rgba(45, 106, 79, 0.22);
-  color: #1b4332;
+[data-theme="light"] .parcel-item-name {
+  color: #14241d !important;
+  font-weight: 600 !important;
 }
 
-[data-theme="light"] .btn-card-dossier:hover {
-  background: rgba(45, 106, 79, 0.16);
-  color: #0f281e;
+[data-theme="light"] .parcel-item-tags {
+  color: #557062 !important;
+}
+
+[data-theme="light"] .client-delete-btn {
+  background: #fff0f0 !important;
+  border-color: #ffd6d6 !important;
+  color: #d90429 !important;
+}
+
+[data-theme="light"] .client-delete-btn:hover {
+  background: #ffe0e0 !important;
+}
+
+/* Modal Dossier Client en Mode Jour */
+[data-theme="light"] .client-dossier-modal,
+[data-theme="light"] #client-dossier-modal .modal-container {
+  background: #ffffff !important;
+  color: #14241d !important;
+}
+
+[data-theme="light"] #dossier-client-name {
+  color: #14241d !important;
+}
+
+[data-theme="light"] #dossier-commune-badge {
+  background: #eef5f1 !important;
+  color: #1b4332 !important;
+}
+
+[data-theme="light"] #dossier-client-subtitle {
+  color: #557062 !important;
+}
+
+[data-theme="light"] .dossier-metric-card {
+  background: #f8faf9 !important;
+  border: 1px solid rgba(45, 106, 79, 0.14) !important;
+}
+
+[data-theme="light"] .dossier-metric-val {
+  color: #14241d !important;
+}
+
+[data-theme="light"] .dossier-metric-label {
+  color: #557062 !important;
+}
+
+[data-theme="light"] .dossier-filter-bar {
+  background: #f8faf9 !important;
+  border: 1px solid rgba(45, 106, 79, 0.16) !important;
+}
+
+[data-theme="light"] .dossier-filter-label {
+  color: #244234 !important;
+}
+
+[data-theme="light"] .dossier-tab-btn {
+  color: #557062 !important;
+}
+
+[data-theme="light"] .dossier-tab-btn.active {
+  color: #1b4332 !important;
+  border-bottom-color: #2d6a4f !important;
 }
 
 /* Services View Light Theme */

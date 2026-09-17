@@ -29,6 +29,10 @@ Elle répond aux défis spécifiques du monde viti-vinicole :
 ```text
 Vititrack pro/
 ├── assets/                          # Médias et visuels du projet
+│   ├── logo.png                     # Logo officiel VitiTrack Pro complet
+│   ├── logo-circle.png              # Écusson circulaire officiel pour en-têtes et avatars
+│   ├── logo-icon.png                # Pictogramme pin & grappe transparent
+│   ├── app-icon.png                 # Icône carrée arrondie pour raccourcis PWA/Mobile
 │   ├── dashboard-preview.jpg        # Aperçu visuel du tableau de bord
 │   ├── hero-vineyard.jpg            # Image d'ambiance vignoble haute définition
 │   └── mobile-field.jpg             # Image d'illustration utilisation mobile/terrain
@@ -71,7 +75,11 @@ Vititrack pro/
 - **Simulateur de Rentabilité Dynamique** : Calculateur interactif pour estimer le gain de temps et d'argent en fonction du nombre d'hectares et du nombre de clients.
 - **Section Fonctionnalités & Avantages** : Cartes illustrées (Gestion parcellaire, Chantiers en temps réel, Suivi des salariés, Facturation simplifiée).
 - **Aperçu Dashboard interactif** : Visuel avec points clés explicatifs.
-- **Tarification & FAQ** : Accordéon dynamique pour les questions fréquentes.
+- **Tarification & Abonnements** :
+  - **Basic (29 € / mois)** : jusqu'à **5 clients** et **10 parcelles** (pour les petits domaines et démarrages).
+  - **Professionnel (49 € / mois)** : **5 à 15 clients** et **10 à 20 parcelles** (pour les exploitations et prestataires actifs).
+  - **Entreprise (99 € / mois)** : **Clients illimités** et **Parcelles illimitées** (pour les grands domaines et grandes structures).
+- **FAQ** : Accordéon dynamique pour les questions fréquentes.
 
 ### 4.2 Authentification & Profil (`login.html`, `dashboard.html`, `dashboard.js`, `supabase-config.js`)
 - **Page d'Authentification Bivalente (`login.html`)** :
@@ -211,6 +219,11 @@ Sur les écrans de smartphone (< 650px et < 768px) :
 - La saisie de plage de dates (`.date-range-inputs`) s'organise en grille 50/50 équilibrée.
 - Les grilles de métriques (dans le dossier client notamment) restent parfaitement symétriques (la 5ème carte s'étend sur 2 colonnes `grid-column: span 2`).
 - Les boutons d'action des cartes clients partagent exactement la même ligne et hauteur.
+
+### Règle 7 : Fiscalité Viticole — TVA à 5% (Charrues) vs 20% (Autres Travaux)
+- Pour tout ce qui relève de la **charrue mécanique** ou **charrue hydraulique** (labour, travail du cavaillon), le taux de TVA légal applicable est de **5%**.
+- Pour **tous les autres travaux viticoles** (taille, palissage, rognage, effeuillage, traitements, vendanges...), le taux de TVA standard est de **20%**.
+- L'application calcule et affiche dynamiquement les montants HT et TTC avec le taux adéquat via la fonction globale `getTvaRate()`.
 
 ---
 

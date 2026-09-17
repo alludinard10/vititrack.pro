@@ -34,6 +34,29 @@ function getUserStorageKey(baseKey) {
   return `${baseKey}_${getAuthUserId()}`;
 }
 
+// ==================== RÈGLES FISCALES VITICOLES (TVA) ====================
+// Charrue mécanique ou charrue hydraulique : 5%
+// Tous les autres travaux : 20%
+function getTvaRate(itemOrTask) {
+  if (!itemOrTask) return 0.20;
+
+  if (typeof itemOrTask === "object") {
+    if (typeof itemOrTask.tvaRate === "number") {
+      return itemOrTask.tvaRate > 1 ? itemOrTask.tvaRate / 100 : itemOrTask.tvaRate;
+    }
+    const name = itemOrTask.task || itemOrTask.name || "";
+    return getTvaRate(name);
+  }
+
+  const str = String(itemOrTask).toLowerCase().trim();
+  // Charrue mécanique, charrue hydraulique ou tout travail de charrue
+  if (str.includes("charrue")) {
+    return 0.05; // 5%
+  }
+  return 0.20; // 20% pour tous les autres travaux
+}
+window.getTvaRate = getTvaRate;
+
 // ==================== DEFAULT PRESTATIONS CATALOG ====================
 const DEFAULT_SERVICES = [
   {
@@ -109,6 +132,24 @@ const DEFAULT_SERVICES = [
     description: "Aération superficielle du sol et enfouissement léger du couvert végétal."
   },
   {
+    id: "srv-charrue-meca",
+    name: "Charrue mécanique",
+    category: "Sol & Mécanisation",
+    rateType: "surface",
+    price: 95,
+    tvaRate: 5,
+    description: "Labour et travail du sol à la charrue mécanique (TVA réduite 5%)."
+  },
+  {
+    id: "srv-charrue-hydro",
+    name: "Charrue hydraulique",
+    category: "Sol & Mécanisation",
+    rateType: "surface",
+    price: 120,
+    tvaRate: 5,
+    description: "Travail du sol et interceps de précision à la charrue hydraulique (TVA réduite 5%)."
+  },
+  {
     id: "srv-10",
     name: "Traitement anti-mildiou (cuivre & soufre)",
     category: "Traitements & Soins",
@@ -180,14 +221,49 @@ let servicesActiveSubtab = "catalog";
 let pendingInterventionFormState = null;
 
 // ==================== INITIALIZATION ====================
-document.addEventListener("DOMContentLoaded", async () => {
-  initTheme();
-  await checkAuthUser();
-  loadDatabase();
-  setupEventListeners();
-  renderAll();
-  initSupabaseSync();
-});
+function initDashboard() {
+  try {
+    initTheme();
+  } catch (e) {
+    console.warn("Erreur initTheme :", e);
+  }
+
+  try {
+    setupEventListeners();
+  } catch (e) {
+    console.error("Erreur setupEventListeners :", e);
+  }
+
+  try {
+    loadDatabase();
+  } catch (e) {
+    console.error("Erreur loadDatabase :", e);
+  }
+
+  try {
+    renderAll();
+  } catch (e) {
+    console.error("Erreur renderAll :", e);
+  }
+
+  // Vérification d'authentification asynchrone sans bloquer l'interactivité
+  checkAuthUser().catch(err => {
+    console.warn("Notice vérification utilisateur :", err);
+  });
+
+  // Synchronisation Supabase en tâche de fond
+  try {
+    initSupabaseSync();
+  } catch (err) {
+    console.warn("Notice initialisation Supabase :", err);
+  }
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initDashboard);
+} else {
+  initDashboard();
+}
 
 // Demo data seeds used ONLY for the demo account
 function getDemoClients() {
@@ -1078,6 +1154,11 @@ function setupEventListeners() {
   if (modalClientSelect) {
     modalClientSelect.addEventListener("change", (e) => {
       const clientId = e.target.value;
+      if (clientId === "__create_client__") {
+        modalClientSelect.value = "";
+        openClientModal();
+        return;
+      }
       populateParcelSelectForClient(clientId);
     });
   }
@@ -1237,6 +1318,12 @@ function setupEventListeners() {
   const clientFilter = document.getElementById("filter-client");
   if (clientFilter) {
     clientFilter.addEventListener("change", (e) => {
+      if (e.target.value === "__create_client__") {
+        clientFilter.value = "all";
+        currentFilter.client = "all";
+        openClientModal();
+        return;
+      }
       currentFilter.client = e.target.value;
       renderTable();
     });
@@ -1454,8 +1541,6 @@ function switchView(viewName) {
   const viewOverview = document.getElementById("view-overview");
   const viewClients = document.getElementById("view-clients");
   const viewServices = document.getElementById("view-services");
-  const pageTitle = document.getElementById("page-title");
-  const pageSubtitle = document.getElementById("page-subtitle");
 
   const navOverview = document.getElementById("nav-btn-overview");
   const navClients = document.getElementById("nav-btn-clients");
@@ -1476,66 +1561,103 @@ function switchView(viewName) {
   });
 
   if (viewName === "clients") {
-    if (viewOverview) viewOverview.style.display = "none";
-    if (viewServices) viewServices.style.display = "none";
-    if (viewClients) viewClients.style.display = "block";
-    if (pageTitle) pageTitle.textContent = "Clients & Parcelles";
-    if (pageSubtitle) pageSubtitle.textContent = "Répertoire des domaines viticoles et de leurs parcelles sous contrat";
+    if (viewOverview) {
+      viewOverview.style.display = "none";
+      viewOverview.classList.remove("active");
+    }
+    if (viewServices) {
+      viewServices.style.display = "none";
+      viewServices.classList.remove("active");
+    }
+    if (viewClients) {
+      viewClients.style.display = "flex";
+      viewClients.classList.add("active");
+    }
     if (navClients) navClients.classList.add("active");
     if (mNavClients) mNavClients.classList.add("active");
     renderClientsView();
   } else if (viewName === "services") {
-    if (viewOverview) viewOverview.style.display = "none";
-    if (viewClients) viewClients.style.display = "none";
-    if (viewServices) viewServices.style.display = "block";
-    if (pageTitle) pageTitle.textContent = "Prestations & Travaux à faire";
-    if (pageSubtitle) pageSubtitle.textContent = "Catalogue de toutes les prestations viticoles réalisables et planification des travaux";
+    if (viewOverview) {
+      viewOverview.style.display = "none";
+      viewOverview.classList.remove("active");
+    }
+    if (viewClients) {
+      viewClients.style.display = "none";
+      viewClients.classList.remove("active");
+    }
+    if (viewServices) {
+      viewServices.style.display = "flex";
+      viewServices.classList.add("active");
+    }
     if (navServices) navServices.classList.add("active");
     if (mNavServices) mNavServices.classList.add("active");
     renderServicesView();
   } else if (viewName === "interventions") {
-    if (viewClients) viewClients.style.display = "none";
-    if (viewServices) viewServices.style.display = "none";
-    if (viewOverview) viewOverview.style.display = "block";
-    if (pageTitle) pageTitle.textContent = "Journal des interventions";
-    if (pageSubtitle) pageSubtitle.textContent = "Historique et registre complet de tous les travaux viticoles réalisés";
+    if (viewClients) {
+      viewClients.style.display = "none";
+      viewClients.classList.remove("active");
+    }
+    if (viewServices) {
+      viewServices.style.display = "none";
+      viewServices.classList.remove("active");
+    }
+    if (viewOverview) {
+      viewOverview.style.display = "flex";
+      viewOverview.classList.add("active");
+    }
     if (navInterventions) navInterventions.classList.add("active");
     if (mNavOverview) mNavOverview.classList.add("active");
     filterByStatus("all");
     renderTable();
     renderKPIs();
-    const journalSec = document.getElementById("journal-interventions-section");
-    if (journalSec) {
-      setTimeout(() => journalSec.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
-    }
   } else if (viewName === "billing") {
-    if (viewClients) viewClients.style.display = "none";
-    if (viewServices) viewServices.style.display = "none";
-    if (viewOverview) viewOverview.style.display = "block";
-    if (pageTitle) pageTitle.textContent = "Chantiers À Facturer";
-    if (pageSubtitle) pageSubtitle.textContent = "Interventions viticoles terminées en attente de facturation";
+    if (viewClients) {
+      viewClients.style.display = "none";
+      viewClients.classList.remove("active");
+    }
+    if (viewServices) {
+      viewServices.style.display = "none";
+      viewServices.classList.remove("active");
+    }
+    if (viewOverview) {
+      viewOverview.style.display = "flex";
+      viewOverview.classList.add("active");
+    }
     if (navBilling) navBilling.classList.add("active");
     if (mNavOverview) mNavOverview.classList.add("active");
     filterByStatus("À facturer");
     renderTable();
     renderKPIs();
-    const journalSec = document.getElementById("journal-interventions-section");
-    if (journalSec) {
-      setTimeout(() => journalSec.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
-    }
   } else {
     // Default Overview
-    if (viewClients) viewClients.style.display = "none";
-    if (viewServices) viewServices.style.display = "none";
-    if (viewOverview) viewOverview.style.display = "block";
-    if (pageTitle) pageTitle.textContent = "Tableau de bord";
-    if (pageSubtitle) pageSubtitle.textContent = "Suivi des travaux viticoles & préparation de la facturation";
+    if (viewClients) {
+      viewClients.style.display = "none";
+      viewClients.classList.remove("active");
+    }
+    if (viewServices) {
+      viewServices.style.display = "none";
+      viewServices.classList.remove("active");
+    }
+    if (viewOverview) {
+      viewOverview.style.display = "flex";
+      viewOverview.classList.add("active");
+    }
     if (navOverview) navOverview.classList.add("active");
     if (mNavOverview) mNavOverview.classList.add("active");
     renderTable();
     renderKPIs();
   }
 }
+
+function scrollToInterventions() {
+  const journalSec = document.getElementById("journal-interventions-section");
+  if (journalSec) {
+    setTimeout(() => {
+      journalSec.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 60);
+  }
+}
+window.scrollToInterventions = scrollToInterventions;
 
 function filterByStatus(status) {
   currentFilter.status = status;
@@ -2018,7 +2140,7 @@ function populateClientSelect() {
 
   if (modalClientSelect) {
     if (clients.length === 0) {
-      modalClientSelect.innerHTML = '<option value="">⚠️ Aucun client enregistré — Cliquez sur « ＋ Nouveau client »</option>';
+      modalClientSelect.innerHTML = '<option value="">⚠️ Aucun client enregistré</option><option value="__create_client__">🍇 ＋ Créer mon premier client...</option>';
     } else {
       modalClientSelect.innerHTML = '<option value="">Sélectionner un domaine client...</option>';
       clients.forEach(c => {
@@ -2027,6 +2149,10 @@ function populateClientSelect() {
         opt.textContent = c.name + (c.commune ? ` (${c.commune})` : '');
         modalClientSelect.appendChild(opt);
       });
+      const addOpt = document.createElement("option");
+      addOpt.value = "__create_client__";
+      addOpt.textContent = "🍇 ＋ Ajouter un nouveau client...";
+      modalClientSelect.appendChild(addOpt);
     }
   }
 
@@ -2038,24 +2164,34 @@ function populateClientSelect() {
       opt.textContent = c.name;
       filterClientSelect.appendChild(opt);
     });
+    const addOpt = document.createElement("option");
+    addOpt.value = "__create_client__";
+    addOpt.textContent = "🍇 ＋ Nouveau client...";
+    filterClientSelect.appendChild(addOpt);
   }
 }
 
 function updateCalculatedPrice() {
   const quantity = parseFloat(document.getElementById("input-quantity")?.value || 0);
   const unitPrice = parseFloat(document.getElementById("input-unit-price")?.value || 0);
+  const task = document.getElementById("input-task")?.value || "";
   const display = document.getElementById("calculated-total-display");
 
   const total = quantity * unitPrice;
+  const rate = getTvaRate(task);
+  const ratePct = Math.round(rate * 100);
+  const totalTTC = total * (1 + rate);
   if (display) {
-    display.textContent = total.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €";
+    display.textContent = `${total.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € HT (${totalTTC.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € TTC — TVA ${ratePct}%)`;
   }
 }
 
 function handleCreateInterventionSubmit(e) {
   e.preventDefault();
 
-  const worker = document.getElementById("input-worker")?.value?.trim() || (currentUser ? currentUser.name : "Exploitant");
+  const authUser = getAuthUser();
+  const defaultWorker = authUser ? (authUser.fullName || authUser.name || "Exploitant") : "Exploitant";
+  const worker = document.getElementById("input-worker")?.value?.trim() || defaultWorker;
   const datetime = document.getElementById("input-datetime")?.value;
   const clientId = document.getElementById("input-client")?.value;
   const parcel = document.getElementById("input-parcel")?.value?.trim();
@@ -2066,27 +2202,39 @@ function handleCreateInterventionSubmit(e) {
   const notes = document.getElementById("input-notes")?.value || "";
   const status = document.getElementById("input-status")?.value || "À facturer";
 
+  if (!datetime) {
+    showToast("Veuillez renseigner la date et l'heure.", "error");
+    return;
+  }
   if (!clientId) {
-    showToast("Veuillez sélectionner ou créer un client partenaire.", "warning");
+    showToast("Veuillez sélectionner un domaine viticole client.", "error");
+    return;
+  }
+  if (!parcel) {
+    showToast("Veuillez renseigner le nom de la parcelle travaillée.", "error");
+    return;
+  }
+  if (!task) {
+    showToast("Veuillez sélectionner une prestation viticole.", "error");
+    return;
+  }
+  if (quantity <= 0) {
+    showToast("La quantité ou durée doit être supérieure à zéro.", "error");
     return;
   }
 
   const clientObj = clients.find(c => c.id === clientId);
   const clientName = clientObj ? clientObj.name : "Client Inconnu";
-
-  if (!parcel) {
-    showToast("Veuillez cocher au moins une parcelle travaillée.", "warning");
-    return;
-  }
-
-  if (!datetime || !task || isNaN(quantity) || quantity <= 0) {
-    showToast("Veuillez remplir tous les champs obligatoires (*)", "warning");
-    return;
-  }
-
   const unit = rateType === "hourly" ? "heures" : (rateType === "surface" ? "ha" : "forfait");
   const total = quantity * unitPrice;
+  const tvaRate = getTvaRate(task);
+  const totalTTC = total * (1 + tvaRate);
   const id = `VT-${new Date().getFullYear()}-${String(interventions.length + 1).padStart(3, '0')}`;
+
+  if (services.length === 0 && typeof DEFAULT_SERVICES !== "undefined") {
+    services = JSON.parse(JSON.stringify(DEFAULT_SERVICES));
+    saveServices();
+  }
 
   const newIntervention = {
     id,
@@ -2101,6 +2249,8 @@ function handleCreateInterventionSubmit(e) {
     unit,
     unitPrice,
     total,
+    tvaRate,
+    totalTTC,
     status,
     notes,
     isNewlyCreated: true
@@ -2109,22 +2259,15 @@ function handleCreateInterventionSubmit(e) {
   interventions.unshift(newIntervention);
   saveInterventions();
 
+  // Synchronisation Cloud Supabase si session active
+  syncInterventionToSupabase(newIntervention);
+
   closeCreateModal();
-  document.getElementById("create-intervention-form").reset();
+  renderTable();
+  renderKPIs();
+  updateClientCardsStats();
 
-  const parcelContainer = document.getElementById("parcel-checkbox-list");
-  if (parcelContainer) {
-    parcelContainer.innerHTML = '<div class="parcel-list-empty">Sélectionnez d\'abord un client pour charger ses parcelles.</div>';
-  }
-  const summaryBar = document.getElementById("parcel-summary-bar");
-  if (summaryBar) summaryBar.style.display = "none";
-  const hiddenParcelInput = document.getElementById("input-parcel");
-  if (hiddenParcelInput) hiddenParcelInput.value = "";
-  const toggleBtn = document.getElementById("btn-toggle-all-parcels");
-  if (toggleBtn) toggleBtn.style.display = "none";
-
-  renderAll();
-  showToast(`Intervention #${id} enregistrée pour ${clientName} !`, "success");
+  showToast(`✅ Intervention #${id} enregistrée avec succès (${clientName}) !`, "success");
 }
 
 // ==================== RENDERING ALL ====================
@@ -2153,19 +2296,26 @@ function renderKPIs() {
   let workedSurface = 0;
   let workedHours = 0;
   let unbilledAmount = 0;
+  let unbilledAmountTTC = 0;
   let unbilledCount = 0;
   let billedAmount = 0;
+  let billedAmountTTC = 0;
   let billedCount = 0;
 
   interventions.forEach(item => {
     if (item.unit === "ha") workedSurface += item.quantity;
     else if (item.unit === "heures") workedHours += item.quantity;
 
+    const rate = getTvaRate(item);
+    const itemTTC = (item.total || 0) * (1 + rate);
+
     if (item.status === "À facturer") {
-      unbilledAmount += item.total;
+      unbilledAmount += (item.total || 0);
+      unbilledAmountTTC += itemTTC;
       unbilledCount++;
     } else {
-      billedAmount += item.total;
+      billedAmount += (item.total || 0);
+      billedAmountTTC += itemTTC;
       billedCount++;
     }
   });
@@ -2178,10 +2328,12 @@ function renderKPIs() {
   setElemText("kpi-total-count", totalInterventions);
   setElemText("kpi-surface-hours", `${formatSurface(workedSurface)} ha / ${Math.round(workedHours)} h travaillées`);
 
-  setElemText("kpi-unbilled-amount", `${unbilledAmount.toLocaleString("fr-FR", { minimumFractionDigits: 0 })} €`);
+  setElemText("kpi-unbilled-amount", `${unbilledAmount.toLocaleString("fr-FR", { minimumFractionDigits: 0 })} € HT`);
+  setElemText("kpi-unbilled-ttc", `${unbilledAmountTTC.toLocaleString("fr-FR", { minimumFractionDigits: 0 })} € TTC`);
   setElemText("kpi-unbilled-badge", `${unbilledCount} chantier${unbilledCount > 1 ? 's' : ''}`);
 
-  setElemText("kpi-billed-amount", `${billedAmount.toLocaleString("fr-FR", { minimumFractionDigits: 0 })} €`);
+  setElemText("kpi-billed-amount", `${billedAmount.toLocaleString("fr-FR", { minimumFractionDigits: 0 })} € HT`);
+  setElemText("kpi-billed-ttc", `${billedAmountTTC.toLocaleString("fr-FR", { minimumFractionDigits: 0 })} € TTC`);
   setElemText("kpi-billed-badge", `${billedCount} chantier${billedCount > 1 ? 's' : ''}`);
 
   // Sidebar badges
@@ -2292,7 +2444,7 @@ function renderTable() {
   let html = "";
   filtered.forEach(item => {
     const formattedDate = formatDateDisplay(item.datetime);
-    const workerInitials = item.worker.split(" ").map(w => w[0]).join("");
+    const workerInitials = (item.worker || "VT").split(" ").filter(Boolean).map(w => w[0]).join("") || "VT";
     const isUnbilled = item.status === "À facturer";
     const statusClass = isUnbilled ? "status-unbilled" : "status-billed";
     const statusIcon = isUnbilled ? "⏳" : "✅";
@@ -2327,7 +2479,11 @@ function renderTable() {
           <span class="volume-value">${item.unit === 'ha' ? formatSurface(item.quantity) : item.quantity} ${item.unit}</span>
         </td>
         <td>
-          <span class="amount-value">${item.total.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €</span>
+          <span class="amount-value">${item.total.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € HT</span>
+        </td>
+        <td>
+          <span class="amount-value amount-ttc" style="color: var(--color-accent-light, #74c69d); font-weight: 700;">${((item.total || 0) * (1 + getTvaRate(item))).toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € TTC</span>
+          <span style="font-size: 0.70rem; display: block; opacity: 0.78; color: var(--color-text-muted);">TVA ${Math.round(getTvaRate(item) * 100)}%</span>
         </td>
         <td>
           <button class="status-pill-toggle ${statusClass}" onclick="toggleInterventionStatus('${item.id}')" title="Cliquer pour basculer le statut">
@@ -2595,17 +2751,28 @@ function populateDossierContent(clientId) {
   }
 
   let unbilledTotal = 0;
+  let unbilledTotalTTC = 0;
   let billedTotal = 0;
+  let billedTotalTTC = 0;
   clientInterventions.forEach(i => {
-    if (i.status === "À facturer") unbilledTotal += (i.total || 0);
-    else if (i.status === "Facturée") billedTotal += (i.total || 0);
+    const rate = getTvaRate(i);
+    const itemTTC = (i.total || 0) * (1 + rate);
+    if (i.status === "À facturer") {
+      unbilledTotal += (i.total || 0);
+      unbilledTotalTTC += itemTTC;
+    } else if (i.status === "Facturée") {
+      billedTotal += (i.total || 0);
+      billedTotalTTC += itemTTC;
+    }
   });
 
   setElemText("dossier-total-ha", `${formatSurface(totalHa)} ha`);
   setElemText("dossier-parcels-count", totalParcels);
   setElemText("dossier-interventions-count", dossierDateFilterFrom ? `${clientInterventions.length} / ${allClientInterventions.length}` : `${clientInterventions.length}`);
-  setElemText("dossier-unbilled-total", `${unbilledTotal.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`);
-  setElemText("dossier-billed-total", `${billedTotal.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`);
+  setElemText("dossier-unbilled-total", `${unbilledTotal.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € HT`);
+  setElemText("dossier-unbilled-ttc", `${unbilledTotalTTC.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € TTC`);
+  setElemText("dossier-billed-total", `${billedTotal.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € HT`);
+  setElemText("dossier-billed-ttc", `${billedTotalTTC.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € TTC`);
 
   setElemText("dossier-count-parcels-tab", totalParcels);
   setElemText("dossier-count-interventions-tab", clientInterventions.length);
@@ -2668,7 +2835,11 @@ function populateDossierContent(clientId) {
             <td><span class="task-tag">✂️ ${escapeHTML(item.task)}</span></td>
             <td>👤 ${escapeHTML(item.worker || '—')}</td>
             <td>${item.unit === 'ha' ? formatSurface(item.quantity) : item.quantity} ${item.unit}</td>
-            <td><strong>${(item.total || 0).toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €</strong></td>
+            <td><strong>${(item.total || 0).toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € HT</strong></td>
+            <td>
+              <strong style="color: var(--color-accent-light, #74c69d);">${((item.total || 0) * (1 + getTvaRate(item))).toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € TTC</strong>
+              <span style="font-size: 0.70rem; opacity: 0.75; display: block; color: var(--color-text-muted);">TVA ${Math.round(getTvaRate(item) * 100)}%</span>
+            </td>
             <td>
               <button class="status-pill-toggle ${statusClass}" onclick="toggleInterventionStatusFromDossier('${item.id}', '${client.id}')" title="Basculer le statut">
                 <span>${statusIcon}</span>
@@ -2684,7 +2855,7 @@ function populateDossierContent(clientId) {
         const frDate = parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : dossierDateFilterFrom;
         interventionsTbody.innerHTML = `
           <tr>
-            <td colspan="7" style="text-align:center; padding:2rem; color:var(--color-text-muted);">
+            <td colspan="8" style="text-align:center; padding:2rem; color:var(--color-text-muted);">
               Aucune intervention enregistrée pour ${escapeHTML(client.name)} à partir du <strong>${frDate}</strong>.
               <div style="margin-top:0.75rem;">
                 <button type="button" class="btn btn-outline btn-xs" onclick="resetDossierDateFilter()">✕ Afficher tout l'historique</button>
@@ -2695,7 +2866,7 @@ function populateDossierContent(clientId) {
       } else {
         interventionsTbody.innerHTML = `
           <tr>
-            <td colspan="7" style="text-align:center; padding:2rem; color:var(--color-text-muted);">
+            <td colspan="8" style="text-align:center; padding:2rem; color:var(--color-text-muted);">
               Aucune intervention enregistrée pour ${escapeHTML(client.name)}.
             </td>
           </tr>
@@ -2824,7 +2995,11 @@ window.openDetailModal = function(id) {
         </div>
         <div class="detail-item">
           <span class="detail-label">Total estimé HT</span>
-          <span class="detail-value text-gradient" style="font-size: 1.2rem;">${item.total.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</span>
+          <span class="detail-value text-gradient" style="font-size: 1.2rem;">${item.total.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} € HT</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Total estimé TTC (TVA ${Math.round(getTvaRate(item) * 100)}%)</span>
+          <span class="detail-value" style="font-size: 1.2rem; font-weight: 700; color: var(--color-accent-light, #74c69d);">${((item.total || 0) * (1 + getTvaRate(item))).toLocaleString("fr-FR", { minimumFractionDigits: 2 })} € TTC</span>
         </div>
         <div class="detail-item">
           <span class="detail-label">Statut facturation</span>
@@ -2870,22 +3045,27 @@ function exportCSV() {
   }
 
   const BOM = "\uFEFF";
-  const headers = ["ID", "Date", "Heure", "Salarié", "Client", "Parcelle", "Prestation", "Quantité", "Unité", "Tarif Unitaire HT", "Total HT", "Statut", "Observations"];
+  const headers = ["ID", "Date", "Heure", "Salarié", "Client", "Parcelle", "Prestation", "Quantité", "Unité", "Tarif Unitaire HT", "Total HT", "Taux TVA", "Total TTC", "Statut", "Observations"];
 
   const rows = interventions.map(item => {
     const formatted = formatDateDisplay(item.datetime);
+    const rate = getTvaRate(item);
+    const ratePercent = `${Math.round(rate * 100)}%`;
+    const itemTTC = ((item.total || 0) * (1 + rate)).toFixed(2);
     return [
-      `"${item.id}"`,
+      `"${item.id || ''}"`,
       `"${formatted.date}"`,
       `"${formatted.time}"`,
-      `"${item.worker.replace(/"/g, '""')}"`,
-      `"${item.client.replace(/"/g, '""')}"`,
+      `"${(item.worker || '').replace(/"/g, '""')}"`,
+      `"${(item.client || '').replace(/"/g, '""')}"`,
       `"${item.parcel.replace(/"/g, '""')}"`,
       `"${item.task.replace(/"/g, '""')}"`,
       `"${item.quantity}"`,
       `"${item.unit}"`,
       `"${item.unitPrice}"`,
-      `"${item.total.toFixed(2)}"`,
+      `"${(item.total || 0).toFixed(2)}"`,
+      `"${ratePercent}"`,
+      `"${itemTTC}"`,
       `"${item.status}"`,
       `"${(item.notes || '').replace(/"/g, '""')}"`
     ].join(";");
@@ -2912,13 +3092,16 @@ function populateTaskSelects() {
   const filterTask = document.getElementById("filter-task");
   const inputPlannedService = document.getElementById("input-planned-service");
 
+  // Fallback to DEFAULT_SERVICES if services array is empty so the user is never blocked
+  const availableServices = (services && services.length > 0) ? services : (typeof DEFAULT_SERVICES !== "undefined" ? DEFAULT_SERVICES : []);
+
   if (inputTask) {
     const currentVal = inputTask.value;
     inputTask.innerHTML = '<option value="">Sélectionner une tâche viticole...</option>';
     
     // Group services by category
     const categories = {};
-    services.forEach(s => {
+    availableServices.forEach(s => {
       const cat = s.category || "Autres";
       if (!categories[cat]) categories[cat] = [];
       categories[cat].push(s);
@@ -2943,7 +3126,7 @@ function populateTaskSelects() {
   if (filterTask) {
     const currentVal = filterTask.value;
     filterTask.innerHTML = '<option value="all">Toutes les prestations</option>';
-    services.forEach(s => {
+    availableServices.forEach(s => {
       const opt = document.createElement("option");
       opt.value = s.name;
       opt.textContent = s.name;
@@ -2954,7 +3137,7 @@ function populateTaskSelects() {
 
   if (inputPlannedService) {
     inputPlannedService.innerHTML = '<option value="">Sélectionner une prestation...</option>';
-    services.forEach(s => {
+    availableServices.forEach(s => {
       const opt = document.createElement("option");
       opt.value = s.name;
       opt.textContent = s.name;
@@ -3051,7 +3234,10 @@ function renderServices() {
       <div class="service-card" data-id="${escapeHTML(s.id)}">
         <div class="service-card-header">
           <span class="service-cat-badge">${escapeHTML(s.category)}</span>
-          <span class="service-rate-badge ${rateBadgeClass}">${s.price} ${rateUnit}</span>
+          <div style="display: flex; gap: 0.4rem; align-items: center;">
+            <span style="font-size: 0.70rem; font-weight: 700; padding: 2px 6px; border-radius: 4px; background: rgba(82, 183, 136, 0.15); color: var(--color-accent-light, #74c69d);">TVA ${Math.round(getTvaRate(s) * 100)}%</span>
+            <span class="service-rate-badge ${rateBadgeClass}">${s.price} ${rateUnit}</span>
+          </div>
         </div>
         <div class="service-title">${escapeHTML(s.name)}</div>
         <div class="service-desc">${escapeHTML(s.description || 'Prestation viticole professionnelle.')}</div>
@@ -3466,10 +3652,27 @@ function showToast(message, type = "success") {
 async function checkAuthUser() {
   let user = null;
 
-  // 1. Check Supabase Auth active session first
+  // 1. Priorité absolue : lecture immédiate du cache local pour zéro blocage
+  try {
+    const raw = localStorage.getItem("vititrack_auth_user");
+    if (raw) user = JSON.parse(raw);
+  } catch (e) {}
+
+  // Mise à jour immédiate de l'interface utilisateur si l'utilisateur est déjà en cache
+  if (user) {
+    updateUserInterface(user);
+  }
+
+  // 2. Vérification Supabase en arrière-plan avec timeout strict de 1.5s
   if (window.supabaseClient) {
     try {
-      const { data: { session } } = await window.supabaseClient.auth.getSession();
+      const sessionPromise = window.supabaseClient.auth.getSession();
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error("Supabase auth timeout")), 1500)
+      );
+      const { data } = await Promise.race([sessionPromise, timeoutPromise]);
+      const session = data ? data.session : null;
+
       if (session && session.user) {
         const meta = session.user.user_metadata || {};
         user = {
@@ -3481,25 +3684,22 @@ async function checkAuthUser() {
           loggedInAt: new Date().toISOString()
         };
         localStorage.setItem("vititrack_auth_user", JSON.stringify(user));
+        updateUserInterface(user);
       }
     } catch (err) {
-      console.warn("Notice vérification session Supabase :", err);
+      console.warn("Notice vérification session Supabase :", err.message || err);
     }
   }
 
-  // 2. Check localStorage if no active Supabase session
-  if (!user) {
-    try {
-      const raw = localStorage.getItem("vititrack_auth_user");
-      if (raw) user = JSON.parse(raw);
-    } catch (e) {}
-  }
-
+  // Si aucun utilisateur n'est authentifié (ni local, ni Supabase), redirection login
   if (!user) {
     window.location.href = "login.html";
     return;
   }
+}
 
+function updateUserInterface(user) {
+  if (!user) return;
   const topbarUserName = document.getElementById("user-topbar-name");
   const sidebarUserName = document.getElementById("sidebar-user-name");
   const sidebarUserRole = document.getElementById("sidebar-user-role");
@@ -3580,52 +3780,13 @@ function applyTheme(theme, save = true) {
       segLight.classList.remove("active");
     }
   }
-
-  // 2. Sidebar top choices
-  const choiceDark = document.getElementById("choice-dark");
-  const choiceLight = document.getElementById("choice-light");
-  if (choiceDark && choiceLight) {
-    if (currentTheme === "light") {
-      choiceLight.classList.add("active");
-      choiceDark.classList.remove("active");
-    } else {
-      choiceDark.classList.add("active");
-      choiceLight.classList.remove("active");
-    }
-  }
-
-  // 3. Tableau de bord quick button
-  const quickThemeIcon = document.getElementById("quick-theme-icon");
-  const quickThemeText = document.getElementById("quick-theme-text");
-  if (quickThemeIcon && quickThemeText) {
-    if (currentTheme === "light") {
-      quickThemeIcon.textContent = "🌙";
-      quickThemeText.textContent = "Mode Nuit";
-    } else {
-      quickThemeIcon.textContent = "☀️";
-      quickThemeText.textContent = "Mode Jour";
-    }
-  }
-
-  // 4. Legacy sidebar item support
-  const sidebarIcon = document.getElementById("sidebar-theme-icon");
-  const sidebarText = document.getElementById("sidebar-theme-text");
-  if (sidebarIcon && sidebarText) {
-    if (currentTheme === "light") {
-      sidebarIcon.textContent = "🌙";
-      sidebarText.textContent = "Mode Nuit";
-    } else {
-      sidebarIcon.textContent = "☀️";
-      sidebarText.textContent = "Mode Jour";
-    }
-  }
 }
 
-let _lastToggleTime = 0;
+let _jsToggleTime = 0;
 function toggleTheme() {
   const now = Date.now();
-  if (now - _lastToggleTime < 250) return;
-  _lastToggleTime = now;
+  if (now - _jsToggleTime < 250) return;
+  _jsToggleTime = now;
   const current = document.documentElement.getAttribute("data-theme") || "dark";
   const target = current === "light" ? "dark" : "light";
   applyTheme(target, true);
@@ -3645,52 +3806,36 @@ function initTheme() {
       toggleTheme();
     });
   }
-
-  // Sidebar top panel choices
-  const choiceDark = document.getElementById("choice-dark");
-  if (choiceDark && !choiceDark.dataset.bound) {
-    choiceDark.dataset.bound = "true";
-    choiceDark.addEventListener("click", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      applyTheme("dark", true);
-    });
-  }
-
-  const choiceLight = document.getElementById("choice-light");
-  if (choiceLight && !choiceLight.dataset.bound) {
-    choiceLight.dataset.bound = "true";
-    choiceLight.addEventListener("click", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      applyTheme("light", true);
-    });
-  }
-
-  // Quick button in table header
-  const quickTableBtn = document.getElementById("btn-theme-quick-table");
-  if (quickTableBtn && !quickTableBtn.dataset.bound) {
-    quickTableBtn.dataset.bound = "true";
-    quickTableBtn.addEventListener("click", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      toggleTheme();
-    });
-  }
-
-  // Legacy lower sidebar button
-  const sidebarBtn = document.getElementById("sidebar-theme-toggle");
-  if (sidebarBtn && !sidebarBtn.dataset.bound) {
-    sidebarBtn.dataset.bound = "true";
-    sidebarBtn.addEventListener("click", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      toggleTheme();
-    });
-  }
 }
 
 window.applyTheme = applyTheme;
 window.toggleTheme = toggleTheme;
 window.initTheme = initTheme;
+
+// Fonctions globales de navigation et de modales pour garantir un fonctionnement infaillible
+window.switchView = switchView;
+window.openClientModal = openClientModal;
+window.closeClientModal = closeClientModal;
+window.openCreateModal = openCreateModal;
+window.closeCreateModal = closeCreateModal;
+window.openServiceModal = openServiceModal;
+window.closeServiceModal = closeServiceModal;
+window.openPlannedModal = openPlannedModal;
+window.closePlannedModal = closePlannedModal;
+window.openParcelModal = openParcelModal;
+window.closeParcelModal = closeParcelModal;
+window.openDetailModal = openDetailModal;
+window.closeDetailModal = closeDetailModal;
+window.toggleSidebar = function() {
+  const sidebar = document.getElementById("sidebar");
+  const backdrop = document.getElementById("sidebar-backdrop");
+  if (sidebar) sidebar.classList.toggle("open");
+  if (backdrop) backdrop.classList.toggle("active");
+};
+window.closeSidebar = function() {
+  const sidebar = document.getElementById("sidebar");
+  const backdrop = document.getElementById("sidebar-backdrop");
+  if (sidebar) sidebar.classList.remove("open");
+  if (backdrop) backdrop.classList.remove("active");
+};
 
