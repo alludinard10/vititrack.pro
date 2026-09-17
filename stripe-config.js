@@ -7,23 +7,53 @@
   const SUPABASE_FUNCTIONS_URL = `${window.SUPABASE_URL || "https://zygxjkckwaskukhnltck.supabase.co"}/functions/v1`;
 
   /**
+   * Obtient et rafraîchit si nécessaire la session Supabase active.
+   */
+  async function getActiveValidSession() {
+    if (!window.supabaseClient) return null;
+    try {
+      const { data: sessData } = await window.supabaseClient.auth.getSession();
+      let session = sessData?.session;
+
+      // Si la session est expirée ou expire dans moins de 2 minutes, la rafraîchir
+      if (session && session.expires_at && (session.expires_at * 1000 < Date.now() + 120000)) {
+        const { data: refData, error: refErr } = await window.supabaseClient.auth.refreshSession();
+        if (!refErr && refData?.session) {
+          session = refData.session;
+        }
+      }
+
+      if (!session) {
+        const { data: refData } = await window.supabaseClient.auth.refreshSession();
+        session = refData?.session || null;
+      }
+
+      return session;
+    } catch (e) {
+      console.warn("⚠️ [VitiTrack Stripe] Erreur récupération session :", e);
+      return null;
+    }
+  }
+
+  /**
    * Lance le processus d'abonnement Stripe Checkout pour une formule donnée.
    * @param {'basic' | 'pro' | 'enterprise'} planId
    */
   async function startStripeCheckout(planId = "pro") {
-    // 1. Vérifier si un utilisateur est connecté
-    let session = null;
-    if (window.supabaseClient) {
-      const { data } = await window.supabaseClient.auth.getSession();
-      session = data?.session;
-    }
+    // 1. Vérifier si un utilisateur est connecté avec une session valide
+    const session = await getActiveValidSession();
 
     if (!session || !session.access_token) {
-      // Si pas connecté, sauvegarder le plan souhaité et rediriger vers login
+      // Si pas connecté, sauvegarder le plan souhaité et avertir
       try {
         localStorage.setItem("vititrack_pending_plan", planId);
       } catch (e) {}
-      window.location.href = `login.html?redirect=checkout&plan=${encodeURIComponent(planId)}`;
+      if (typeof showToast === "function") {
+        showToast("Veuillez vous connecter avec votre compte pour souscrire.", "warning");
+      }
+      setTimeout(() => {
+        window.location.href = `login.html?redirect=checkout&plan=${encodeURIComponent(planId)}`;
+      }, 500);
       return;
     }
 
@@ -66,11 +96,7 @@
    * Ouvre le portail client Stripe (gestion CB, factures, résiliation).
    */
   async function openCustomerPortal() {
-    let session = null;
-    if (window.supabaseClient) {
-      const { data } = await window.supabaseClient.auth.getSession();
-      session = data?.session;
-    }
+    const session = await getActiveValidSession();
 
     if (!session || !session.access_token) {
       window.location.href = "login.html";

@@ -53,12 +53,23 @@ serve(async (req: Request) => {
       });
     }
 
+    const token = authHeader.replace(/^Bearer\s+/i, "").trim();
+    if (!token) {
+      return new Response(JSON.stringify({ error: "Non autorisé : format Bearer manquant" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Le client Supabase valide le token directement auprès du service Auth
     const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: authHeader } },
+      global: { headers: { Authorization: `Bearer ${token}` } },
+      auth: { persistSession: false },
     });
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
 
     if (authError || !user) {
+      console.error("❌ [Checkout] Erreur auth getUser :", authError?.message || "Utilisateur introuvable");
       return new Response(JSON.stringify({ error: "Session invalide ou expirée" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -143,6 +154,10 @@ serve(async (req: Request) => {
       line_items: lineItems,
       allow_promotion_codes: true,
       billing_address_collection: "required",
+      customer_update: {
+        name: "auto",
+        address: "auto",
+      },
       tax_id_collection: { enabled: true }, // Collecte numéro TVA intracommunautaire pour facturation viticole
       subscription_data: {
         metadata: {
