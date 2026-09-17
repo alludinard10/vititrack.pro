@@ -1079,25 +1079,33 @@ function setupEventListeners() {
     });
   }
 
-  const categoryChips = document.querySelectorAll("#category-filter-chips .chip");
-  categoryChips.forEach(chip => {
-    chip.addEventListener("click", () => {
-      categoryChips.forEach(c => c.classList.remove("active"));
-      chip.classList.add("active");
-      servicesCategoryFilter = chip.getAttribute("data-category") || "all";
+  // Dropdown Filter for Services Categories
+  const servicesFilterCategory = document.getElementById("services-filter-category");
+  const wrapServicesCat = document.getElementById("wrap-services-cat");
+  if (servicesFilterCategory) {
+    servicesFilterCategory.addEventListener("change", (e) => {
+      servicesCategoryFilter = e.target.value;
+      if (wrapServicesCat) {
+        wrapServicesCat.classList.toggle("is-active", servicesCategoryFilter !== "all");
+      }
+      updateServicesFilterResetBtn();
       renderServices();
     });
-  });
+  }
 
-  const rateChips = document.querySelectorAll("#rate-filter-chips .chip");
-  rateChips.forEach(chip => {
-    chip.addEventListener("click", () => {
-      rateChips.forEach(c => c.classList.remove("active"));
-      chip.classList.add("active");
-      servicesRateTypeFilter = chip.getAttribute("data-rate") || "all";
+  // Dropdown Filter for Services Rate Types
+  const servicesFilterRate = document.getElementById("services-filter-rate");
+  const wrapServicesRate = document.getElementById("wrap-services-rate");
+  if (servicesFilterRate) {
+    servicesFilterRate.addEventListener("change", (e) => {
+      servicesRateTypeFilter = e.target.value;
+      if (wrapServicesRate) {
+        wrapServicesRate.classList.toggle("is-active", servicesRateTypeFilter !== "all");
+      }
+      updateServicesFilterResetBtn();
       renderServices();
     });
-  });
+  }
 
   // Modal Service Rate Type Select (Nouvelle Prestation)
   const serviceRateSelect = document.getElementById("input-service-rate-type");
@@ -1127,6 +1135,7 @@ function setupEventListeners() {
   setupModalCloser("detail-modal", "detail-close-btn", "detail-dismiss-btn", closeDetailModal);
   setupModalCloser("service-modal", "service-modal-close-btn", "service-modal-cancel-btn", closeServiceModal);
   setupModalCloser("planned-modal", "planned-modal-close-btn", "planned-modal-cancel-btn", closePlannedModal);
+  setupModalCloser("client-dossier-modal", "dossier-modal-close-btn", null, closeClientDossier);
 
   // Forms Submissions
   const clientForm = document.getElementById("create-client-form");
@@ -1533,6 +1542,12 @@ function setupModalCloser(overlayId, closeBtnId, cancelBtnId, closeFn) {
     overlay.addEventListener("click", (e) => {
       if (e.target === overlay) closeFn();
     });
+    // Prevent iOS Safari background scroll chaining & rubber-banding
+    overlay.addEventListener("touchmove", (e) => {
+      if (!e.target.closest(".modal-body")) {
+        e.preventDefault();
+      }
+    }, { passive: false });
   }
 }
 
@@ -1669,6 +1684,42 @@ function filterByStatus(status) {
   renderTable();
 }
 
+// ==================== BULLETPROOF BODY SCROLL LOCKING FOR IOS SAFARI ====================
+let bodyScrollPos = 0;
+let activeModalsCount = 0;
+
+function lockBodyScroll() {
+  if (activeModalsCount === 0) {
+    bodyScrollPos = window.pageYOffset || document.documentElement.scrollTop || 0;
+    document.documentElement.style.overflow = "hidden";
+    document.documentElement.style.height = "100%";
+    document.body.style.position = "fixed";
+    document.body.style.top = `-${bodyScrollPos}px`;
+    document.body.style.left = "0";
+    document.body.style.right = "0";
+    document.body.style.width = "100%";
+    document.body.style.height = "100%";
+    document.body.style.overflow = "hidden";
+  }
+  activeModalsCount++;
+}
+
+function unlockBodyScroll() {
+  activeModalsCount = Math.max(0, activeModalsCount - 1);
+  if (activeModalsCount === 0) {
+    document.documentElement.style.overflow = "";
+    document.documentElement.style.height = "";
+    document.body.style.position = "";
+    document.body.style.top = "";
+    document.body.style.left = "";
+    document.body.style.right = "";
+    document.body.style.width = "";
+    document.body.style.height = "";
+    document.body.style.overflow = "";
+    window.scrollTo(0, bodyScrollPos);
+  }
+}
+
 // ==================== CLIENT MANAGEMENT ====================
 function openClientModal(clientId = null) {
   const modal = document.getElementById("client-modal");
@@ -1717,7 +1768,9 @@ function openClientModal(clientId = null) {
   if (modal) {
     modal.classList.add("open");
     modal.setAttribute("aria-hidden", "false");
-    document.body.style.overflow = "hidden";
+    lockBodyScroll();
+    const modalBody = modal.querySelector(".modal-body");
+    if (modalBody) modalBody.scrollTop = 0;
   }
 }
 
@@ -1730,7 +1783,7 @@ function closeClientModal() {
   if (modal) {
     modal.classList.remove("open");
     modal.setAttribute("aria-hidden", "true");
-    document.body.style.overflow = "";
+    unlockBodyScroll();
   }
 }
 
@@ -1871,7 +1924,9 @@ window.openParcelModal = function(clientId) {
   if (modal) {
     modal.classList.add("open");
     modal.setAttribute("aria-hidden", "false");
-    document.body.style.overflow = "hidden";
+    lockBodyScroll();
+    const modalBody = modal.querySelector(".modal-body");
+    if (modalBody) modalBody.scrollTop = 0;
   }
 };
 
@@ -1880,7 +1935,7 @@ function closeParcelModal() {
   if (modal) {
     modal.classList.remove("open");
     modal.setAttribute("aria-hidden", "true");
-    document.body.style.overflow = "";
+    unlockBodyScroll();
   }
 }
 
@@ -2121,7 +2176,9 @@ function openCreateModal() {
   if (modal) {
     modal.classList.add("open");
     modal.setAttribute("aria-hidden", "false");
-    document.body.style.overflow = "hidden";
+    lockBodyScroll();
+    const modalBody = modal.querySelector(".modal-body");
+    if (modalBody) modalBody.scrollTop = 0;
   }
 }
 
@@ -2130,7 +2187,7 @@ function closeCreateModal() {
   if (modal) {
     modal.classList.remove("open");
     modal.setAttribute("aria-hidden", "true");
-    document.body.style.overflow = "";
+    unlockBodyScroll();
   }
 }
 
@@ -2174,15 +2231,11 @@ function populateClientSelect() {
 function updateCalculatedPrice() {
   const quantity = parseFloat(document.getElementById("input-quantity")?.value || 0);
   const unitPrice = parseFloat(document.getElementById("input-unit-price")?.value || 0);
-  const task = document.getElementById("input-task")?.value || "";
   const display = document.getElementById("calculated-total-display");
 
   const total = quantity * unitPrice;
-  const rate = getTvaRate(task);
-  const ratePct = Math.round(rate * 100);
-  const totalTTC = total * (1 + rate);
   if (display) {
-    display.textContent = `${total.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € HT (${totalTTC.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € TTC — TVA ${ratePct}%)`;
+    display.textContent = `${total.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € HT`;
   }
 }
 
@@ -2190,8 +2243,9 @@ function handleCreateInterventionSubmit(e) {
   e.preventDefault();
 
   const authUser = getAuthUser();
-  const defaultWorker = authUser ? (authUser.fullName || authUser.name || "Exploitant") : "Exploitant";
-  const worker = document.getElementById("input-worker")?.value?.trim() || defaultWorker;
+  const defaultWorker = authUser ? (authUser.fullName || authUser.name || "") : "";
+  const workerInput = document.getElementById("input-worker");
+  const worker = workerInput ? workerInput.value.trim() : defaultWorker;
   const datetime = document.getElementById("input-datetime")?.value;
   const clientId = document.getElementById("input-client")?.value;
   const parcel = document.getElementById("input-parcel")?.value?.trim();
@@ -2444,7 +2498,6 @@ function renderTable() {
   let html = "";
   filtered.forEach(item => {
     const formattedDate = formatDateDisplay(item.datetime);
-    const workerInitials = (item.worker || "VT").split(" ").filter(Boolean).map(w => w[0]).join("") || "VT";
     const isUnbilled = item.status === "À facturer";
     const statusClass = isUnbilled ? "status-unbilled" : "status-billed";
     const statusIcon = isUnbilled ? "⏳" : "✅";
@@ -2456,12 +2509,6 @@ function renderTable() {
           <div class="cell-datetime">
             <span class="date-main">${formattedDate.date}</span>
             <span class="time-sub">${formattedDate.time}</span>
-          </div>
-        </td>
-        <td>
-          <div class="worker-badge">
-            <span class="worker-avatar-mini">${workerInitials}</span>
-            <span>${escapeHTML(item.worker)}</span>
           </div>
         </td>
         <td>
@@ -2725,7 +2772,9 @@ window.openClientDossier = function(clientId, retainTab = false) {
 
   modal.classList.add("open");
   modal.setAttribute("aria-hidden", "false");
-  document.body.style.overflow = "hidden";
+  lockBodyScroll();
+  const dossierModalBody = modal.querySelector(".modal-body");
+  if (dossierModalBody) dossierModalBody.scrollTop = 0;
 };
 
 function populateDossierContent(clientId) {
@@ -2833,7 +2882,6 @@ function populateDossierContent(clientId) {
             </td>
             <td>🌿 <strong>${escapeHTML(item.parcel)}</strong></td>
             <td><span class="task-tag">✂️ ${escapeHTML(item.task)}</span></td>
-            <td>👤 ${escapeHTML(item.worker || '—')}</td>
             <td>${item.unit === 'ha' ? formatSurface(item.quantity) : item.quantity} ${item.unit}</td>
             <td><strong>${(item.total || 0).toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € HT</strong></td>
             <td>
@@ -2899,7 +2947,7 @@ window.closeClientDossier = function() {
   if (modal) {
     modal.classList.remove("open");
     modal.setAttribute("aria-hidden", "true");
-    document.body.style.overflow = "";
+    unlockBodyScroll();
   }
 };
 
@@ -2973,10 +3021,11 @@ window.openDetailModal = function(id) {
           <span class="detail-label">Date & Heure</span>
           <span class="detail-value">${formattedDate.date} à ${formattedDate.time}</span>
         </div>
+        ${item.worker ? `
         <div class="detail-item">
           <span class="detail-label">Salarié</span>
           <span class="detail-value">${escapeHTML(item.worker)}</span>
-        </div>
+        </div>` : ''}
         <div class="detail-item">
           <span class="detail-label">Client</span>
           <span class="detail-value">${escapeHTML(item.client)}</span>
@@ -3024,7 +3073,9 @@ window.openDetailModal = function(id) {
   if (modal) {
     modal.classList.add("open");
     modal.setAttribute("aria-hidden", "false");
-    document.body.style.overflow = "hidden";
+    lockBodyScroll();
+    const modalBody = modal.querySelector(".modal-body");
+    if (modalBody) modalBody.scrollTop = 0;
   }
 };
 
@@ -3033,7 +3084,7 @@ function closeDetailModal() {
   if (modal) {
     modal.classList.remove("open");
     modal.setAttribute("aria-hidden", "true");
-    document.body.style.overflow = "";
+    unlockBodyScroll();
   }
 }
 
@@ -3168,20 +3219,103 @@ function renderServicesKPIs() {
   setElemText("count-tab-catalog", total);
   setElemText("count-tab-planned", plannedCount);
 
-  // Update Category Filter Badges
-  setElemText("count-cat-all", total);
-  setElemText("count-cat-taille", services.filter(s => s.category === "Taille & Végétal").length);
-  setElemText("count-cat-palissage", services.filter(s => s.category === "Palissage & Écimage").length);
-  setElemText("count-cat-sol", services.filter(s => s.category === "Sol & Mécanisation").length);
-  setElemText("count-cat-soins", services.filter(s => s.category === "Traitements & Soins").length);
-  setElemText("count-cat-vendanges", services.filter(s => s.category === "Vendanges & Récolte").length);
-  setElemText("count-cat-plantations", services.filter(s => s.category === "Aménagement & Plantations").length);
+  // Update Dropdown Category Options with dynamic counts
+  const catSelect = document.getElementById("services-filter-category");
+  if (catSelect) {
+    const cats = [
+      { val: "all", label: "Toutes les catégories", count: total },
+      { val: "Taille & Végétal", label: "Taille & Végétal", count: services.filter(s => s.category === "Taille & Végétal").length },
+      { val: "Palissage & Écimage", label: "Palissage & Rognage", count: services.filter(s => s.category === "Palissage & Écimage").length },
+      { val: "Sol & Mécanisation", label: "Sol & Mécanisation", count: services.filter(s => s.category === "Sol & Mécanisation").length },
+      { val: "Traitements & Soins", label: "Traitements & Soins", count: services.filter(s => s.category === "Traitements & Soins").length },
+      { val: "Vendanges & Récolte", label: "Vendanges & Récolte", count: services.filter(s => s.category === "Vendanges & Récolte").length },
+      { val: "Aménagement & Plantations", label: "Plantations & Entretien", count: services.filter(s => s.category === "Aménagement & Plantations").length },
+      { val: "Autre Prestation", label: "Autre prestation", count: services.filter(s => s.category === "Autre Prestation").length }
+    ];
+    const currentCatVal = servicesCategoryFilter || "all";
+    catSelect.innerHTML = cats.map(c => `<option value="${escapeHTML(c.val)}" ${c.val === currentCatVal ? "selected" : ""}>${escapeHTML(c.label)} (${c.count})</option>`).join("");
+  }
 
-  // Update Rate Type Filter Badges
-  setElemText("count-rate-all", total);
-  setElemText("count-rate-hourly", hourlyCount);
-  setElemText("count-rate-surface", surfaceCount);
-  setElemText("count-rate-fixed", fixedCount);
+  // Update Dropdown Rate Options with dynamic counts
+  const rateSelect = document.getElementById("services-filter-rate");
+  if (rateSelect) {
+    const rates = [
+      { val: "all", label: "Tous les modes de facturation", count: total },
+      { val: "hourly", label: "Taux horaire (€/h)", count: hourlyCount },
+      { val: "surface", label: "À l'hectare (€/ha)", count: surfaceCount },
+      { val: "fixed", label: "Forfait fixe (€)", count: fixedCount }
+    ];
+    const currentRateVal = servicesRateTypeFilter || "all";
+    rateSelect.innerHTML = rates.map(r => `<option value="${escapeHTML(r.val)}" ${r.val === currentRateVal ? "selected" : ""}>${escapeHTML(r.label)} (${r.count})</option>`).join("");
+  }
+}
+
+function updateServicesFilterResetBtn() {
+  const resetWrap = document.getElementById("services-filter-reset-wrap");
+  const isFiltered = (servicesCategoryFilter && servicesCategoryFilter !== "all") ||
+                     (servicesRateTypeFilter && servicesRateTypeFilter !== "all") ||
+                     (servicesSearchFilter && servicesSearchFilter.length > 0);
+  if (resetWrap) {
+    resetWrap.style.display = isFiltered ? "flex" : "none";
+  }
+}
+
+function resetServicesFilters() {
+  servicesCategoryFilter = "all";
+  servicesRateTypeFilter = "all";
+  servicesSearchFilter = "";
+  const catSelect = document.getElementById("services-filter-category");
+  const rateSelect = document.getElementById("services-filter-rate");
+  const searchInput = document.getElementById("services-search-input");
+  const wrapCat = document.getElementById("wrap-services-cat");
+  const wrapRate = document.getElementById("wrap-services-rate");
+
+  if (catSelect) catSelect.value = "all";
+  if (rateSelect) rateSelect.value = "all";
+  if (searchInput) searchInput.value = "";
+  if (wrapCat) wrapCat.classList.remove("is-active");
+  if (wrapRate) wrapRate.classList.remove("is-active");
+
+  updateServicesFilterResetBtn();
+  updateServicesMetrics();
+  renderServices();
+}
+window.resetServicesFilters = resetServicesFilters;
+
+function renderSingleServiceCard(s) {
+  let rateBadgeClass = "rate-hourly";
+  let rateUnit = "€/h";
+  let rateModeText = "Au temps passé";
+  if (s.rateType === "surface") {
+    rateBadgeClass = "rate-surface";
+    rateUnit = "€/ha";
+    rateModeText = "À la surface";
+  } else if (s.rateType === "fixed") {
+    rateBadgeClass = "";
+    rateUnit = "€";
+    rateModeText = "Forfait fixe";
+  }
+
+  return `
+    <div class="service-card" data-id="${escapeHTML(s.id)}">
+      <div class="service-card-header">
+        <span class="service-cat-badge">${escapeHTML(s.category)}</span>
+        <div style="display: flex; gap: 0.4rem; align-items: center;">
+          <span style="font-size: 0.70rem; font-weight: 700; padding: 2px 6px; border-radius: 4px; background: rgba(82, 183, 136, 0.15); color: var(--color-accent-light, #74c69d);">TVA ${Math.round(getTvaRate(s) * 100)}%</span>
+          <span class="service-rate-badge ${rateBadgeClass}">${s.price} ${rateUnit}</span>
+        </div>
+      </div>
+      <div class="service-title">${escapeHTML(s.name)}</div>
+      <div class="service-desc">${escapeHTML(s.description || 'Prestation viticole professionnelle.')}</div>
+      <div class="service-meta-row">
+        <span>${rateModeText}</span>
+        <div class="service-card-actions">
+          <button class="btn btn-outline btn-xs" onclick="editService('${escapeHTML(s.id)}')">✏️ Modifier</button>
+          <button class="btn btn-ghost btn-xs text-muted" onclick="deleteService('${escapeHTML(s.id)}')" title="Supprimer">🗑️</button>
+        </div>
+      </div>
+    </div>
+  `;
 }
 
 function renderServices() {
@@ -3216,41 +3350,60 @@ function renderServices() {
     return;
   }
 
-  grid.innerHTML = filtered.map(s => {
-    let rateBadgeClass = "rate-hourly";
-    let rateUnit = "€/h";
-    let rateModeText = "Au temps passé";
-    if (s.rateType === "surface") {
-      rateBadgeClass = "rate-surface";
-      rateUnit = "€/ha";
-      rateModeText = "À la surface";
-    } else if (s.rateType === "fixed") {
-      rateBadgeClass = "";
-      rateUnit = "€";
-      rateModeText = "Forfait fixe";
-    }
+  const catIcons = {
+    "Taille & Végétal": "✂️",
+    "Palissage & Écimage": "🌿",
+    "Sol & Mécanisation": "🚜",
+    "Traitements & Soins": "🛡️",
+    "Vendanges & Récolte": "🍇",
+    "Aménagement & Plantations": "🌱",
+    "Autre Prestation": "📋"
+  };
 
-    return `
-      <div class="service-card" data-id="${escapeHTML(s.id)}">
-        <div class="service-card-header">
-          <span class="service-cat-badge">${escapeHTML(s.category)}</span>
-          <div style="display: flex; gap: 0.4rem; align-items: center;">
-            <span style="font-size: 0.70rem; font-weight: 700; padding: 2px 6px; border-radius: 4px; background: rgba(82, 183, 136, 0.15); color: var(--color-accent-light, #74c69d);">TVA ${Math.round(getTvaRate(s) * 100)}%</span>
-            <span class="service-rate-badge ${rateBadgeClass}">${s.price} ${rateUnit}</span>
+  // If "all" categories are selected and not in active search, render as collapsible category accordions
+  if (servicesCategoryFilter === "all" && !servicesSearchFilter) {
+    const categoryOrder = [
+      "Taille & Végétal",
+      "Palissage & Écimage",
+      "Sol & Mécanisation",
+      "Traitements & Soins",
+      "Vendanges & Récolte",
+      "Aménagement & Plantations",
+      "Autre Prestation"
+    ];
+
+    const presentCategories = categoryOrder.filter(cat => filtered.some(s => s.category === cat));
+    filtered.forEach(s => {
+      if (!presentCategories.includes(s.category)) presentCategories.push(s.category);
+    });
+
+    grid.innerHTML = presentCategories.map(cat => {
+      const catServices = filtered.filter(s => s.category === cat);
+      const icon = catIcons[cat] || "🍇";
+      return `
+        <details class="category-services-accordion" open style="grid-column: 1 / -1; width: 100%;">
+          <summary class="category-accordion-summary">
+            <div class="cat-summary-info">
+              <span class="cat-summary-icon">${icon}</span>
+              <span class="cat-summary-title">${escapeHTML(cat)}</span>
+              <span class="cat-summary-badge">${catServices.length} prestation${catServices.length > 1 ? 's' : ''}</span>
+            </div>
+            <span class="cat-summary-arrow">
+              <svg width="12" height="7" viewBox="0 0 12 7" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </span>
+          </summary>
+          <div class="services-grid" style="padding: 1.15rem;">
+            ${catServices.map(renderSingleServiceCard).join("")}
           </div>
-        </div>
-        <div class="service-title">${escapeHTML(s.name)}</div>
-        <div class="service-desc">${escapeHTML(s.description || 'Prestation viticole professionnelle.')}</div>
-        <div class="service-meta-row">
-          <span>${rateModeText}</span>
-          <div class="service-card-actions">
-            <button class="btn btn-outline btn-xs" onclick="editService('${escapeHTML(s.id)}')">✏️ Modifier</button>
-            <button class="btn btn-ghost btn-xs text-muted" onclick="deleteService('${escapeHTML(s.id)}')" title="Supprimer">🗑️</button>
-          </div>
-        </div>
-      </div>
-    `;
-  }).join("");
+        </details>
+      `;
+    }).join("");
+  } else {
+    // Flat grid when filtered by specific category or search query
+    grid.innerHTML = filtered.map(renderSingleServiceCard).join("");
+  }
 }
 
 function renderPlannedWorks() {
@@ -3339,7 +3492,9 @@ function openServiceModal(serviceId = null) {
   if (modal) {
     modal.classList.add("open");
     modal.setAttribute("aria-hidden", "false");
-    document.body.style.overflow = "hidden";
+    lockBodyScroll();
+    const modalBody = modal.querySelector(".modal-body");
+    if (modalBody) modalBody.scrollTop = 0;
   }
 }
 
@@ -3348,7 +3503,7 @@ function closeServiceModal() {
   if (modal) {
     modal.classList.remove("open");
     modal.setAttribute("aria-hidden", "true");
-    document.body.style.overflow = "";
+    unlockBodyScroll();
   }
 }
 
@@ -3463,7 +3618,9 @@ function openPlannedModal() {
   if (modal) {
     modal.classList.add("open");
     modal.setAttribute("aria-hidden", "false");
-    document.body.style.overflow = "hidden";
+    lockBodyScroll();
+    const modalBody = modal.querySelector(".modal-body");
+    if (modalBody) modalBody.scrollTop = 0;
   }
 }
 
@@ -3472,7 +3629,7 @@ function closePlannedModal() {
   if (modal) {
     modal.classList.remove("open");
     modal.setAttribute("aria-hidden", "true");
-    document.body.style.overflow = "";
+    unlockBodyScroll();
   }
 }
 

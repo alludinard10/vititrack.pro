@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>VitiTrack Pro — Tableau de bord & Gestion Clients</title>
   <meta name="description" content="Tableau de bord VitiTrack pour gérants et exploitants viticoles. Base de données neutre de clients et parcelles, saisie d'interventions et facturation.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -343,7 +343,7 @@
               <div class="table-controls-bar">
                 <div class="search-box">
                   <span class="search-icon">🔍</span>
-                  <input type="text" id="filter-search" placeholder="Rechercher par client, parcelle, salarié, tâche..." aria-label="Rechercher une intervention">
+                  <input type="text" id="filter-search" placeholder="Rechercher par client, parcelle, tâche..." aria-label="Rechercher une intervention">
                 </div>
 
                 <div class="filter-dropdown-btn-wrap select-client-wrap" id="wrap-filter-client">
@@ -446,7 +446,6 @@
                 <thead>
                   <tr>
                     <th>Date & Heure</th>
-                    <th>Salarié</th>
                     <th>Client</th>
                     <th>Parcelle & Surface</th>
                     <th>Prestation viticole</th>
@@ -601,64 +600,59 @@
 
           <!-- SECTION 1 : CATALOGUE PRESTATIONS -->
           <div class="services-section-content" id="services-catalog-tab-content">
-            <!-- CATEGORY & RATE TYPE FILTERS (Épuré, sans émojis) -->
-            <div class="services-filter-panel">
-              <div class="services-filter-row">
-                <div class="services-filter-row-header">
-                  <span class="services-filter-label">Catégories viticoles</span>
+            <!-- FILTRES DES PRESTATIONS : MENUS DÉROULANTS -->
+            <div class="services-filter-panel services-filter-dropdowns-bar">
+              <div class="services-filter-dropdowns-grid">
+                <!-- Menu déroulant 1 : Catégories viticoles -->
+                <div class="filter-dropdown-btn-wrap" id="wrap-services-cat">
+                  <div class="filter-dropdown-pill">
+                    <span class="filter-dropdown-icon">🏷️</span>
+                    <div class="filter-dropdown-body">
+                      <span class="filter-dropdown-label">Catégorie viticole</span>
+                      <select id="services-filter-category" aria-label="Filtrer par catégorie viticole">
+                        <option value="all">Toutes les catégories</option>
+                        <option value="Taille & Végétal">Taille & Végétal</option>
+                        <option value="Palissage & Écimage">Palissage & Rognage</option>
+                        <option value="Sol & Mécanisation">Sol & Mécanisation</option>
+                        <option value="Traitements & Soins">Traitements & Soins</option>
+                        <option value="Vendanges & Récolte">Vendanges & Récolte</option>
+                        <option value="Aménagement & Plantations">Plantations & Entretien</option>
+                        <option value="Autre Prestation">Autre prestation</option>
+                      </select>
+                    </div>
+                    <span class="filter-dropdown-arrow">
+                      <svg width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M1 1L5 5L9 1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                      </svg>
+                    </span>
+                  </div>
                 </div>
-                <div class="category-filter-chips" id="category-filter-chips">
-                  <button class="chip active" data-category="all">
-                    <span class="chip-title">Toutes</span>
-                    <span class="chip-count" id="count-cat-all">0</span>
-                  </button>
-                  <button class="chip" data-category="Taille & Végétal">
-                    <span class="chip-title">Taille & Végétal</span>
-                    <span class="chip-count" id="count-cat-taille">0</span>
-                  </button>
-                  <button class="chip" data-category="Palissage & Écimage">
-                    <span class="chip-title">Palissage & Rognage</span>
-                    <span class="chip-count" id="count-cat-palissage">0</span>
-                  </button>
-                  <button class="chip" data-category="Sol & Mécanisation">
-                    <span class="chip-title">Sol & Mécanisation</span>
-                    <span class="chip-count" id="count-cat-sol">0</span>
-                  </button>
-                  <button class="chip" data-category="Traitements & Soins">
-                    <span class="chip-title">Traitements & Soins</span>
-                    <span class="chip-count" id="count-cat-soins">0</span>
-                  </button>
-                  <button class="chip" data-category="Vendanges & Récolte">
-                    <span class="chip-title">Vendanges & Récolte</span>
-                    <span class="chip-count" id="count-cat-vendanges">0</span>
-                  </button>
-                  <button class="chip" data-category="Aménagement & Plantations">
-                    <span class="chip-title">Plantations & Entretien</span>
-                    <span class="chip-count" id="count-cat-plantations">0</span>
-                  </button>
-                </div>
-              </div>
 
-              <div class="services-filter-row">
-                <div class="services-filter-row-header">
-                  <span class="services-filter-label">Modes de facturation</span>
+                <!-- Menu déroulant 2 : Modes de facturation -->
+                <div class="filter-dropdown-btn-wrap" id="wrap-services-rate">
+                  <div class="filter-dropdown-pill">
+                    <span class="filter-dropdown-icon">💶</span>
+                    <div class="filter-dropdown-body">
+                      <span class="filter-dropdown-label">Mode de facturation</span>
+                      <select id="services-filter-rate" aria-label="Filtrer par mode de facturation">
+                        <option value="all">Tous les modes de facturation</option>
+                        <option value="hourly">Taux horaire (€/h)</option>
+                        <option value="surface">À l'hectare (€/ha)</option>
+                        <option value="fixed">Forfait fixe (€)</option>
+                      </select>
+                    </div>
+                    <span class="filter-dropdown-arrow">
+                      <svg width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M1 1L5 5L9 1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                      </svg>
+                    </span>
+                  </div>
                 </div>
-                <div class="rate-filter-chips" id="rate-filter-chips">
-                  <button class="chip chip-rate active" data-rate="all">
-                    <span class="chip-title">Tous les modes</span>
-                    <span class="chip-count" id="count-rate-all">0</span>
-                  </button>
-                  <button class="chip chip-rate" data-rate="hourly">
-                    <span class="chip-title">Taux horaire (€/h)</span>
-                    <span class="chip-count" id="count-rate-hourly">0</span>
-                  </button>
-                  <button class="chip chip-rate" data-rate="surface">
-                    <span class="chip-title">À l'hectare (€/ha)</span>
-                    <span class="chip-count" id="count-rate-surface">0</span>
-                  </button>
-                  <button class="chip chip-rate" data-rate="fixed">
-                    <span class="chip-title">Forfait fixe (€)</span>
-                    <span class="chip-count" id="count-rate-fixed">0</span>
+
+                <!-- Réinitialisation des filtres -->
+                <div class="services-filter-reset-wrap" id="services-filter-reset-wrap" style="display: none;">
+                  <button type="button" class="btn btn-ghost btn-xs" id="btn-reset-services-filters" onclick="resetServicesFilters()">
+                    ✕ Réinitialiser
                   </button>
                 </div>
               </div>
@@ -741,20 +735,12 @@
         <form id="create-intervention-form" novalidate>
           <div class="modal-body">
 
-            <!-- LIGNE 1 : Date & Opérateur -->
-            <div class="form-row">
-              <div class="form-group flex-1">
-                <label for="input-datetime" class="form-label">
-                  <span>Date & Heure</span> <span class="required">*</span>
-                </label>
-                <input type="datetime-local" id="input-datetime" class="epure-input" required>
-              </div>
-              <div class="form-group flex-1">
-                <label for="input-worker" class="form-label">
-                  <span>Opérateur / Salarié</span> <span class="required">*</span>
-                </label>
-                <input type="text" id="input-worker" class="epure-input" placeholder="Ex: Jean (Tractoriste), Équipe A..." value="Exploitant">
-              </div>
+            <!-- LIGNE 1 : Date & Heure de l'intervention -->
+            <div class="form-group">
+              <label for="input-datetime" class="form-label">
+                <span>Date & Heure</span> <span class="required">*</span>
+              </label>
+              <input type="datetime-local" id="input-datetime" class="epure-input" required>
             </div>
 
             <!-- LIGNE 2 : Client & Parcelles travaillées (Multi-sélection & Calcul auto de la surface) -->
@@ -856,7 +842,7 @@
                   <span>Total estimé HT</span>
                 </label>
                 <div class="calculated-preview">
-                  <span id="calculated-total-display">152,00 €</span>
+                  <span id="calculated-total-display">152,00 € HT</span>
                 </div>
               </div>
             </div>
@@ -1423,7 +1409,6 @@
                     <th>Date</th>
                     <th>Parcelle</th>
                     <th>Prestation</th>
-                    <th>Salarié</th>
                     <th>Volume / Durée</th>
                     <th>Montant HT</th>
                     <th>Montant TTC</th>

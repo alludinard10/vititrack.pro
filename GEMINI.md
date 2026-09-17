@@ -107,12 +107,13 @@ Vititrack pro/
   - Filtre par type de prestation.
   - Filtre par plage de dates interactif (*Toutes les dates*, *Aujourd'hui*, *Cette semaine*, *Ce mois-ci*, *30 derniers jours*, *Année en cours*, ou sélecteurs personnalisés *Du ... Au ...*).
 - **Création d'Intervention Ergonomique & Intelligente** :
+  - **Formulaire épuré** : saisie directe de la date & heure, du client et des parcelles travaillées sans saisie superflue d'opérateur/salarié.
   - **Multi-sélection de parcelles** : Possibilité de cocher une ou plusieurs parcelles travaillées pour le client avec bouton « Tout cocher / Tout décocher ».
   - **Sommation et report automatique de la surface** : La somme exacte des surfaces parcellaires (à 4 décimales) est immédiatement calculée et pré-remplit le champ « Surface travaillée ».
-  - **Calcul en direct du total HT** : Dès le choix de la prestation (ex: *Traitement anti-mildiou*, travail du sol...) ou de la surface, le montant total HT estimé est calculé et affiché en temps réel (`Surface (ha) × Prix (€/ha)`).
+  - **Calcul en direct du total HT** : Dès le choix de la prestation (ex: *Traitement anti-mildiou*, travail du sol...) ou de la surface, le montant total HT estimé est calculé et affiché en temps réel exclusivement en hors taxe (`Surface (ha) × Prix (€/ha)`), sans mention de TVA.
   - Possibilité pour l'utilisateur d'ajuster manuellement la surface travaillée si le chantier n'a couvert qu'une fraction de la parcelle.
-- **Tableau Principal des Interventions** :
-  - Colonnes : Date/Heure, Client, Parcelle, Prestation, Salarié, Volume/Surface, Montant HT, Statut, Actions.
+- **Tableau Principal des Interventions (Journal des interventions)** :
+  - Colonnes épurées : Date/Heure, Client, Parcelle, Prestation, Volume/Surface, Montant HT, Montant TTC, Statut, Actions (la colonne Salarié/Exploitant a été retirée pour simplifier la consultation).
   - Bascule de statut d'un clic (*Facturée* ✅ vs *À facturer* ⏳).
   - Actions rapides : Consulter la fiche complète du client, Éditer l'intervention, Dupliquer le chantier, Supprimer.
   - Export CSV / Excel des interventions filtrées.
@@ -148,8 +149,9 @@ Vititrack pro/
 
 #### D. Vue 3 : Prestations & Travaux à faire
 - **Sous-onglet 1 : Catalogue des prestations viticoles** :
-  - Catégories viticoles (Travaux d'hiver, Travaux en vert, Sol & Entretien, Traitements, Vendanges).
-  - Unités de facturation : à l'hectare (`ha`), à l'heure (`h`), au forfait (`forfait`), au pied (`pied`).
+  - **Filtres sous forme de menus déroulants** : deux sélecteurs compacts pour filtrer instantanément par *Catégorie viticole* et par *Mode de facturation* (€/h, €/ha, forfait).
+  - **Organisation en menus déroulants accordéons par catégorie** : affichage soigné regroupé par catégorie avec compteurs de prestations et chevrons repliables.
+  - Unités de facturation : à l'hectare (`ha`), à l'heure (`h`), au forfait (`forfait`).
   - Tarifs indicatifs HT avec calcul automatique lors de la saisie d'une intervention.
   - Création, modification et suppression de prestations.
 - **Sous-onglet 2 : Planning des travaux à faire (travaux prévisionnels)** :
@@ -219,6 +221,7 @@ Sur les écrans de smartphone (< 650px et < 768px) :
 - La saisie de plage de dates (`.date-range-inputs`) s'organise en grille 50/50 équilibrée.
 - Les grilles de métriques (dans le dossier client notamment) restent parfaitement symétriques (la 5ème carte s'étend sur 2 colonnes `grid-column: span 2`).
 - Les boutons d'action des cartes clients partagent exactement la même ligne et hauteur.
+- **Modales & Défilement iOS Safari** : Toutes les modales utilisent une hauteur dynamique `92dvh`, une chaîne flexbox complète (`.modal-dialog > .modal-content > form > .modal-body`), un scrolling natif WebKit fluide (`-webkit-overflow-scrolling: touch`) et un espacement de sécurité (`env(safe-area-inset-bottom)`) pour garantir un défilement complet sans blocage jusqu'au bouton de validation.
 
 ### Règle 7 : Fiscalité Viticole — TVA à 5% (Charrues) vs 20% (Autres Travaux)
 - Pour tout ce qui relève de la **charrue mécanique** ou **charrue hydraulique** (labour, travail du cavaillon), le taux de TVA légal applicable est de **5%**.
