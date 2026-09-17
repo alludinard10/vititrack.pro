@@ -104,8 +104,10 @@ serve(async (req: Request) => {
     }
 
     // 4. Détermination du Price ID Stripe
-    // Priorité à la variable d'environnement (ex: price_1O...) ou génération de line_items dynamique
-    const configuredPriceId = Deno.env.get(plan.defaultPriceEnv);
+    let configuredPriceId = Deno.env.get(plan.defaultPriceEnv);
+    if (planId === "pro") {
+      configuredPriceId = Deno.env.get("STRIPE_PRICE_PRO_MONTHLY") || configuredPriceId || "price_1UGiQZIsJ4ka554qPJdI6ndP";
+    }
 
     let lineItems: Stripe.Checkout.SessionCreateParams.LineItem[];
     if (configuredPriceId) {

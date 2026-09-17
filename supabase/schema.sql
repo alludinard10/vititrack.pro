@@ -9,9 +9,10 @@ CREATE TABLE IF NOT EXISTS public.subscriptions (
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
     stripe_customer_id TEXT UNIQUE,
     stripe_subscription_id TEXT UNIQUE,
-    plan_id TEXT NOT NULL DEFAULT 'basic', -- 'basic' (29€), 'pro' (49€), 'enterprise' (99€)
-    plan_name TEXT NOT NULL DEFAULT 'Basic',
-    plan_price_ht NUMERIC(10, 2) NOT NULL DEFAULT 29.00,
+    stripe_price_id TEXT,
+    plan_id TEXT NOT NULL DEFAULT 'pro', -- 'basic' (29€), 'pro' (49€), 'enterprise' (99€)
+    plan_name TEXT NOT NULL DEFAULT 'Professionnel',
+    plan_price_ht NUMERIC(10, 2) NOT NULL DEFAULT 49.00,
     status TEXT NOT NULL DEFAULT 'incomplete', -- 'active', 'trialing', 'past_due', 'canceled', 'incomplete'
     current_period_start TIMESTAMPTZ,
     current_period_end TIMESTAMPTZ,
@@ -22,11 +23,30 @@ CREATE TABLE IF NOT EXISTS public.subscriptions (
     CONSTRAINT unique_user_subscription UNIQUE (user_id)
 );
 
--- 2. Index pour des requêtes ultra-rapides
+-- 2. Table d'idempotence pour les événements Stripe (évite les doublons)
+CREATE TABLE IF NOT EXISTS public.stripe_events (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    stripe_event_id TEXT NOT NULL UNIQUE,
+    event_type TEXT NOT NULL,
+    processed_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.stripe_events ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Seul le service_role gère les stripe_events" ON public.stripe_events;
+CREATE POLICY "Seul le service_role gère les stripe_events"
+ON public.stripe_events
+FOR ALL
+TO service_role
+USING (true)
+WITH CHECK (true);
+
+-- 3. Index pour des requêtes ultra-rapides
 CREATE INDEX IF NOT EXISTS idx_subscriptions_user_id ON public.subscriptions(user_id);
 CREATE INDEX IF NOT EXISTS idx_subscriptions_stripe_customer ON public.subscriptions(stripe_customer_id);
 CREATE INDEX IF NOT EXISTS idx_subscriptions_stripe_sub ON public.subscriptions(stripe_subscription_id);
 CREATE INDEX IF NOT EXISTS idx_subscriptions_status ON public.subscriptions(status);
+CREATE INDEX IF NOT EXISTS idx_stripe_events_event_id ON public.stripe_events(stripe_event_id);
 
 -- 3. Activation de Row Level Security (RLS)
 ALTER TABLE public.subscriptions ENABLE ROW LEVEL SECURITY;
