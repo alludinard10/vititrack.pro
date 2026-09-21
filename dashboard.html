@@ -94,7 +94,7 @@
           <img src="assets/logo-circle.png" alt="Logo VitiTrack Pro" class="brand-logo-img">
           <span class="logo-text">Viti<span class="logo-accent">Track</span> <span class="badge-pro">PRO</span></span>
         </a>
-        <button class="sidebar-close-btn" id="sidebar-close" onclick="closeSidebar()" aria-label="Fermer le menu">✕</button>
+        <button class="sidebar-close-btn" id="sidebar-close" aria-label="Fermer le menu">✕</button>
       </div>
 
       <div class="sidebar-user">
@@ -107,52 +107,52 @@
 
       <nav class="sidebar-nav">
         <div class="nav-section-title">PILOTAGE</div>
-        <a href="javascript:void(0)" class="nav-item active" id="nav-btn-overview" data-view="overview" onclick="switchView('overview'); closeSidebar(); return false;">
+        <a href="javascript:void(0)" class="nav-item active" id="nav-btn-overview" data-view="overview">
           <span class="nav-icon">📊</span>
           <span class="nav-label">Tableau de bord</span>
         </a>
-        <a href="javascript:void(0)" class="nav-item" id="nav-btn-clients" data-view="clients" onclick="switchView('clients'); closeSidebar(); return false;">
+        <a href="javascript:void(0)" class="nav-item" id="nav-btn-clients" data-view="clients">
           <span class="nav-icon">🍇</span>
           <span class="nav-label">Clients & Parcelles</span>
           <span class="nav-badge" id="sidebar-clients-count">0</span>
         </a>
-        <a href="javascript:void(0)" class="nav-item" id="nav-btn-services" data-view="services" onclick="switchView('services'); closeSidebar(); return false;">
+        <a href="javascript:void(0)" class="nav-item" id="nav-btn-services" data-view="services">
           <span class="nav-icon">✂️</span>
           <span class="nav-label">Prestations & Travaux</span>
           <span class="nav-badge" id="sidebar-services-count">0</span>
         </a>
-        <a href="javascript:void(0)" class="nav-item" id="nav-btn-interventions" data-view="interventions" onclick="switchView('interventions'); closeSidebar(); return false;">
+        <a href="javascript:void(0)" class="nav-item" id="nav-btn-interventions" data-view="interventions">
           <span class="nav-icon">🚜</span>
           <span class="nav-label">Interventions</span>
           <span class="nav-badge" id="sidebar-interventions-count">0</span>
         </a>
-        <a href="javascript:void(0)" class="nav-item" id="nav-btn-billing" data-view="billing" onclick="switchView('billing'); closeSidebar(); return false;">
+        <a href="javascript:void(0)" class="nav-item" id="nav-btn-billing" data-view="billing">
           <span class="nav-icon">💶</span>
           <span class="nav-label">À Facturer</span>
           <span class="nav-badge badge-warning" id="sidebar-unbilled-count">0</span>
         </a>
 
         <div class="nav-section-title">ABONNEMENT STRIPE</div>
-        <a href="javascript:void(0)" class="nav-item" id="sidebar-sub-btn" onclick="openSubscriptionModal(); closeSidebar(); return false;" title="Gérer mon abonnement et mes factures">
+        <a href="javascript:void(0)" class="nav-item" id="sidebar-sub-btn" title="Gérer mon abonnement et mes factures">
           <span class="nav-icon">💳</span>
           <span class="nav-label">Mon Abonnement</span>
           <span class="nav-badge badge-success" id="sidebar-plan-badge">Pro</span>
         </a>
 
         <div class="nav-section-title">OUTILS & BASE</div>
-        <a href="javascript:void(0)" class="nav-item" id="sidebar-add-service-btn" onclick="openServiceModal(); closeSidebar(); return false;">
+        <a href="javascript:void(0)" class="nav-item" id="sidebar-add-service-btn">
           <span class="nav-icon">＋</span>
           <span class="nav-label">Nouvelle Prestation</span>
         </a>
-        <a href="javascript:void(0)" class="nav-item" id="sidebar-add-planned-btn" onclick="openPlannedModal(); closeSidebar(); return false;">
+        <a href="javascript:void(0)" class="nav-item" id="sidebar-add-planned-btn">
           <span class="nav-icon">📌</span>
           <span class="nav-label">Planifier un travail</span>
         </a>
-        <a href="javascript:void(0)" class="nav-item" id="sidebar-add-client-btn" onclick="openClientModal(); closeSidebar(); return false;">
+        <a href="javascript:void(0)" class="nav-item" id="sidebar-add-client-btn">
           <span class="nav-icon">＋</span>
           <span class="nav-label">Nouveau Client</span>
         </a>
-        <a href="javascript:void(0)" class="nav-item" id="sidebar-export-btn" onclick="exportCSV(); closeSidebar(); return false;">
+        <a href="javascript:void(0)" class="nav-item" id="sidebar-export-btn">
           <span class="nav-icon">📥</span>
           <span class="nav-label">Export Comptable CSV</span>
         </a>
@@ -204,7 +204,7 @@
         <div class="topbar-actions">
           <!-- Switch Thème Jour / Nuit Exécutif -->
           <div class="theme-switch-wrapper" title="Basculer entre Mode Jour et Mode Nuit">
-            <button type="button" class="theme-mode-pill" id="theme-toggle-btn" onclick="toggleTheme()" aria-label="Basculer Mode Jour / Mode Nuit">
+            <button type="button" class="theme-mode-pill" id="theme-toggle-btn" aria-label="Basculer Mode Jour / Mode Nuit">
               <span class="theme-pill-seg active" id="seg-dark">
                 <span class="seg-icon">🌙</span>
                 <span class="seg-text">Nuit</span>
@@ -219,11 +219,11 @@
             <span class="btn-text-desktop">← Site</span>
             <span class="btn-text-mobile">🌐</span>
           </a>
-          <button class="btn btn-outline btn-sm btn-topbar-item" id="btn-export-topbar" onclick="exportCSV()" title="Exporter en CSV">
+          <button class="btn btn-outline btn-sm btn-topbar-item" id="btn-export-topbar" title="Exporter en CSV">
             <span class="btn-text-desktop">📥 Export CSV</span>
             <span class="btn-text-mobile">📥</span>
           </button>
-          <button class="btn btn-secondary btn-sm btn-topbar-item" id="topbar-add-client-btn" onclick="openClientModal()" title="Ajouter un nouveau domaine ou client">
+          <button class="btn btn-secondary btn-sm btn-topbar-item" id="topbar-add-client-btn" title="Ajouter un nouveau domaine ou client">
             <span class="btn-icon">🍇</span>
             <span class="btn-text-desktop">Nouveau client</span>
           </button>
@@ -234,12 +234,12 @@
               <span class="btn-text-desktop">🔄 Compte</span>
               <span class="btn-text-mobile">🔄</span>
             </a>
-            <button type="button" class="btn-topbar-logout" id="btn-topbar-logout" onclick="handleLogout()" title="Déconnexion de l'espace">
+            <button type="button" class="btn-topbar-logout" id="btn-topbar-logout" title="Déconnexion de l'espace">
               <span class="btn-text-desktop">🚪 Déconnexion</span>
               <span class="btn-text-mobile">🚪</span>
             </button>
           </div>
-          <button class="btn btn-primary btn-glow btn-sm btn-topbar-item" id="btn-open-create-modal" onclick="openCreateModal()" title="Saisir une nouvelle intervention">
+          <button class="btn btn-primary btn-glow btn-sm btn-topbar-item" id="btn-open-create-modal" title="Saisir une nouvelle intervention">
             <span class="btn-icon">＋</span>
             <span class="btn-text-desktop">Nouvelle intervention</span>
             <span class="btn-text-mobile">Saisie</span>
@@ -342,10 +342,10 @@
                   <span class="table-count-badge" id="table-results-count">0 enregistrée</span>
                 </div>
                 <div class="table-header-actions">
-                  <button class="btn btn-outline btn-xs" id="btn-export-table-top" onclick="exportCSV()" title="Exporter au format CSV">
+                  <button class="btn btn-outline btn-xs" id="btn-export-table-top" title="Exporter au format CSV">
                     <span>📥 Exporter CSV</span>
                   </button>
-                  <button class="btn btn-primary btn-xs btn-glow" id="btn-create-table-top" onclick="openCreateModal()">
+                  <button class="btn btn-primary btn-xs btn-glow" id="btn-create-table-top">
                     <span class="btn-icon">＋</span>
                     <span>Nouvelle intervention</span>
                   </button>
@@ -359,36 +359,79 @@
                 </div>
 
                 <div class="filter-dropdown-btn-wrap select-client-wrap" id="wrap-filter-client">
-                  <div class="filter-dropdown-pill">
+                  <button type="button" class="filter-dropdown-pill filter-ms-trigger" id="btn-filter-client" aria-haspopup="true" aria-expanded="false" aria-label="Filtrer par client">
                     <span class="filter-dropdown-icon">🍇</span>
                     <div class="filter-dropdown-body">
                       <span class="filter-dropdown-label">Domaine / Client</span>
-                      <select id="filter-client" aria-label="Filtrer par client">
-                        <option value="all">Tous les clients</option>
-                      </select>
+                      <span class="filter-dropdown-value" id="filter-client-text">Tous les clients</span>
                     </div>
                     <span class="filter-dropdown-arrow">
                       <svg width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M1 1L5 5L9 1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
                       </svg>
                     </span>
+                  </button>
+
+                  <div class="filter-multiselect-dropdown" id="dropdown-filter-client" style="display: none;">
+                    <div class="filter-multiselect-header">
+                      <div class="filter-ms-header-info">
+                        <span class="filter-ms-header-title">Clients</span>
+                        <span class="filter-ms-count-badge" id="filter-client-badge">Tous</span>
+                      </div>
+                      <div class="filter-ms-actions">
+                        <button type="button" class="filter-ms-action-btn" id="btn-select-all-clients">Tout cocher</button>
+                        <span class="filter-ms-sep">•</span>
+                        <button type="button" class="filter-ms-action-btn" id="btn-clear-clients">Tout décocher</button>
+                      </div>
+                    </div>
+                    <div class="filter-ms-search-box">
+                      <span class="filter-ms-search-icon">🔍</span>
+                      <input type="text" id="search-filter-client" class="filter-ms-search-input" placeholder="Chercher un domaine..." autocomplete="off">
+                    </div>
+                    <div class="filter-ms-list" id="list-filter-client">
+                      <!-- Généré dynamiquement avec encoches (cases à cocher) -->
+                    </div>
+                    <div class="filter-ms-footer">
+                      <button type="button" class="btn-ms-new-client" id="btn-ms-new-client">
+                        <span>🍇 ＋ Nouveau client...</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
 
                 <div class="filter-dropdown-btn-wrap select-task-wrap" id="wrap-filter-task">
-                  <div class="filter-dropdown-pill">
+                  <button type="button" class="filter-dropdown-pill filter-ms-trigger" id="btn-filter-task" aria-haspopup="true" aria-expanded="false" aria-label="Filtrer par prestation">
                     <span class="filter-dropdown-icon">✂️</span>
                     <div class="filter-dropdown-body">
                       <span class="filter-dropdown-label">Prestation viticole</span>
-                      <select id="filter-task" aria-label="Filtrer par tâche">
-                        <option value="all">Toutes les prestations</option>
-                      </select>
+                      <span class="filter-dropdown-value" id="filter-task-text">Toutes les prestations</span>
                     </div>
                     <span class="filter-dropdown-arrow">
                       <svg width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M1 1L5 5L9 1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
                       </svg>
                     </span>
+                  </button>
+
+                  <div class="filter-multiselect-dropdown" id="dropdown-filter-task" style="display: none;">
+                    <div class="filter-multiselect-header">
+                      <div class="filter-ms-header-info">
+                        <span class="filter-ms-header-title">Prestations</span>
+                        <span class="filter-ms-count-badge" id="filter-task-badge">Toutes</span>
+                      </div>
+                      <div class="filter-ms-actions">
+                        <button type="button" class="filter-ms-action-btn" id="btn-select-all-tasks">Tout cocher</button>
+                        <span class="filter-ms-sep">•</span>
+                        <button type="button" class="filter-ms-action-btn" id="btn-clear-tasks">Tout décocher</button>
+                      </div>
+                    </div>
+                    <div class="filter-ms-search-box">
+                      <span class="filter-ms-search-icon">🔍</span>
+                      <input type="text" id="search-filter-task" class="filter-ms-search-input" placeholder="Chercher une prestation..." autocomplete="off">
+                    </div>
+                    <div class="filter-ms-list" id="list-filter-task">
+                      <!-- Généré dynamiquement avec encoches (cases à cocher) -->
+                    </div>
                   </div>
                 </div>
 
@@ -480,8 +523,8 @@
               <h3>Aucune intervention enregistrée</h3>
               <p id="table-empty-message">Votre base de données est actuellement vierge. Commencez par créer vos clients et enregistrez votre première intervention.</p>
               <div style="display: flex; gap: 0.75rem; margin-top: 0.5rem; flex-wrap: wrap; justify-content: center;">
-                <button type="button" class="btn btn-secondary btn-sm" id="btn-empty-add-client" onclick="openClientModal()">🍇 ＋ Ajouter un client</button>
-                <button type="button" class="btn btn-primary btn-sm" id="btn-empty-add-intervention" onclick="openCreateModal()">🚜 ＋ Nouvelle intervention</button>
+                <button type="button" class="btn btn-secondary btn-sm" id="btn-empty-add-client">🍇 ＋ Ajouter un client</button>
+                <button type="button" class="btn btn-primary btn-sm" id="btn-empty-add-intervention">🚜 ＋ Nouvelle intervention</button>
               </div>
             </div>
 
@@ -491,8 +534,8 @@
                 <span>💡 <em>Cliquez sur le badge de statut pour basculer directement entre « À facturer » et « Facturée ».</em></span>
               </div>
               <div class="table-actions-bulk">
-                <button class="btn btn-outline btn-xs" id="btn-export-bottom" onclick="exportCSV()">📥 Exporter le tableau (CSV)</button>
-                <button class="btn btn-primary btn-xs" id="btn-open-create-bottom" onclick="openCreateModal()">＋ Créer une intervention</button>
+                <button class="btn btn-outline btn-xs" id="btn-export-bottom">📥 Exporter le tableau (CSV)</button>
+                <button class="btn btn-primary btn-xs" id="btn-open-create-bottom">＋ Créer une intervention</button>
               </div>
             </div>
           </section>
@@ -507,7 +550,7 @@
               <h2 class="view-heading">Répertoire des Clients & Domaines</h2>
               <p class="view-subheading">Base de données de vos partenaires viticoles et de leurs parcelles sous contrat</p>
             </div>
-            <button class="btn btn-primary btn-glow" id="btn-view-add-client" onclick="openClientModal()">
+            <button class="btn btn-primary btn-glow" id="btn-view-add-client">
               <span class="btn-icon">＋</span>
               <span>Nouveau client</span>
             </button>
@@ -542,7 +585,7 @@
             <div class="empty-icon">🍇</div>
             <h3>Base clients neutre et vierge</h3>
             <p>Aucun client n'est encore enregistré dans votre base de données. Créez votre premier domaine pour commencer à y attacher des parcelles et saisir vos chantiers.</p>
-            <button class="btn btn-primary btn-sm" id="btn-create-first-client" onclick="openClientModal()">
+            <button class="btn btn-primary btn-sm" id="btn-create-first-client">
               <span>🍇 ＋ Créer mon premier client</span>
             </button>
           </div>
@@ -558,11 +601,11 @@
               <p class="view-subheading">Toutes les prestations viticoles que votre équipe peut réaliser, tarifs par défaut et suivi des travaux à faire.</p>
             </div>
             <div class="services-view-actions">
-              <button class="btn btn-secondary btn-sm" id="btn-view-add-planned" onclick="openPlannedModal()">
+              <button class="btn btn-secondary btn-sm" id="btn-view-add-planned">
                 <span class="btn-icon">📌</span>
                 <span>Planifier un travail</span>
               </button>
-              <button class="btn btn-primary btn-glow btn-sm" id="btn-view-add-service" onclick="openServiceModal()">
+              <button class="btn btn-primary btn-glow btn-sm" id="btn-view-add-service">
                 <span class="btn-icon">＋</span>
                 <span>Nouvelle prestation</span>
               </button>
@@ -762,7 +805,7 @@
                   <label for="input-client" class="form-label">
                     <span>Client / Domaine</span> <span class="required">*</span>
                   </label>
-                  <button type="button" class="btn-link-action" id="btn-quick-add-client" onclick="openClientModal()">＋ Nouveau client</button>
+                  <button type="button" class="btn-link-action" id="btn-quick-add-client">＋ Nouveau client</button>
                 </div>
                 <select id="input-client" class="form-select-simple" required>
                   <option value="">Sélectionner un client...</option>
@@ -1320,7 +1363,7 @@
             </div>
             <p class="modal-subtitle" id="dossier-client-subtitle">Fiche complète : parcelles associées et historique des interventions</p>
           </div>
-          <button class="modal-close-btn" id="dossier-modal-close-btn" onclick="closeClientDossier()" aria-label="Fermer">✕</button>
+          <button class="modal-close-btn" id="dossier-modal-close-btn" aria-label="Fermer">✕</button>
         </div>
 
         <div class="modal-body" style="padding-top: 1rem; display: flex; flex-direction: column; gap: 1.25rem;">
@@ -1463,7 +1506,7 @@
         </div>
 
         <div class="modal-footer" style="justify-content: space-between;">
-          <button type="button" class="btn btn-ghost" id="dossier-modal-dismiss-btn" onclick="closeClientDossier()">Fermer</button>
+          <button type="button" class="btn btn-ghost" id="dossier-modal-dismiss-btn">Fermer</button>
           <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
             <button type="button" class="btn btn-outline btn-sm" id="dossier-btn-edit-client">✏️ Modifier le domaine</button>
             <button type="button" class="btn btn-primary btn-sm btn-glow" id="dossier-btn-create-intervention">🚜 Saisir intervention</button>
@@ -1483,7 +1526,7 @@
             <h3 class="modal-title">Mon Abonnement VitiTrack Pro</h3>
             <p class="modal-subtitle">Gestion de votre formule mensuelle, factures et paiements Stripe sécurisés</p>
           </div>
-          <button class="modal-close-btn" id="subscription-modal-close-btn" onclick="closeSubscriptionModal()" aria-label="Fermer">✕</button>
+          <button class="modal-close-btn" id="subscription-modal-close-btn" aria-label="Fermer">✕</button>
         </div>
 
         <div class="modal-body">
@@ -1596,7 +1639,7 @@
         </div>
 
         <div class="modal-footer">
-          <button type="button" class="btn btn-ghost" id="sub-modal-close-btn" onclick="closeSubscriptionModal()">Fermer</button>
+          <button type="button" class="btn btn-ghost" id="sub-modal-close-btn">Fermer</button>
         </div>
       </div>
     </div>
@@ -1604,25 +1647,25 @@
 
   <!-- ==================== BARRE DE NAVIGATION INFÉRIEURE (MOBILE / SMARTPHONE) ==================== -->
   <nav class="mobile-bottom-nav" id="mobile-bottom-nav" aria-label="Navigation mobile">
-    <button type="button" class="mobile-nav-item active" id="mobile-nav-overview" data-view="overview" onclick="switchView('overview')" aria-label="Tableau de bord">
+    <button type="button" class="mobile-nav-item active" id="mobile-nav-overview" data-view="overview" aria-label="Tableau de bord">
       <span class="mobile-nav-icon">📊</span>
       <span class="mobile-nav-label">Tableau</span>
     </button>
-    <button type="button" class="mobile-nav-item" id="mobile-nav-clients" data-view="clients" onclick="switchView('clients')" aria-label="Répertoire clients">
+    <button type="button" class="mobile-nav-item" id="mobile-nav-clients" data-view="clients" aria-label="Répertoire clients">
       <span class="mobile-nav-icon">🏰</span>
       <span class="mobile-nav-label">Clients</span>
     </button>
-    <button type="button" class="mobile-nav-item mobile-nav-action-center" id="mobile-nav-create" onclick="openCreateModal()" aria-label="Saisir une intervention">
+    <button type="button" class="mobile-nav-item mobile-nav-action-center" id="mobile-nav-create" aria-label="Saisir une intervention">
       <div class="mobile-action-circle">
         <span>＋</span>
       </div>
       <span class="mobile-nav-label">Saisie</span>
     </button>
-    <button type="button" class="mobile-nav-item" id="mobile-nav-services" data-view="services" onclick="switchView('services')" aria-label="Catalogue et travaux">
+    <button type="button" class="mobile-nav-item" id="mobile-nav-services" data-view="services" aria-label="Catalogue et travaux">
       <span class="mobile-nav-icon">✂️</span>
       <span class="mobile-nav-label">Prestations</span>
     </button>
-    <button type="button" class="mobile-nav-item" id="mobile-nav-menu" onclick="toggleSidebar()" aria-label="Menu et options">
+    <button type="button" class="mobile-nav-item" id="mobile-nav-menu" aria-label="Menu et options">
       <span class="mobile-nav-icon">☰</span>
       <span class="mobile-nav-label">Menu</span>
     </button>

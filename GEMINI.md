@@ -103,8 +103,8 @@ Vititrack pro/
 - **Filtres de Recherche Avancés** :
   - Recherche plein texte (client, parcelle, salarié, tâche).
   - Filtre par statut (*Tous*, *À facturer*, *Facturée*).
-  - Filtre par domaine client.
-  - Filtre par type de prestation.
+  - **Filtre multi-sélection Domaine / Client à encoches (cases à cocher)** : menu déroulant avec recherche en direct, boutons « Tout cocher » / « Tout décocher », sélection multiple simultanée et bouton d'ajout direct de nouveau client.
+  - **Filtre multi-sélection Prestation viticole à encoches (cases à cocher)** : regroupé par catégories viticoles avec tarifs indicatifs, recherche intégrée et sélection multiple simultanée.
   - Filtre par plage de dates interactif (*Toutes les dates*, *Aujourd'hui*, *Cette semaine*, *Ce mois-ci*, *30 derniers jours*, *Année en cours*, ou sélecteurs personnalisés *Du ... Au ...*).
 - **Création d'Intervention Ergonomique & Intelligente** :
   - **Formulaire épuré** : saisie directe de la date & heure, du client et des parcelles travaillées sans saisie superflue d'opérateur/salarié.

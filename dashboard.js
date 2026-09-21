@@ -207,7 +207,9 @@ let plannedWorks = [];
 let currentFilter = {
   search: "",
   client: "all",
+  clients: [], // Multi-sélection de domaines clients (encoches)
   task: "all",
+  tasks: [],   // Multi-sélection de prestations viticoles (encoches)
   status: "all",
   dateFrom: "",
   dateTo: "",
@@ -219,6 +221,250 @@ let servicesCategoryFilter = "all";
 let servicesRateTypeFilter = "all";
 let servicesActiveSubtab = "catalog";
 let pendingInterventionFormState = null;
+
+// ==================== UNIQUE IDENTIFIER GENERATORS & REPAIR UTILS ====================
+
+/**
+ * Générateur universel d'identifiants uniques fiables
+ * Utilise crypto.randomUUID() en priorité avec repli sur timestamp étendu + composante aléatoire
+ */
+function generateUniqueId(prefix = "ID") {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return `${prefix}-${crypto.randomUUID()}`;
+  }
+  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+}
+window.generateUniqueId = generateUniqueId;
+
+/**
+ * Générateur unique pour les interventions
+ * Conserve le format lisible VT-YYYY-NNN en calculant le max existant + 1 pour l'année
+ */
+function generateUniqueInterventionId(year = new Date().getFullYear()) {
+  const currentYearStr = String(year);
+  const regex = new RegExp(`^VT-${currentYearStr}-(\\d+)$`);
+  let maxNum = 0;
+  const existingIds = new Set();
+
+  if (Array.isArray(interventions)) {
+    interventions.forEach(inv => {
+      if (inv && inv.id) {
+        existingIds.add(inv.id);
+        const match = String(inv.id).match(regex);
+        if (match) {
+          const num = parseInt(match[1], 10);
+          if (!isNaN(num) && num > maxNum) {
+            maxNum = num;
+          }
+        }
+      }
+    });
+  }
+
+  let nextNum = maxNum + 1;
+  let candidateId = `VT-${currentYearStr}-${String(nextNum).padStart(3, '0')}`;
+  while (existingIds.has(candidateId)) {
+    nextNum++;
+    candidateId = `VT-${currentYearStr}-${String(nextNum).padStart(3, '0')}`;
+  }
+  return candidateId;
+}
+window.generateUniqueInterventionId = generateUniqueInterventionId;
+
+/**
+ * Validation stricte d'unicité des IDs dans un lot (payload) avant upsert Supabase
+ */
+function validatePayloadUniqueIds(payload, entityType) {
+  if (!Array.isArray(payload) || payload.length === 0) {
+    return { valid: true };
+  }
+
+  const seen = new Map();
+  const duplicates = [];
+
+  for (const item of payload) {
+    const id = item?.id;
+    if (!id) {
+      console.error(`❌ [VitiTrack Pro] Erreur validation ${entityType} : élément sans ID !`, item);
+      return { valid: false, reason: `Élément ${entityType} sans ID` };
+    }
+    if (seen.has(id)) {
+      duplicates.push({
+        id,
+        firstItem: seen.get(id),
+        duplicateItem: item
+      });
+    } else {
+      seen.set(id, item);
+    }
+  }
+
+  if (duplicates.length > 0) {
+    console.error(`❌ [VitiTrack Pro] COLLISION D'IDENTIFIANTS DÉTECTÉE sur « ${entityType} » ! L'upsert Supabase est ANNULÉ.`);
+    duplicates.forEach(d => {
+      console.error(`   - ID en collision : "${d.id}"`);
+      console.error(`     Premier objet :`, d.firstItem);
+      console.error(`     Objet en collision :`, d.duplicateItem);
+    });
+    return {
+      valid: false,
+      reason: `Collision d'identifiant détectée sur ${entityType} (ID: ${duplicates[0].id})`,
+      duplicates
+    };
+  }
+
+  return { valid: true };
+}
+window.validatePayloadUniqueIds = validatePayloadUniqueIds;
+
+/**
+ * Répare les collisions d'identifiants locales existantes SANS supprimer aucune donnée
+ * Conserve le premier objet, réattribue un nouvel ID unique au second, et met à jour les références
+ */
+function repairLocalCollisions() {
+  let hasModified = false;
+  const repairsLog = [];
+
+  // 1. Clients
+  if (Array.isArray(clients) && clients.length > 0) {
+    const seenClientIds = new Set();
+    clients.forEach((c) => {
+      if (!c.id || seenClientIds.has(c.id)) {
+        const oldId = c.id;
+        const newId = generateUniqueId("CLI");
+        c.id = newId;
+        hasModified = true;
+        repairsLog.push(`Client « ${c.name} » : ID ${oldId} réassigné à ${newId}`);
+        if (Array.isArray(c.parcels)) {
+          c.parcels.forEach(p => { p.client_id = newId; });
+        }
+        if (Array.isArray(interventions)) {
+          interventions.forEach(inv => {
+            if (inv.clientId === oldId || inv.client === c.name) {
+              inv.clientId = newId;
+            }
+          });
+        }
+        if (Array.isArray(plannedWorks)) {
+          plannedWorks.forEach(pw => {
+            if (pw.clientId === oldId || pw.clientName === c.name) {
+              pw.clientId = newId;
+            }
+          });
+        }
+      } else {
+        seenClientIds.add(c.id);
+      }
+    });
+  }
+
+  // 2. Parcelles (collectées à travers l'ensemble des clients)
+  if (Array.isArray(clients) && clients.length > 0) {
+    const seenParcelIds = new Map(); // id -> { client, parcel }
+    clients.forEach((c) => {
+      if (Array.isArray(c.parcels)) {
+        c.parcels.forEach((p) => {
+          if (!p.id) {
+            p.id = generateUniqueId("PAR");
+            hasModified = true;
+            repairsLog.push(`Parcelle « ${p.name} » (Client: ${c.name}) : ID manquant généré (${p.id})`);
+          } else if (seenParcelIds.has(p.id)) {
+            const firstEntry = seenParcelIds.get(p.id);
+            const oldId = p.id;
+            const newId = generateUniqueId("PAR");
+            p.id = newId;
+            hasModified = true;
+            repairsLog.push(`Parcelle « ${p.name} » (Client: ${c.name}) : Collision résolue sur ID ${oldId} -> nouvel ID unique ${newId} (l'ID ${oldId} reste attribué à la parcelle « ${firstEntry.parcel.name} » de « ${firstEntry.client.name} »)`);
+
+            // Mettre à jour les références d'interventions ciblant cette parcelle
+            if (Array.isArray(interventions)) {
+              interventions.forEach(inv => {
+                const matchesClient = (inv.clientId === c.id || inv.client === c.name);
+                const matchesParcel = (inv.parcelId === oldId || (inv.parcel && inv.parcel.includes(p.name)));
+                if (matchesClient && matchesParcel) {
+                  inv.parcelId = newId;
+                }
+              });
+            }
+            seenParcelIds.set(newId, { client: c, parcel: p });
+          } else {
+            seenParcelIds.set(p.id, { client: c, parcel: p });
+          }
+        });
+      }
+    });
+  }
+
+  // 3. Prestations (Services)
+  if (Array.isArray(services) && services.length > 0) {
+    const seenServiceIds = new Set();
+    services.forEach((s) => {
+      if (!s.id || seenServiceIds.has(s.id)) {
+        const oldId = s.id;
+        const newId = generateUniqueId("SRV");
+        s.id = newId;
+        hasModified = true;
+        repairsLog.push(`Prestation « ${s.name} » : ID ${oldId} réassigné à ${newId}`);
+        if (Array.isArray(interventions)) {
+          interventions.forEach(inv => {
+            if (inv.serviceId === oldId && inv.task === s.name) {
+              inv.serviceId = newId;
+            }
+          });
+        }
+        seenServiceIds.add(newId);
+      } else {
+        seenServiceIds.add(s.id);
+      }
+    });
+  }
+
+  // 4. Interventions
+  if (Array.isArray(interventions) && interventions.length > 0) {
+    const seenInvIds = new Set();
+    interventions.forEach((inv) => {
+      if (!inv.id || seenInvIds.has(inv.id)) {
+        const oldId = inv.id;
+        const year = inv.datetime ? new Date(inv.datetime).getFullYear() : new Date().getFullYear();
+        const newId = generateUniqueInterventionId(year);
+        inv.id = newId;
+        hasModified = true;
+        repairsLog.push(`Intervention (${inv.client} - ${inv.task}) : Collision résolue sur ID ${oldId} -> nouvel ID ${newId}`);
+        seenInvIds.add(newId);
+      } else {
+        seenInvIds.add(inv.id);
+      }
+    });
+  }
+
+  // 5. Travaux planifiés
+  if (Array.isArray(plannedWorks) && plannedWorks.length > 0) {
+    const seenPwIds = new Set();
+    plannedWorks.forEach((pw) => {
+      if (!pw.id || seenPwIds.has(pw.id)) {
+        const oldId = pw.id;
+        const newId = generateUniqueId("PLN");
+        pw.id = newId;
+        hasModified = true;
+        repairsLog.push(`Travail planifié (${pw.clientName} - ${pw.service}) : ID ${oldId} réassigné à ${newId}`);
+        seenPwIds.add(newId);
+      } else {
+        seenPwIds.add(pw.id);
+      }
+    });
+  }
+
+  if (hasModified) {
+    saveClientsLocally();
+    saveInterventionsLocally();
+    saveServicesLocally();
+    savePlannedWorksLocally();
+    console.log("🛠️ [VitiTrack Pro] Réparation automatique des collisions locales effectuée :", repairsLog);
+  }
+
+  return repairsLog;
+}
+window.repairLocalCollisions = repairLocalCollisions;
 
 // ==================== INITIALIZATION ====================
 function initDashboard() {
@@ -402,6 +648,9 @@ function loadDatabase() {
     plannedWorks = isDemo ? getDemoPlannedWorks() : [];
     savePlannedWorksLocally();
   }
+
+  // Détection et réparation immédiate des collisions d'IDs dans le stockage local
+  repairLocalCollisions();
 }
 
 // Local cache functions (user-isolated)
@@ -583,6 +832,9 @@ async function loadFromSupabase() {
         }));
       }
 
+      // Détection et réparation préventive des éventuelles collisions avant mise en cache local
+      repairLocalCollisions();
+
       // Save fresh data to user's isolated local cache
       saveClientsLocally();
       saveInterventionsLocally();
@@ -628,6 +880,9 @@ window.migrateAllToSupabase = async function() {
   showToast("Synchronisation vers Supabase en cours...", "info");
 
   try {
+    // 0. Réparation préventive des collisions d'identifiants avant envoi
+    repairLocalCollisions();
+
     const sb = window.supabaseClient;
     const userId = getAuthUserId();
 
@@ -643,6 +898,10 @@ window.migrateAllToSupabase = async function() {
         email: c.email || "",
         notes: c.notes || ""
       }));
+
+      const valCli = validatePayloadUniqueIds(clientsPayload, "clients");
+      if (!valCli.valid) throw new Error(valCli.reason);
+
       const { error: errCli } = await sb.from("clients").upsert(clientsPayload);
       if (errCli) throw errCli;
 
@@ -664,6 +923,9 @@ window.migrateAllToSupabase = async function() {
         }
       });
       if (allParcels.length > 0) {
+        const valParc = validatePayloadUniqueIds(allParcels, "parcelles");
+        if (!valParc.valid) throw new Error(valParc.reason);
+
         const { error: errParc } = await sb.from("parcelles").upsert(allParcels);
         if (errParc) throw errParc;
       }
@@ -680,6 +942,10 @@ window.migrateAllToSupabase = async function() {
         price: s.price,
         description: s.description || ""
       }));
+
+      const valSrv = validatePayloadUniqueIds(servicesPayload, "prestations (services)");
+      if (!valSrv.valid) throw new Error(valSrv.reason);
+
       const { error: errSrv } = await sb.from("services").upsert(servicesPayload);
       if (errSrv) throw errSrv;
     }
@@ -705,6 +971,10 @@ window.migrateAllToSupabase = async function() {
         status: inv.status || "À facturer",
         notes: inv.notes || ""
       }));
+
+      const valInv = validatePayloadUniqueIds(interventionsPayload, "interventions");
+      if (!valInv.valid) throw new Error(valInv.reason);
+
       const { error: errInv } = await sb.from("interventions").upsert(interventionsPayload);
       if (errInv) throw errInv;
     }
@@ -724,6 +994,10 @@ window.migrateAllToSupabase = async function() {
         status: pw.status || "À réaliser",
         notes: pw.notes || ""
       }));
+
+      const valPw = validatePayloadUniqueIds(plannedPayload, "travaux planifiés (planned_works)");
+      if (!valPw.valid) throw new Error(valPw.reason);
+
       const { error: errPw } = await sb.from("planned_works").upsert(plannedPayload);
       if (errPw) throw errPw;
     }
@@ -756,7 +1030,10 @@ async function syncClientToSupabase(client) {
         notes: client.notes || "",
         updated_at: new Date().toISOString()
       });
-    if (errCli) return;
+    if (errCli) {
+      console.error(`❌ [VitiTrack Pro] Erreur sync client « ${client.name} » :`, errCli);
+      return;
+    }
 
     if (client.parcels && client.parcels.length > 0) {
       const parcelsData = client.parcels.map(p => ({
@@ -768,10 +1045,20 @@ async function syncClientToSupabase(client) {
         grape: p.grape || "",
         soil: p.soil || ""
       }));
-      await window.supabaseClient.from("parcelles").upsert(parcelsData);
+
+      const val = validatePayloadUniqueIds(parcelsData, `parcelles de « ${client.name} »`);
+      if (!val.valid) {
+        console.error(`❌ [VitiTrack Pro] Upsert parcelles annulé pour « ${client.name} » : collision détectée ! (${val.reason})`);
+        return;
+      }
+
+      const { error: errParc } = await window.supabaseClient.from("parcelles").upsert(parcelsData);
+      if (errParc) {
+        console.error(`❌ [VitiTrack Pro] Erreur sync parcelles pour « ${client.name} » :`, errParc);
+      }
     }
   } catch (err) {
-    console.warn("Notice sync client Supabase :", err);
+    console.error(`❌ [VitiTrack Pro] Exception syncClientToSupabase pour « ${client.name} » :`, err);
   }
 }
 
@@ -1036,6 +1323,16 @@ function setupEventListeners() {
   if (emptyAddClient) emptyAddClient.addEventListener("click", openClientHandler);
   if (quickAddClient) quickAddClient.addEventListener("click", openClientHandler);
 
+  // Stripe Subscription button
+  const sidebarSubBtn = document.getElementById("sidebar-sub-btn");
+  if (sidebarSubBtn) {
+    sidebarSubBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      openSubscriptionModal();
+      closeSidebar();
+    });
+  }
+
   // Prestations & Travaux creation buttons
   const sidebarAddService = document.getElementById("sidebar-add-service-btn");
   const viewAddService = document.getElementById("btn-view-add-service");
@@ -1148,7 +1445,7 @@ function setupEventListeners() {
   setupModalCloser("detail-modal", "detail-close-btn", "detail-dismiss-btn", closeDetailModal);
   setupModalCloser("service-modal", "service-modal-close-btn", "service-modal-cancel-btn", closeServiceModal);
   setupModalCloser("planned-modal", "planned-modal-close-btn", "planned-modal-cancel-btn", closePlannedModal);
-  setupModalCloser("client-dossier-modal", "dossier-modal-close-btn", null, closeClientDossier);
+  setupModalCloser("client-dossier-modal", "dossier-modal-close-btn", "dossier-modal-dismiss-btn", closeClientDossier);
   setupModalCloser("subscription-modal", "subscription-modal-close-btn", "sub-modal-close-btn", closeSubscriptionModal);
 
   // Forms Submissions
@@ -1338,27 +1635,8 @@ function setupEventListeners() {
     });
   }
 
-  const clientFilter = document.getElementById("filter-client");
-  if (clientFilter) {
-    clientFilter.addEventListener("change", (e) => {
-      if (e.target.value === "__create_client__") {
-        clientFilter.value = "all";
-        currentFilter.client = "all";
-        openClientModal();
-        return;
-      }
-      currentFilter.client = e.target.value;
-      renderTable();
-    });
-  }
-
-  const taskFilter = document.getElementById("filter-task");
-  if (taskFilter) {
-    taskFilter.addEventListener("change", (e) => {
-      currentFilter.task = e.target.value;
-      renderTable();
-    });
-  }
+  // Multi-select dropdown filters with checkboxes (encoches)
+  initFilterMultiSelects();
 
   // Date Range Filter in Interventions Table
   const datePresetSelect = document.getElementById("filter-date-preset");
@@ -1465,7 +1743,9 @@ function setupEventListeners() {
     resetTableFiltersBtn.addEventListener("click", () => {
       currentFilter.search = "";
       currentFilter.client = "all";
+      currentFilter.clients = [];
       currentFilter.task = "all";
+      currentFilter.tasks = [];
       currentFilter.status = "all";
       currentFilter.dateFrom = "";
       currentFilter.dateTo = "";
@@ -1474,11 +1754,35 @@ function setupEventListeners() {
       const searchInput = document.getElementById("filter-search");
       if (searchInput) searchInput.value = "";
 
-      const clientSelect = document.getElementById("filter-client");
-      if (clientSelect) clientSelect.value = "all";
+      // Reset client checkboxes & UI
+      const clientCheckboxes = document.querySelectorAll("#list-filter-client .filter-client-cb");
+      clientCheckboxes.forEach(cb => {
+        cb.checked = false;
+        const item = cb.closest(".filter-ms-item");
+        if (item) item.classList.remove("is-checked");
+      });
+      const searchFilterClient = document.getElementById("search-filter-client");
+      if (searchFilterClient) {
+        searchFilterClient.value = "";
+        const items = document.querySelectorAll("#list-filter-client .filter-ms-item");
+        items.forEach(item => item.style.display = "flex");
+      }
+      if (typeof updateClientFilterUI === "function") updateClientFilterUI();
 
-      const taskSelect = document.getElementById("filter-task");
-      if (taskSelect) taskSelect.value = "all";
+      // Reset task checkboxes & UI
+      const taskCheckboxes = document.querySelectorAll("#list-filter-task .filter-task-cb");
+      taskCheckboxes.forEach(cb => {
+        cb.checked = false;
+        const item = cb.closest(".filter-ms-item");
+        if (item) item.classList.remove("is-checked");
+      });
+      const searchFilterTask = document.getElementById("search-filter-task");
+      if (searchFilterTask) {
+        searchFilterTask.value = "";
+        const items = document.querySelectorAll("#list-filter-task .filter-ms-item");
+        items.forEach(item => item.style.display = "flex");
+      }
+      if (typeof updateTaskFilterUI === "function") updateTaskFilterUI();
 
       if (datePresetSelect) datePresetSelect.value = "all";
       if (dateRangeInputs) dateRangeInputs.style.display = "none";
@@ -1702,8 +2006,31 @@ function filterByStatus(status) {
 let bodyScrollPos = 0;
 let activeModalsCount = 0;
 
-function lockBodyScroll() {
+function syncBodyScrollLock() {
+  const openModals = document.querySelectorAll(".modal-overlay.open");
+  activeModalsCount = openModals.length;
   if (activeModalsCount === 0) {
+    document.documentElement.style.overflow = "";
+    document.documentElement.style.height = "";
+    document.body.style.position = "";
+    document.body.style.top = "";
+    document.body.style.left = "";
+    document.body.style.right = "";
+    document.body.style.width = "";
+    document.body.style.height = "";
+    document.body.style.overflow = "";
+    if (bodyScrollPos > 0) {
+      window.scrollTo(0, bodyScrollPos);
+      bodyScrollPos = 0;
+    }
+  }
+}
+
+function lockBodyScroll() {
+  const openModals = document.querySelectorAll(".modal-overlay.open");
+  const openCount = openModals.length;
+
+  if (document.body.style.position !== "fixed") {
     bodyScrollPos = window.pageYOffset || document.documentElement.scrollTop || 0;
     document.documentElement.style.overflow = "hidden";
     document.documentElement.style.height = "100%";
@@ -1715,23 +2042,15 @@ function lockBodyScroll() {
     document.body.style.height = "100%";
     document.body.style.overflow = "hidden";
   }
-  activeModalsCount++;
+  activeModalsCount = Math.max(1, openCount);
 }
 
 function unlockBodyScroll() {
-  activeModalsCount = Math.max(0, activeModalsCount - 1);
-  if (activeModalsCount === 0) {
-    document.documentElement.style.overflow = "";
-    document.documentElement.style.height = "";
-    document.body.style.position = "";
-    document.body.style.top = "";
-    document.body.style.left = "";
-    document.body.style.right = "";
-    document.body.style.width = "";
-    document.body.style.height = "";
-    document.body.style.overflow = "";
-    window.scrollTo(0, bodyScrollPos);
-  }
+  // Petite temporisation ou vérification immédiate après le retrait de .open
+  setTimeout(() => {
+    syncBodyScrollLock();
+  }, 10);
+  syncBodyScrollLock();
 }
 
 // ==================== CLIENT MANAGEMENT ====================
@@ -1855,7 +2174,7 @@ function handleCreateClientSubmit(e) {
   }
 
   // Mode CREATE
-  const clientId = `CLI-${Date.now().toString().slice(-4)}`;
+  const clientId = generateUniqueId("CLI");
 
   // Optional initial parcel
   const initialParcelName = document.getElementById("input-initial-parcel-name")?.value.trim();
@@ -1865,7 +2184,7 @@ function handleCreateClientSubmit(e) {
   const parcels = [];
   if (initialParcelName) {
     parcels.push({
-      id: `PAR-${Date.now().toString().slice(-4)}`,
+      id: generateUniqueId("PAR"),
       name: initialParcelName,
       surface: initialParcelSurface > 0 ? initialParcelSurface : 1.0,
       grape: initialParcelGrape,
@@ -1971,7 +2290,7 @@ function handleCreateParcelSubmit(e) {
   }
 
   const newParcel = {
-    id: `PAR-${Date.now().toString().slice(-4)}`,
+    id: generateUniqueId("PAR"),
     name,
     surface,
     grape,
@@ -2172,6 +2491,8 @@ function updateParcelSelectionSummary(client) {
 // ==================== INTERVENTION CREATION ====================
 function openCreateModal() {
   const modal = document.getElementById("create-modal");
+  if (modal && modal.classList.contains("open")) return;
+
   const datetimeInput = document.getElementById("input-datetime");
 
   if (datetimeInput && !datetimeInput.value) {
@@ -2202,6 +2523,421 @@ function closeCreateModal() {
     modal.classList.remove("open");
     modal.setAttribute("aria-hidden", "true");
     unlockBodyScroll();
+  }
+}
+
+// ==================== FILTRES MULTI-SÉLECTION À ENCOCHES (CLIENTS & PRESTATIONS) ====================
+let _filterMsInitialized = false;
+
+function initFilterMultiSelects() {
+  if (_filterMsInitialized) return;
+  _filterMsInitialized = true;
+
+  const wrapClient = document.getElementById("wrap-filter-client");
+  const btnClient = document.getElementById("btn-filter-client");
+  const dropdownClient = document.getElementById("dropdown-filter-client");
+  const searchClient = document.getElementById("search-filter-client");
+  const btnSelectAllClients = document.getElementById("btn-select-all-clients");
+  const btnClearClients = document.getElementById("btn-clear-clients");
+  const btnMsNewClient = document.getElementById("btn-ms-new-client");
+
+  const wrapTask = document.getElementById("wrap-filter-task");
+  const btnTask = document.getElementById("btn-filter-task");
+  const dropdownTask = document.getElementById("dropdown-filter-task");
+  const searchTask = document.getElementById("search-filter-task");
+  const btnSelectAllTasks = document.getElementById("btn-select-all-tasks");
+  const btnClearTasks = document.getElementById("btn-clear-tasks");
+
+  // Bascule du menu Client
+  if (btnClient && dropdownClient) {
+    btnClient.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const isOpen = dropdownClient.style.display === "flex";
+      closeAllFilterMultiSelects();
+      if (!isOpen) {
+        dropdownClient.style.display = "flex";
+        if (wrapClient) wrapClient.classList.add("is-open");
+        btnClient.setAttribute("aria-expanded", "true");
+        if (searchClient) {
+          setTimeout(() => searchClient.focus(), 60);
+        }
+      }
+    });
+  }
+
+  // Bascule du menu Prestation
+  if (btnTask && dropdownTask) {
+    btnTask.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const isOpen = dropdownTask.style.display === "flex";
+      closeAllFilterMultiSelects();
+      if (!isOpen) {
+        dropdownTask.style.display = "flex";
+        if (wrapTask) wrapTask.classList.add("is-open");
+        btnTask.setAttribute("aria-expanded", "true");
+        if (searchTask) {
+          setTimeout(() => searchTask.focus(), 60);
+        }
+      }
+    });
+  }
+
+  // Éviter la fermeture lors du clic à l'intérieur des menus déroulants
+  if (dropdownClient) {
+    dropdownClient.addEventListener("click", (e) => {
+      e.stopPropagation();
+    });
+  }
+  if (dropdownTask) {
+    dropdownTask.addEventListener("click", (e) => {
+      e.stopPropagation();
+    });
+  }
+
+  // Recherche dans la liste des clients
+  if (searchClient) {
+    searchClient.addEventListener("input", (e) => {
+      const q = e.target.value.toLowerCase().trim();
+      const items = document.querySelectorAll("#list-filter-client .filter-ms-item");
+      items.forEach(item => {
+        const text = item.textContent.toLowerCase();
+        item.style.display = text.includes(q) ? "flex" : "none";
+      });
+    });
+  }
+
+  // Recherche dans la liste des prestations
+  if (searchTask) {
+    searchTask.addEventListener("input", (e) => {
+      const q = e.target.value.toLowerCase().trim();
+      const items = document.querySelectorAll("#list-filter-task .filter-ms-item");
+      items.forEach(item => {
+        const text = item.textContent.toLowerCase();
+        item.style.display = text.includes(q) ? "flex" : "none";
+      });
+
+      // Gestion de la visibilité des en-têtes de catégories
+      const catTitles = document.querySelectorAll("#list-filter-task .filter-ms-category-title");
+      catTitles.forEach(title => {
+        if (!q) {
+          title.style.display = "block";
+        } else {
+          let next = title.nextElementSibling;
+          let anyVisible = false;
+          while (next && !next.classList.contains("filter-ms-category-title")) {
+            if (next.style.display !== "none") anyVisible = true;
+            next = next.nextElementSibling;
+          }
+          title.style.display = anyVisible ? "block" : "none";
+        }
+      });
+    });
+  }
+
+  // Clients : Tout cocher
+  if (btnSelectAllClients) {
+    btnSelectAllClients.addEventListener("click", (e) => {
+      e.preventDefault();
+      const checkboxes = document.querySelectorAll("#list-filter-client .filter-client-cb");
+      currentFilter.clients = [];
+      checkboxes.forEach(cb => {
+        cb.checked = true;
+        const item = cb.closest(".filter-ms-item");
+        if (item) item.classList.add("is-checked");
+        currentFilter.clients.push(cb.value);
+      });
+      currentFilter.client = "all";
+      updateClientFilterUI();
+      renderTable();
+    });
+  }
+
+  // Clients : Tout décocher
+  if (btnClearClients) {
+    btnClearClients.addEventListener("click", (e) => {
+      e.preventDefault();
+      const checkboxes = document.querySelectorAll("#list-filter-client .filter-client-cb");
+      checkboxes.forEach(cb => {
+        cb.checked = false;
+        const item = cb.closest(".filter-ms-item");
+        if (item) item.classList.remove("is-checked");
+      });
+      currentFilter.clients = [];
+      currentFilter.client = "all";
+      updateClientFilterUI();
+      renderTable();
+    });
+  }
+
+  // Prestations : Tout cocher
+  if (btnSelectAllTasks) {
+    btnSelectAllTasks.addEventListener("click", (e) => {
+      e.preventDefault();
+      const checkboxes = document.querySelectorAll("#list-filter-task .filter-task-cb");
+      currentFilter.tasks = [];
+      checkboxes.forEach(cb => {
+        cb.checked = true;
+        const item = cb.closest(".filter-ms-item");
+        if (item) item.classList.add("is-checked");
+        currentFilter.tasks.push(cb.value);
+      });
+      currentFilter.task = "all";
+      updateTaskFilterUI();
+      renderTable();
+    });
+  }
+
+  // Prestations : Tout décocher
+  if (btnClearTasks) {
+    btnClearTasks.addEventListener("click", (e) => {
+      e.preventDefault();
+      const checkboxes = document.querySelectorAll("#list-filter-task .filter-task-cb");
+      checkboxes.forEach(cb => {
+        cb.checked = false;
+        const item = cb.closest(".filter-ms-item");
+        if (item) item.classList.remove("is-checked");
+      });
+      currentFilter.tasks = [];
+      currentFilter.task = "all";
+      updateTaskFilterUI();
+      renderTable();
+    });
+  }
+
+  // Bouton Ajouter un client dans le menu déroulant
+  if (btnMsNewClient) {
+    btnMsNewClient.addEventListener("click", (e) => {
+      e.preventDefault();
+      closeAllFilterMultiSelects();
+      openClientModal();
+    });
+  }
+
+  // Fermeture lors d'un clic en dehors
+  document.addEventListener("click", (e) => {
+    if (!e.target.closest("#wrap-filter-client") && !e.target.closest("#wrap-filter-task")) {
+      closeAllFilterMultiSelects();
+    }
+  });
+
+  // Fermeture par touche Échap
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      closeAllFilterMultiSelects();
+    }
+  });
+}
+
+function closeAllFilterMultiSelects() {
+  const dropdownClient = document.getElementById("dropdown-filter-client");
+  const wrapClient = document.getElementById("wrap-filter-client");
+  const btnClient = document.getElementById("btn-filter-client");
+
+  const dropdownTask = document.getElementById("dropdown-filter-task");
+  const wrapTask = document.getElementById("wrap-filter-task");
+  const btnTask = document.getElementById("btn-filter-task");
+
+  if (dropdownClient) dropdownClient.style.display = "none";
+  if (wrapClient) wrapClient.classList.remove("is-open");
+  if (btnClient) btnClient.setAttribute("aria-expanded", "false");
+
+  if (dropdownTask) dropdownTask.style.display = "none";
+  if (wrapTask) wrapTask.classList.remove("is-open");
+  if (btnTask) btnTask.setAttribute("aria-expanded", "false");
+}
+
+function renderClientMultiSelectFilter() {
+  const listEl = document.getElementById("list-filter-client");
+  if (!listEl) return;
+
+  listEl.innerHTML = "";
+
+  if (!clients || clients.length === 0) {
+    listEl.innerHTML = '<div class="filter-ms-empty">Aucun domaine client enregistré</div>';
+    updateClientFilterUI();
+    return;
+  }
+
+  clients.forEach(c => {
+    const isChecked = Array.isArray(currentFilter.clients) && currentFilter.clients.includes(c.name);
+    const label = document.createElement("label");
+    label.className = `filter-ms-item ${isChecked ? "is-checked" : ""}`;
+
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.className = "filter-ms-cb filter-client-cb";
+    checkbox.value = c.name;
+    checkbox.checked = isChecked;
+
+    checkbox.addEventListener("change", () => {
+      const allChecked = Array.from(document.querySelectorAll("#list-filter-client .filter-client-cb:checked")).map(cb => cb.value);
+      currentFilter.clients = allChecked;
+      currentFilter.client = "all";
+      label.classList.toggle("is-checked", checkbox.checked);
+      updateClientFilterUI();
+      renderTable();
+    });
+
+    const infoWrap = document.createElement("div");
+    infoWrap.className = "filter-ms-item-info";
+
+    const nameSpan = document.createElement("span");
+    nameSpan.className = "filter-ms-item-name";
+    nameSpan.textContent = c.name;
+    infoWrap.appendChild(nameSpan);
+
+    if (c.commune) {
+      const subSpan = document.createElement("span");
+      subSpan.className = "filter-ms-item-sub";
+      subSpan.textContent = c.commune;
+      infoWrap.appendChild(subSpan);
+    }
+
+    label.appendChild(checkbox);
+    label.appendChild(infoWrap);
+    listEl.appendChild(label);
+  });
+
+  updateClientFilterUI();
+}
+
+function updateClientFilterUI() {
+  const textEl = document.getElementById("filter-client-text");
+  const badgeEl = document.getElementById("filter-client-badge");
+  const wrapEl = document.getElementById("wrap-filter-client");
+
+  const count = Array.isArray(currentFilter.clients) ? currentFilter.clients.length : 0;
+  const total = clients ? clients.length : 0;
+
+  if (textEl) {
+    if (count === 0) {
+      textEl.textContent = "Tous les clients";
+    } else if (count === 1) {
+      textEl.textContent = currentFilter.clients[0];
+    } else if (count === total && total > 0) {
+      textEl.textContent = `Tous les clients (${count})`;
+    } else {
+      textEl.textContent = `${count} clients sélectionnés`;
+    }
+  }
+
+  if (badgeEl) {
+    if (count === 0) {
+      badgeEl.textContent = "Tous";
+    } else {
+      badgeEl.textContent = `${count} sélectionné${count > 1 ? "s" : ""}`;
+    }
+  }
+
+  if (wrapEl) {
+    wrapEl.classList.toggle("is-active", count > 0 && count < total);
+  }
+}
+
+function renderTaskMultiSelectFilter() {
+  const listEl = document.getElementById("list-filter-task");
+  if (!listEl) return;
+
+  listEl.innerHTML = "";
+
+  const availableServices = (services && services.length > 0) ? services : (typeof DEFAULT_SERVICES !== "undefined" ? DEFAULT_SERVICES : []);
+
+  if (availableServices.length === 0) {
+    listEl.innerHTML = '<div class="filter-ms-empty">Aucune prestation disponible</div>';
+    updateTaskFilterUI();
+    return;
+  }
+
+  // Grouper par catégorie
+  const categories = {};
+  availableServices.forEach(s => {
+    const cat = s.category || "Autres travaux viticoles";
+    if (!categories[cat]) categories[cat] = [];
+    categories[cat].push(s);
+  });
+
+  Object.keys(categories).forEach(cat => {
+    const catTitle = document.createElement("div");
+    catTitle.className = "filter-ms-category-title";
+    catTitle.textContent = cat;
+    listEl.appendChild(catTitle);
+
+    categories[cat].forEach(s => {
+      const isChecked = Array.isArray(currentFilter.tasks) && currentFilter.tasks.includes(s.name);
+      const label = document.createElement("label");
+      label.className = `filter-ms-item ${isChecked ? "is-checked" : ""}`;
+
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.className = "filter-ms-cb filter-task-cb";
+      checkbox.value = s.name;
+      checkbox.checked = isChecked;
+
+      checkbox.addEventListener("change", () => {
+        const allChecked = Array.from(document.querySelectorAll("#list-filter-task .filter-task-cb:checked")).map(cb => cb.value);
+        currentFilter.tasks = allChecked;
+        currentFilter.task = "all";
+        label.classList.toggle("is-checked", checkbox.checked);
+        updateTaskFilterUI();
+        renderTable();
+      });
+
+      const infoWrap = document.createElement("div");
+      infoWrap.className = "filter-ms-item-info";
+
+      const nameSpan = document.createElement("span");
+      nameSpan.className = "filter-ms-item-name";
+      nameSpan.textContent = s.name;
+      infoWrap.appendChild(nameSpan);
+
+      const rateLabel = s.rateType === "hourly" ? `${s.price} €/h` : (s.rateType === "surface" ? `${s.price} €/ha` : `${s.price} € forfait`);
+      const badge = document.createElement("span");
+      badge.className = "filter-ms-rate-badge";
+      badge.textContent = rateLabel;
+      infoWrap.appendChild(badge);
+
+      label.appendChild(checkbox);
+      label.appendChild(infoWrap);
+      listEl.appendChild(label);
+    });
+  });
+
+  updateTaskFilterUI();
+}
+
+function updateTaskFilterUI() {
+  const textEl = document.getElementById("filter-task-text");
+  const badgeEl = document.getElementById("filter-task-badge");
+  const wrapEl = document.getElementById("wrap-filter-task");
+
+  const availableServices = (services && services.length > 0) ? services : (typeof DEFAULT_SERVICES !== "undefined" ? DEFAULT_SERVICES : []);
+  const count = Array.isArray(currentFilter.tasks) ? currentFilter.tasks.length : 0;
+  const total = availableServices.length;
+
+  if (textEl) {
+    if (count === 0) {
+      textEl.textContent = "Toutes les prestations";
+    } else if (count === 1) {
+      textEl.textContent = currentFilter.tasks[0];
+    } else if (count === total && total > 0) {
+      textEl.textContent = `Toutes les prestations (${count})`;
+    } else {
+      textEl.textContent = `${count} prestations sélectionnées`;
+    }
+  }
+
+  if (badgeEl) {
+    if (count === 0) {
+      badgeEl.textContent = "Toutes";
+    } else {
+      badgeEl.textContent = `${count} sélectionnée${count > 1 ? "s" : ""}`;
+    }
+  }
+
+  if (wrapEl) {
+    wrapEl.classList.toggle("is-active", count > 0 && count < total);
   }
 }
 
@@ -2240,6 +2976,9 @@ function populateClientSelect() {
     addOpt.textContent = "🍇 ＋ Nouveau client...";
     filterClientSelect.appendChild(addOpt);
   }
+
+  // Mettre à jour la liste multi-sélection avec encoches
+  renderClientMultiSelectFilter();
 }
 
 function updateCalculatedPrice() {
@@ -2297,7 +3036,7 @@ function handleCreateInterventionSubmit(e) {
   const total = quantity * unitPrice;
   const tvaRate = getTvaRate(task);
   const totalTTC = total * (1 + tvaRate);
-  const id = `VT-${new Date().getFullYear()}-${String(interventions.length + 1).padStart(3, '0')}`;
+  const id = generateUniqueInterventionId(datetime ? new Date(datetime).getFullYear() : new Date().getFullYear());
 
   if (services.length === 0 && typeof DEFAULT_SERVICES !== "undefined") {
     services = JSON.parse(JSON.stringify(DEFAULT_SERVICES));
@@ -2434,8 +3173,22 @@ function renderTable() {
 
   const filtered = interventions.filter(item => {
     if (currentFilter.status !== "all" && item.status !== currentFilter.status) return false;
-    if (currentFilter.client !== "all" && item.client !== currentFilter.client) return false;
-    if (currentFilter.task !== "all" && !item.task.includes(currentFilter.task)) return false;
+
+    // Filtrage multi-sélection des clients (encoches)
+    if (Array.isArray(currentFilter.clients) && currentFilter.clients.length > 0) {
+      if (!currentFilter.clients.includes(item.client)) return false;
+    } else if (currentFilter.client && currentFilter.client !== "all") {
+      if (item.client !== currentFilter.client) return false;
+    }
+
+    // Filtrage multi-sélection des prestations (encoches)
+    if (Array.isArray(currentFilter.tasks) && currentFilter.tasks.length > 0) {
+      const matchesAny = currentFilter.tasks.some(t => item.task && item.task.includes(t));
+      if (!matchesAny) return false;
+    } else if (currentFilter.task && currentFilter.task !== "all") {
+      if (!item.task || !item.task.includes(currentFilter.task)) return false;
+    }
+
     if (currentFilter.dateFrom) {
       const itemDate = (item.datetime || "").split("T")[0];
       if (itemDate && itemDate < currentFilter.dateFrom) return false;
@@ -2470,22 +3223,26 @@ function renderTable() {
   setElemText("count-status-billed", countBilled);
 
   // Update Active State on Filter Dropdowns
+  const isClientActive = (Array.isArray(currentFilter.clients) && currentFilter.clients.length > 0) || (currentFilter.client && currentFilter.client !== "all");
   const wrapClient = document.getElementById("wrap-filter-client");
   if (wrapClient) {
-    wrapClient.classList.toggle("is-active", currentFilter.client !== "all");
+    wrapClient.classList.toggle("is-active", isClientActive);
   }
+
+  const isTaskActive = (Array.isArray(currentFilter.tasks) && currentFilter.tasks.length > 0) || (currentFilter.task && currentFilter.task !== "all");
   const wrapTask = document.getElementById("wrap-filter-task");
   if (wrapTask) {
-    wrapTask.classList.toggle("is-active", currentFilter.task !== "all");
+    wrapTask.classList.toggle("is-active", isTaskActive);
   }
+
   const wrapDate = document.getElementById("wrap-filter-date");
   if (wrapDate) {
     wrapDate.classList.toggle("is-active", currentFilter.datePreset !== "all" || Boolean(currentFilter.dateFrom) || Boolean(currentFilter.dateTo));
   }
   const resetBtn = document.getElementById("btn-reset-table-filters");
   if (resetBtn) {
-    const hasFilter = currentFilter.client !== "all" || 
-                      currentFilter.task !== "all" || 
+    const hasFilter = isClientActive || 
+                      isTaskActive || 
                       currentFilter.status !== "all" || 
                       Boolean(currentFilter.search) || 
                       Boolean(currentFilter.dateFrom) || 
@@ -3209,6 +3966,9 @@ function populateTaskSelects() {
       inputPlannedService.appendChild(opt);
     });
   }
+
+  // Mettre à jour la liste multi-sélection des prestations avec encoches
+  renderTaskMultiSelectFilter();
 }
 
 function renderServicesView() {
@@ -3548,7 +4308,7 @@ function handleCreateServiceSubmit(e) {
     }
   } else {
     const newService = {
-      id: `srv-${Date.now().toString().slice(-4)}`,
+      id: generateUniqueId("SRV"),
       name,
       category,
       rateType,
@@ -3667,7 +4427,7 @@ function handleCreatePlannedSubmit(e) {
   const clientName = client ? client.name : "Client Inconnu";
 
   const newPlanned = {
-    id: `PLN-${Date.now().toString().slice(-4)}`,
+    id: generateUniqueId("PLN"),
     clientId,
     clientName,
     parcel,
