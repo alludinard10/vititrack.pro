@@ -781,13 +781,14 @@
             </svg>
           </div>
           <div>
-            <h3 class="modal-title">Nouvelle intervention viticole</h3>
-            <p class="modal-subtitle">Enregistrement rapide des travaux de parcelle pour facturation</p>
+            <h3 class="modal-title" id="intervention-modal-title">Nouvelle intervention viticole</h3>
+            <p class="modal-subtitle" id="intervention-modal-subtitle">Enregistrement rapide des travaux de parcelle pour facturation</p>
           </div>
           <button class="modal-close-btn" id="modal-close-btn" aria-label="Fermer">✕</button>
         </div>
 
         <form id="create-intervention-form" novalidate>
+          <input type="hidden" id="intervention-edit-id" value="">
           <div class="modal-body">
 
             <!-- LIGNE 1 : Date & Heure de l'intervention -->
@@ -924,7 +925,7 @@
           <div class="modal-footer">
             <button type="button" class="btn btn-ghost" id="modal-cancel-btn">Annuler</button>
             <button type="submit" class="btn btn-primary btn-glow" id="modal-submit-btn">
-              <span>Enregistrer l'intervention</span>
+              <span id="intervention-modal-submit-text">Enregistrer l'intervention</span>
             </button>
           </div>
         </form>
@@ -1143,6 +1144,7 @@
 
         <div class="modal-footer">
           <button type="button" class="btn btn-ghost" id="detail-dismiss-btn">Fermer</button>
+          <button type="button" class="btn btn-outline btn-sm" id="detail-edit-btn" style="color: var(--color-primary-lighter); border-color: rgba(82, 183, 136, 0.4);">✏️ Modifier</button>
           <button type="button" class="btn btn-primary btn-sm" id="detail-toggle-status-btn">Changer le statut</button>
         </div>
       </div>
@@ -1468,6 +1470,7 @@
                     <th>Montant HT</th>
                     <th>Montant TTC</th>
                     <th>Statut</th>
+                    <th class="text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody id="dossier-interventions-tbody">

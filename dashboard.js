@@ -2335,7 +2335,7 @@ window.deleteParcel = function(clientId, parcelId) {
 };
 
 // ==================== MULTI-PARCEL SELECTION & SURFACE CALCULATION ====================
-function populateParcelSelectForClient(clientId) {
+function populateParcelSelectForClient(clientId, selectedParcelsStr = null) {
   const parcelContainer = document.getElementById("parcel-checkbox-list");
   const hiddenParcelInput = document.getElementById("input-parcel");
   const parcelHint = document.getElementById("parcel-hint");
@@ -2347,7 +2347,7 @@ function populateParcelSelectForClient(clientId) {
 
   if (!clientId) {
     parcelContainer.innerHTML = '<div class="parcel-list-empty">Sélectionnez d\'abord un client pour charger ses parcelles.</div>';
-    if (hiddenParcelInput) hiddenParcelInput.value = "";
+    if (hiddenParcelInput) hiddenParcelInput.value = selectedParcelsStr || "";
     if (parcelHint) parcelHint.textContent = "Sélectionnez un client pour charger ses parcelles.";
     if (quickAddParcelBtn) quickAddParcelBtn.style.display = "none";
     if (toggleAllParcelsBtn) toggleAllParcelsBtn.style.display = "none";
@@ -2362,7 +2362,7 @@ function populateParcelSelectForClient(clientId) {
 
   if (!client.parcels || client.parcels.length === 0) {
     parcelContainer.innerHTML = `<div class="parcel-list-empty">⚠️ Ce client n'a pas encore de parcelle.<br><a href="#" onclick="openParcelModal('${client.id}'); return false;" style="color:var(--color-primary-lighter); text-decoration:underline; font-weight:600; display:inline-block; margin-top:0.35rem;">＋ Ajouter une première parcelle</a></div>`;
-    if (hiddenParcelInput) hiddenParcelInput.value = "";
+    if (hiddenParcelInput) hiddenParcelInput.value = selectedParcelsStr || "";
     if (parcelHint) parcelHint.textContent = "Aucune parcelle répertoriée pour ce domaine.";
     if (toggleAllParcelsBtn) toggleAllParcelsBtn.style.display = "none";
     if (summaryBar) summaryBar.style.display = "none";
@@ -2423,16 +2423,35 @@ function populateParcelSelectForClient(clientId) {
     parcelHint.textContent = `${client.parcels.length} parcelle(s) disponible(s) pour ${client.name}. Cochez celle(s) travaillée(s).`;
   }
 
-  // Preselect the first parcel by default so user has immediate visual confirmation & calculated total
-  const firstCb = parcelContainer.querySelector(".parcel-checkbox-input");
-  if (firstCb) {
-    firstCb.checked = true;
-    firstCb.closest(".parcel-checkbox-item")?.classList.add("selected");
-    updateParcelSelectionSummary(client);
+  if (selectedParcelsStr) {
+    // Mode ÉDITION ou présélection spécifique
+    let matchedAny = false;
+    const checkboxes = Array.from(parcelContainer.querySelectorAll(".parcel-checkbox-input"));
+    checkboxes.forEach(cb => {
+      if (selectedParcelsStr.includes(cb.value)) {
+        cb.checked = true;
+        cb.closest(".parcel-checkbox-item")?.classList.add("selected");
+        matchedAny = true;
+      }
+    });
+
+    if (matchedAny) {
+      updateParcelSelectionSummary(client, false);
+    } else {
+      if (hiddenParcelInput) hiddenParcelInput.value = selectedParcelsStr;
+    }
+  } else {
+    // Preselect the first parcel by default so user has immediate visual confirmation & calculated total
+    const firstCb = parcelContainer.querySelector(".parcel-checkbox-input");
+    if (firstCb) {
+      firstCb.checked = true;
+      firstCb.closest(".parcel-checkbox-item")?.classList.add("selected");
+      updateParcelSelectionSummary(client, true);
+    }
   }
 }
 
-function updateParcelSelectionSummary(client) {
+function updateParcelSelectionSummary(client, autoUpdateQuantity = true) {
   const parcelContainer = document.getElementById("parcel-checkbox-list");
   const hiddenParcelInput = document.getElementById("input-parcel");
   const summaryBar = document.getElementById("parcel-summary-bar");
@@ -2475,38 +2494,161 @@ function updateParcelSelectionSummary(client) {
 
     // If mode is surface (or default), automatically report the cumulative surface!
     const mode = rateTypeSelect?.value || "surface";
-    if (mode === "surface" && inputQuantity) {
+    if (mode === "surface" && inputQuantity && autoUpdateQuantity) {
       inputQuantity.value = parseFloat(totalSurface.toFixed(4));
       updateCalculatedPrice();
     }
   } else {
     if (summaryBar) summaryBar.style.display = "none";
-    if (rateTypeSelect?.value === "surface" && inputQuantity) {
+    if (rateTypeSelect?.value === "surface" && inputQuantity && autoUpdateQuantity) {
       inputQuantity.value = "0.0000";
       updateCalculatedPrice();
     }
   }
 }
 
-// ==================== INTERVENTION CREATION ====================
-function openCreateModal() {
+// ==================== INTERVENTION CREATION & MODIFICATION ====================
+function openCreateModal(interventionId = null) {
   const modal = document.getElementById("create-modal");
-  if (modal && modal.classList.contains("open")) return;
-
+  const form = document.getElementById("create-intervention-form");
+  const editIdInput = document.getElementById("intervention-edit-id");
+  const modalTitle = document.getElementById("intervention-modal-title");
+  const modalSubtitle = document.getElementById("intervention-modal-subtitle");
+  const submitText = document.getElementById("intervention-modal-submit-text");
   const datetimeInput = document.getElementById("input-datetime");
-
-  if (datetimeInput && !datetimeInput.value) {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
-    const hours = String(now.getHours()).padStart(2, '0');
-    const minutes = String(now.getMinutes()).padStart(2, '0');
-    datetimeInput.value = `${year}-${month}-${day}T${hours}:${minutes}`;
-  }
+  const clientSelect = document.getElementById("input-client");
+  const taskSelect = document.getElementById("input-task");
+  const rateTypeSelect = document.getElementById("input-rate-type");
+  const quantityInput = document.getElementById("input-quantity");
+  const unitPriceInput = document.getElementById("input-unit-price");
+  const notesInput = document.getElementById("input-notes");
+  const statusSelect = document.getElementById("input-status");
 
   populateClientSelect();
-  updateCalculatedPrice();
+
+  if (interventionId) {
+    // Mode MODIFIER une intervention existante
+    const item = interventions.find(i => i.id === interventionId);
+    if (!item) return;
+
+    if (editIdInput) editIdInput.value = item.id;
+    if (modalTitle) modalTitle.textContent = `Modifier l'intervention #${item.id}`;
+    if (modalSubtitle) modalSubtitle.textContent = `Mise à jour du chantier réalisé pour ${item.client}`;
+    if (submitText) submitText.textContent = "💾 Enregistrer les modifications";
+
+    // Date & Heure
+    if (datetimeInput) {
+      if (item.datetime) {
+        datetimeInput.value = item.datetime.slice(0, 16);
+      } else {
+        const now = new Date();
+        datetimeInput.value = now.toISOString().slice(0, 16);
+      }
+    }
+
+    // Client & Parcelles
+    if (clientSelect) {
+      let targetClientId = item.clientId;
+      if (!targetClientId) {
+        const found = clients.find(c => c.name === item.client);
+        if (found) targetClientId = found.id;
+      }
+      if (targetClientId) {
+        clientSelect.value = targetClientId;
+        populateParcelSelectForClient(targetClientId, item.parcel);
+      } else {
+        populateParcelSelectForClient("", item.parcel);
+      }
+    }
+
+    // Prestation viticole
+    if (taskSelect) {
+      const exists = Array.from(taskSelect.options).some(o => o.value === item.task);
+      if (!exists && item.task) {
+        const opt = document.createElement("option");
+        opt.value = item.task;
+        opt.textContent = item.task;
+        taskSelect.appendChild(opt);
+      }
+      taskSelect.value = item.task;
+    }
+
+    // Mode facturation & Labels
+    const mode = item.rateType || (item.unit === 'ha' ? 'surface' : (item.unit === 'heures' ? 'hourly' : 'fixed'));
+    if (rateTypeSelect) {
+      rateTypeSelect.value = mode;
+      const badgeUnit = document.getElementById("badge-quantity-unit");
+      const labelQuantity = document.getElementById("label-quantity");
+      const labelUnitPrice = document.getElementById("label-unit-price");
+      if (mode === "hourly") {
+        if (labelQuantity) labelQuantity.innerHTML = '<span>Durée travaillée</span> <span class="required">*</span>';
+        if (badgeUnit) badgeUnit.textContent = "heures";
+        if (quantityInput) quantityInput.step = "0.25";
+        if (labelUnitPrice) labelUnitPrice.innerHTML = '<span>Taux horaire HT (€/h)</span>';
+      } else if (mode === "surface") {
+        if (labelQuantity) labelQuantity.innerHTML = '<span>Surface travaillée</span> <span class="required">*</span>';
+        if (badgeUnit) badgeUnit.textContent = "ha";
+        if (quantityInput) quantityInput.step = "0.0001";
+        if (labelUnitPrice) labelUnitPrice.innerHTML = '<span>Forfait par hectare HT (€/ha)</span>';
+      } else {
+        if (labelQuantity) labelQuantity.innerHTML = '<span>Quantité forfaitaire</span> <span class="required">*</span>';
+        if (badgeUnit) badgeUnit.textContent = "forfait";
+        if (quantityInput) quantityInput.step = "1";
+        if (labelUnitPrice) labelUnitPrice.innerHTML = '<span>Montant forfaitaire HT (€)</span>';
+      }
+    }
+
+    // Quantité & Prix unitaire
+    if (quantityInput) {
+      quantityInput.value = item.unit === "ha" ? parseFloat(Number(item.quantity).toFixed(4)) : item.quantity;
+    }
+    if (unitPriceInput) {
+      unitPriceInput.value = item.unitPrice;
+    }
+    updateCalculatedPrice();
+
+    // Notes & Statut
+    if (notesInput) notesInput.value = item.notes || "";
+    if (statusSelect) statusSelect.value = item.status || "À facturer";
+
+  } else {
+    // Mode NOUVELLE INTERVENTION
+    if (form) form.reset();
+    if (editIdInput) editIdInput.value = "";
+    if (modalTitle) modalTitle.textContent = "Nouvelle intervention viticole";
+    if (modalSubtitle) modalSubtitle.textContent = "Enregistrement rapide des travaux de parcelle pour facturation";
+    if (submitText) submitText.textContent = "Enregistrer l'intervention";
+
+    if (datetimeInput) {
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      const hours = String(now.getHours()).padStart(2, '0');
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      datetimeInput.value = `${year}-${month}-${day}T${hours}:${minutes}`;
+    }
+
+    // Reset rateType labels to default (surface)
+    if (rateTypeSelect) {
+      rateTypeSelect.value = "surface";
+      const badgeUnit = document.getElementById("badge-quantity-unit");
+      const labelQuantity = document.getElementById("label-quantity");
+      const labelUnitPrice = document.getElementById("label-unit-price");
+      if (labelQuantity) labelQuantity.innerHTML = '<span>Surface travaillée</span> <span class="required">*</span>';
+      if (badgeUnit) badgeUnit.textContent = "ha";
+      if (quantityInput) {
+        quantityInput.step = "0.0001";
+        quantityInput.value = "1.0000";
+      }
+      if (labelUnitPrice) labelUnitPrice.innerHTML = '<span>Forfait par hectare HT (€/ha)</span>';
+      if (unitPriceInput) unitPriceInput.value = "95";
+    }
+
+    if (clientSelect) clientSelect.value = "";
+    populateParcelSelectForClient("");
+    updateCalculatedPrice();
+  }
 
   if (modal) {
     modal.classList.add("open");
@@ -2517,8 +2659,14 @@ function openCreateModal() {
   }
 }
 
+window.openEditInterventionModal = function(id) {
+  openCreateModal(id);
+};
+
 function closeCreateModal() {
   const modal = document.getElementById("create-modal");
+  const editIdInput = document.getElementById("intervention-edit-id");
+  if (editIdInput) editIdInput.value = "";
   if (modal) {
     modal.classList.remove("open");
     modal.setAttribute("aria-hidden", "true");
@@ -2995,6 +3143,8 @@ function updateCalculatedPrice() {
 function handleCreateInterventionSubmit(e) {
   e.preventDefault();
 
+  const editId = document.getElementById("intervention-edit-id")?.value;
+
   const authUser = getAuthUser();
   const defaultWorker = authUser ? (authUser.fullName || authUser.name || "") : "";
   const workerInput = document.getElementById("input-worker");
@@ -3036,6 +3186,47 @@ function handleCreateInterventionSubmit(e) {
   const total = quantity * unitPrice;
   const tvaRate = getTvaRate(task);
   const totalTTC = total * (1 + tvaRate);
+
+  if (editId) {
+    // Mode MODIFICATION
+    const existingIndex = interventions.findIndex(i => i.id === editId);
+    if (existingIndex !== -1) {
+      const existing = interventions[existingIndex];
+      existing.datetime = datetime;
+      existing.clientId = clientId;
+      existing.client = clientName;
+      existing.parcel = parcel;
+      existing.task = task;
+      existing.rateType = rateType;
+      existing.quantity = quantity;
+      existing.unit = unit;
+      existing.unitPrice = unitPrice;
+      existing.total = total;
+      existing.tvaRate = tvaRate;
+      existing.totalTTC = totalTTC;
+      existing.status = status;
+      existing.notes = notes;
+      if (worker) existing.worker = worker;
+
+      saveInterventions(existing);
+      syncInterventionToSupabase(existing);
+
+      closeCreateModal();
+      renderAll();
+
+      if (typeof activeDossierClientId !== "undefined" && activeDossierClientId) {
+        const dossierModal = document.getElementById("client-dossier-modal");
+        if (dossierModal && dossierModal.classList.contains("open")) {
+          populateDossierContent(activeDossierClientId);
+        }
+      }
+
+      showToast(`✏️ Intervention #${editId} modifiée avec succès !`, "success");
+      return;
+    }
+  }
+
+  // Mode NOUVELLE INTERVENTION
   const id = generateUniqueInterventionId(datetime ? new Date(datetime).getFullYear() : new Date().getFullYear());
 
   if (services.length === 0 && typeof DEFAULT_SERVICES !== "undefined") {
@@ -3064,15 +3255,20 @@ function handleCreateInterventionSubmit(e) {
   };
 
   interventions.unshift(newIntervention);
-  saveInterventions();
+  saveInterventions(newIntervention);
 
   // Synchronisation Cloud Supabase si session active
   syncInterventionToSupabase(newIntervention);
 
   closeCreateModal();
-  renderTable();
-  renderKPIs();
-  updateClientCardsStats();
+  renderAll();
+
+  if (typeof activeDossierClientId !== "undefined" && activeDossierClientId) {
+    const dossierModal = document.getElementById("client-dossier-modal");
+    if (dossierModal && dossierModal.classList.contains("open")) {
+      populateDossierContent(activeDossierClientId);
+    }
+  }
 
   showToast(`✅ Intervention #${id} enregistrée avec succès (${clientName}) !`, "success");
 }
@@ -3312,6 +3508,7 @@ function renderTable() {
         <td class="text-right">
           <div class="row-actions">
             <button class="action-btn" onclick="openDetailModal('${item.id}')" title="Voir les détails">👁️</button>
+            <button class="action-btn edit-btn" onclick="openEditInterventionModal('${item.id}')" title="Modifier l'intervention">✏️</button>
             <button class="action-btn delete-btn" onclick="deleteIntervention('${item.id}')" title="Supprimer">🗑️</button>
           </div>
         </td>
@@ -3665,6 +3862,13 @@ function populateDossierContent(clientId) {
                 <span>${item.status}</span>
               </button>
             </td>
+            <td class="text-right">
+              <div class="row-actions">
+                <button class="action-btn" onclick="openDetailModal('${item.id}')" title="Voir les détails">👁️</button>
+                <button class="action-btn edit-btn" onclick="openEditInterventionModalFromDossier('${item.id}', '${client.id}')" title="Modifier l'intervention">✏️</button>
+                <button class="action-btn delete-btn" onclick="deleteInterventionFromDossier('${item.id}', '${client.id}')" title="Supprimer">🗑️</button>
+              </div>
+            </td>
           </tr>
         `;
       }).join("");
@@ -3732,6 +3936,15 @@ window.toggleInterventionStatusFromDossier = function(interventionId, clientId) 
   openClientDossier(clientId, true);
 };
 
+window.openEditInterventionModalFromDossier = function(interventionId, clientId) {
+  closeClientDossier();
+  openEditInterventionModal(interventionId);
+};
+
+window.deleteInterventionFromDossier = function(interventionId, clientId) {
+  deleteIntervention(interventionId, clientId);
+};
+
 window.quickCreateForClient = function(clientId) {
   openCreateModal();
   const select = document.getElementById("input-client");
@@ -3759,7 +3972,7 @@ window.toggleInterventionStatus = function(id) {
   renderAll();
 };
 
-window.deleteIntervention = function(id) {
+window.deleteIntervention = function(id, fromClientId = null) {
   const index = interventions.findIndex(i => i.id === id);
   if (index === -1) return;
 
@@ -3768,6 +3981,13 @@ window.deleteIntervention = function(id) {
     saveInterventionsLocally();
     deleteInterventionFromSupabase(id);
     renderAll();
+    const cId = fromClientId || (typeof activeDossierClientId !== "undefined" ? activeDossierClientId : null);
+    if (cId) {
+      const dossierModal = document.getElementById("client-dossier-modal");
+      if (dossierModal && dossierModal.classList.contains("open")) {
+        populateDossierContent(cId);
+      }
+    }
     showToast(`Intervention #${id} supprimée`, "info");
   }
 };
@@ -3780,6 +4000,7 @@ window.openDetailModal = function(id) {
   const detailId = document.getElementById("detail-id");
   const detailBody = document.getElementById("detail-body");
   const toggleBtn = document.getElementById("detail-toggle-status-btn");
+  const editBtn = document.getElementById("detail-edit-btn");
 
   if (detailId) detailId.textContent = `Intervention #${item.id} — ${item.client}`;
 
@@ -3831,6 +4052,13 @@ window.openDetailModal = function(id) {
         </div>
       </div>
     `;
+  }
+
+  if (editBtn) {
+    editBtn.onclick = () => {
+      closeDetailModal();
+      openEditInterventionModal(item.id);
+    };
   }
 
   if (toggleBtn) {
@@ -4748,6 +4976,7 @@ window.switchView = switchView;
 window.openClientModal = openClientModal;
 window.closeClientModal = closeClientModal;
 window.openCreateModal = openCreateModal;
+window.openEditInterventionModal = openEditInterventionModal;
 window.closeCreateModal = closeCreateModal;
 window.openServiceModal = openServiceModal;
 window.closeServiceModal = closeServiceModal;

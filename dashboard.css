@@ -1653,6 +1653,12 @@ button.filter-dropdown-pill {
   border-color: rgba(82, 183, 136, 0.3);
 }
 
+.action-btn.edit-btn:hover {
+  background: rgba(82, 183, 136, 0.22);
+  color: var(--color-primary-lighter, #74c69d);
+  border-color: rgba(82, 183, 136, 0.45);
+}
+
 .action-btn.delete-btn:hover {
   background: rgba(220, 53, 69, 0.2);
   color: #ff6b6b;
@@ -5057,6 +5063,13 @@ body[data-theme="light"],
   background-color: #e1efe7 !important;
   color: #14241d !important;
   border-color: rgba(45, 106, 79, 0.4) !important;
+}
+
+[data-theme="light"] .action-btn.edit-btn:hover {
+  background: #d8ece0 !important;
+  background-color: #d8ece0 !important;
+  color: #1b4332 !important;
+  border-color: rgba(45, 106, 79, 0.5) !important;
 }
 
 [data-theme="light"] .action-btn.delete-btn {
