@@ -99,6 +99,7 @@ Vititrack pro/
   - Superficie totale travaillée en hectares (**précision à 4 décimales**).
   - Nombre total d'interventions réalisées.
   - Montant restant "À facturer" (badge d'alerte jaune/ambre).
+  - **Équipe & Utilisateurs du Domaine** : Nombre total d'utilisateurs actifs, répartition gérant(s) vs salariés/tractoristes, et accès direct à la gestion d'équipe.
   - Total d'heures machines / ouvriers.
 - **Filtres de Recherche Avancés** :
   - Recherche plein texte (client, parcelle, salarié, tâche).
@@ -159,7 +160,17 @@ Vititrack pro/
   - Statuts : *À planifier*, *En cours*, *Terminé*.
   - **Action de conversion en 1 clic** : transforme un travail planifié en intervention réelle réalisée.
 
-#### E. Expérience Mobile / Smartphone
+#### E. Gestion de l'Équipe & des Utilisateurs (Modales 9 & 10)
+- **Compteur & Carte KPI dédiée sur le Tableau de bord** : Affiche en temps réel le nombre total d'utilisateurs, la décomposition (gérant vs salariés/tractoristes) et les membres actifs.
+- **Raccourcis d'accès** : Accès direct depuis la carte KPI, le menu latéral (section *Pilotage* et bouton *＋ Nouvel Utilisateur* dans *Outils & Base*) et le bouton dédié dans la topbar.
+- **Dossier Équipe (Modal 9)** :
+  - Synthèse en 4 indicateurs : Utilisateurs au total, Gérant(s), Salariés & Tractoristes, Membres actifs sur le terrain.
+  - Recherche instantanée et filtrage par rôle (Gérants, Tractoristes, Ouvriers viticoles, Saisonniers).
+  - Cartes profil complètes : avatar avec initiales colorées, rôle avec pastille de couleur, statut (Actif, En mission, En congé), coordonnées (email et téléphone cliquables), habilitations (Certiphyto, CACES) et notes internes.
+- **Formulaire Utilisateur (Modal 10)** : Ajout et édition rapide d'un membre avec assignation du rôle viticole et compétences terrain.
+- **Alimentation dynamique du planning des travaux** : Les travaux prévisionnels proposent automatiquement la liste des membres réels de l'équipe dans le champ « Salarié pressenti ».
+
+#### F. Expérience Mobile / Smartphone
 - **Barre de Navigation Inférieure Fixe (`.mobile-bottom-nav`)** :
   - Toujours accessible au pouce sur smartphone.
   - Icônes claires : *Tableau*, *Clients*, *Prestations*, *Menu*.
@@ -245,6 +256,12 @@ Sur les écrans de smartphone (< 650px et < 768px) :
 - **Module Frontend (`stripe-config.js`)** :
   - Expose `window.VitiTrackStripe` (`startCheckout`, `openPortal`, `getSubscription`, `handleReturn`).
   - Modal 8 intégrée dans `dashboard.html` (`#subscription-modal`) avec récapitulatif du forfait actif et accès portail.
+
+### Règle 9 : Connexion Autonome des Salariés & Saisie Directe dans les Parcelles
+- **Attribution des identifiants par le Gérant (Modal 10)** : L'administrateur/gérant peut attribuer à chaque salarié ou tractoriste un e-mail de connexion et un mot de passe ou code PIN à 6 chiffres (avec bouton générateur rapide ⚡). Un bouton « 📲 Accès terrain » permet de copier en un clic un message de bienvenue prêt pour SMS / WhatsApp avec lien direct.
+- **Connexion autonome sur mobile (`login.html`)** : Les tractoristes et ouvriers viticoles se connectent directement avec leur e-mail et leur code PIN / mot de passe sur leur smartphone.
+- **Routage automatique vers le domaine du Gérant (`ownerUserId`)** : Le compte est authentifié en tant que `isTeamMember: true` avec liaison `ownerUserId` et `ownerDomain`. Toutes les requêtes et écritures (`getAuthUserId()`) pointent directement vers la partition de données du gérant. Le collaborateur accède immédiatement aux domaines clients, parcelles cadastrales et catalogue de prestations de son gérant, sans partition séparée.
+- **Traçabilité terrain & Bandeau Opérateur** : Dans le formulaire de saisie d'intervention (`#create-modal`), un bandeau distinctif affiche l'opérateur connecté et le domaine rattaché. Chaque intervention enregistrée dans la parcelle est automatiquement attribuée au nom du salarié (`worker: "Thomas Mercier"`).
 
 ---
 

@@ -131,6 +131,11 @@
           <span class="nav-label">À Facturer</span>
           <span class="nav-badge badge-warning" id="sidebar-unbilled-count">0</span>
         </a>
+        <a href="javascript:void(0)" class="nav-item" id="nav-btn-team" onclick="openTeamModal()" title="Gérer l'équipe et les utilisateurs">
+          <span class="nav-icon">👥</span>
+          <span class="nav-label">Équipe & Utilisateurs</span>
+          <span class="nav-badge badge-info" id="sidebar-team-count">0</span>
+        </a>
 
         <div class="nav-section-title">ABONNEMENT STRIPE</div>
         <a href="javascript:void(0)" class="nav-item" id="sidebar-sub-btn" title="Gérer mon abonnement et mes factures">
@@ -140,6 +145,10 @@
         </a>
 
         <div class="nav-section-title">OUTILS & BASE</div>
+        <a href="javascript:void(0)" class="nav-item" id="sidebar-add-team-btn" onclick="openAddTeamMemberModal()" title="Ajouter un utilisateur ou salarié">
+          <span class="nav-icon">＋</span>
+          <span class="nav-label">Nouvel Utilisateur</span>
+        </a>
         <a href="javascript:void(0)" class="nav-item" id="sidebar-add-service-btn">
           <span class="nav-icon">＋</span>
           <span class="nav-label">Nouvelle Prestation</span>
@@ -226,6 +235,11 @@
           <button class="btn btn-secondary btn-sm btn-topbar-item" id="topbar-add-client-btn" title="Ajouter un nouveau domaine ou client">
             <span class="btn-icon">🍇</span>
             <span class="btn-text-desktop">Nouveau client</span>
+          </button>
+          <button type="button" class="btn btn-outline btn-sm btn-topbar-item" id="topbar-team-btn" onclick="openTeamModal()" title="Gestion de l'équipe et des utilisateurs">
+            <span class="btn-icon">👥</span>
+            <span class="btn-text-desktop" id="topbar-team-text">Équipe (0)</span>
+            <span class="btn-text-mobile">👥</span>
           </button>
           <div class="user-topbar-profile" id="user-topbar-profile">
             <span class="user-topbar-avatar" title="Profil connecté">👤</span>
@@ -328,6 +342,22 @@
               </div>
               <div class="kpi-card-action-bar">
                 <button type="button" class="kpi-quick-btn" onclick="filterByStatus('Facturée'); renderTable(); scrollToInterventions();" title="Voir les chantiers clôturés">Voir clôturés ➔</button>
+              </div>
+            </div>
+
+            <div class="kpi-card" id="kpi-card-team">
+              <div class="kpi-header">
+                <span class="kpi-title">Utilisateurs & Équipe</span>
+                <span class="kpi-icon icon-team">👥</span>
+              </div>
+              <div class="kpi-value value-team" id="kpi-team-count">0</div>
+              <div class="kpi-footer">
+                <span class="badge-tag" id="kpi-team-roles">1 gérant • 0 utilisateur</span>
+                <span class="kpi-sub" id="kpi-team-sub">Utilisateurs actifs</span>
+              </div>
+              <div class="kpi-card-action-bar">
+                <button type="button" class="kpi-quick-btn" onclick="openTeamModal()" title="Gérer l'équipe et les utilisateurs">＋ Gérer l'équipe</button>
+                <a href="javascript:void(0)" class="kpi-arrow-nav" onclick="openTeamModal(); return false;" title="Voir tous les utilisateurs">Utilisateurs ➔</a>
               </div>
             </div>
           </section>
@@ -790,6 +820,14 @@
         <form id="create-intervention-form" novalidate>
           <input type="hidden" id="intervention-edit-id" value="">
           <div class="modal-body">
+
+            <!-- BANDEAU OPÉRATEUR CONNECTÉ (POUR TRACTORISTE / SALARIÉ) -->
+            <div class="intervention-operator-pill" id="intervention-operator-banner" style="display: none; align-items: center; gap: 0.55rem; background: rgba(59, 130, 246, 0.16); border: 1px solid rgba(59, 130, 246, 0.35); border-radius: var(--radius-sm); padding: 0.55rem 0.85rem; margin-bottom: 0.85rem; font-size: 0.82rem; color: #93c5fd;">
+              <span style="font-size: 1.1rem;">🚜</span>
+              <div>
+                Opérateur : <strong id="intervention-operator-name" style="color: #fff;">Collaborateur</strong> • <span id="intervention-operator-domain" style="opacity: 0.9;">Enregistré pour le domaine</span>
+              </div>
+            </div>
 
             <!-- LIGNE 1 : Date & Heure de l'intervention -->
             <div class="form-group">
@@ -1644,6 +1682,223 @@
         <div class="modal-footer">
           <button type="button" class="btn btn-ghost" id="sub-modal-close-btn">Fermer</button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL 9 : GESTION DE L'ÉQUIPE ET DES UTILISATEURS ==================== -->
+  <div class="modal-overlay" id="team-modal" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div class="modal-header-icon" style="background: rgba(59, 130, 246, 0.15); color: #60a5fa; border-color: rgba(59, 130, 246, 0.3);">👥</div>
+          <div>
+            <h3 class="modal-title">Équipe & Utilisateurs du Domaine</h3>
+            <p class="modal-subtitle">Gestion des accès, tractoristes, chefs de culture et salariés viticoles</p>
+          </div>
+          <button class="modal-close-btn" id="team-modal-close-btn" onclick="closeTeamModal()" aria-label="Fermer">✕</button>
+        </div>
+
+        <div class="modal-body">
+          <!-- RÉCAPITULATIF STATISTIQUES ÉQUIPE -->
+          <div class="team-summary-banner">
+            <div class="team-summary-stat">
+              <span class="team-stat-num" id="team-stat-total">0</span>
+              <span class="team-stat-label">Utilisateurs au total</span>
+            </div>
+            <div class="team-summary-stat">
+              <span class="team-stat-num" id="team-stat-gerants">0</span>
+              <span class="team-stat-label">Gérant(s) exploitant</span>
+            </div>
+            <div class="team-summary-stat">
+              <span class="team-stat-num" id="team-stat-operators">0</span>
+              <span class="team-stat-label">Salariés & Tractoristes</span>
+            </div>
+            <div class="team-summary-stat">
+              <span class="team-stat-num" id="team-stat-active">0</span>
+              <span class="team-stat-label">Membres actifs</span>
+            </div>
+          </div>
+
+          <!-- BARRE D'ACTIONS ET RECHERCHE -->
+          <div class="team-toolbar">
+            <div class="team-search-wrap">
+              <span class="team-search-icon">🔍</span>
+              <input type="text" id="team-search-input" class="team-search-input" placeholder="Rechercher par nom, rôle ou spécialité..." oninput="handleTeamSearch(this.value)">
+            </div>
+            <div class="team-filter-role-wrap">
+              <select id="team-role-filter" class="form-control" onchange="handleTeamRoleFilter(this.value)">
+                <option value="all">Tous les rôles</option>
+                <option value="gerant">Gérants / Direction</option>
+                <option value="tractoriste">Tractoristes / Engins</option>
+                <option value="ouvrier">Ouvriers viticoles</option>
+                <option value="saisonnier">Saisonniers</option>
+              </select>
+            </div>
+            <button type="button" class="btn btn-primary btn-glow btn-sm" onclick="openAddTeamMemberModal()">
+              <span>＋ Ajouter un utilisateur</span>
+            </button>
+          </div>
+
+          <!-- LISTE DES MEMBRES DE L'ÉQUIPE -->
+          <div class="team-members-grid" id="team-members-grid">
+            <!-- Rendu dynamique en Javascript -->
+          </div>
+
+          <!-- ÉTAT VIDE -->
+          <div class="team-empty-state" id="team-empty-state" style="display: none;">
+            <div class="empty-icon">👥</div>
+            <h4>Aucun utilisateur trouvé</h4>
+            <p>Ajoutez les membres de votre équipe (gérant, tractoristes, ouvriers) pour suivre leurs affectations sur les chantiers.</p>
+            <button type="button" class="btn btn-primary btn-sm btn-glow" onclick="openAddTeamMemberModal()">
+              <span>＋ Ajouter un premier collaborateur</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="modal-footer" style="justify-content: space-between;">
+          <button type="button" class="btn btn-ghost" onclick="closeTeamModal()">Fermer</button>
+          <button type="button" class="btn btn-primary btn-glow" onclick="openAddTeamMemberModal()">
+            <span>＋ Nouvel Utilisateur</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL 10 : AJOUTER / MODIFIER UN UTILISATEUR ==================== -->
+  <div class="modal-overlay" id="team-member-modal" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-sm">
+      <div class="modal-content">
+        <form id="team-member-form" onsubmit="handleTeamMemberFormSubmit(event)">
+          <div class="modal-header">
+            <div class="modal-header-icon" style="background: rgba(82, 183, 136, 0.15); color: #52b788; border-color: rgba(82, 183, 136, 0.3);">👤</div>
+            <div>
+              <h3 class="modal-title" id="team-member-modal-title">Ajouter un utilisateur</h3>
+              <p class="modal-subtitle">Collaborateur, tractoriste ou gérant de la société viticole</p>
+            </div>
+            <button type="button" class="modal-close-btn" onclick="closeTeamMemberModal()" aria-label="Fermer">✕</button>
+          </div>
+
+          <div class="modal-body">
+            <input type="hidden" id="input-member-id" value="">
+
+            <div class="form-group">
+              <label for="input-member-name" class="form-label">
+                <span>Nom & Prénom</span>
+                <span class="required-star">*</span>
+              </label>
+              <div class="input-with-icon">
+                <span class="input-icon">👤</span>
+                <input type="text" id="input-member-name" required placeholder="Ex: Thomas Mercier, Alexis Ludinard...">
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group flex-1">
+                <label for="input-member-role" class="form-label">
+                  <span>Rôle dans l'entreprise</span>
+                  <span class="required-star">*</span>
+                </label>
+                <div class="select-with-icon">
+                  <span class="input-icon">🏷️</span>
+                  <select id="input-member-role" required>
+                    <option value="Gérant Exploitant">Gérant Exploitant</option>
+                    <option value="Chef de culture / Responsable">Chef de culture / Responsable</option>
+                    <option value="Tractoriste / Chauffeur d'engins" selected>Tractoriste / Chauffeur d'engins</option>
+                    <option value="Ouvrier viticole qualifié">Ouvrier viticole qualifié</option>
+                    <option value="Saisonnier / Vendangeur">Saisonnier / Vendangeur</option>
+                    <option value="Secrétariat / Comptabilité">Secrétariat / Comptabilité</option>
+                    <option value="Autre intervenant">Autre intervenant</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-group flex-1">
+                <label for="input-member-status" class="form-label">
+                  <span>Statut</span>
+                </label>
+                <div class="select-with-icon">
+                  <span class="input-icon">🟢</span>
+                  <select id="input-member-status">
+                    <option value="Actif" selected>Actif</option>
+                    <option value="En mission">En mission</option>
+                    <option value="En congé / Absence">En congé / Absence</option>
+                    <option value="Inactif">Inactif</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <!-- Notice d'accès terrain -->
+            <div class="team-access-banner" style="background: rgba(45, 106, 79, 0.16); border: 1px solid rgba(82, 183, 136, 0.3); border-radius: var(--radius-sm); padding: 0.7rem 0.85rem; margin-bottom: 0.9rem; display: flex; align-items: flex-start; gap: 0.6rem;">
+              <span style="font-size: 1.15rem; line-height: 1;">📲</span>
+              <div style="font-size: 0.78rem; color: #d8ece0; line-height: 1.4;">
+                <strong>Connexion autonome :</strong> Grâce à son e-mail et son mot de passe, ce salarié pourra se connecter sur son smartphone et accéder <strong>directement aux chantiers et parcelles de votre domaine</strong>.
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group flex-1">
+                <label for="input-member-email" class="form-label">
+                  <span>E-mail de connexion</span>
+                  <span class="required-star">*</span>
+                </label>
+                <div class="input-with-icon">
+                  <span class="input-icon">✉️</span>
+                  <input type="email" id="input-member-email" required placeholder="collaborateur@gmail.com">
+                </div>
+                <span class="form-hint">Sert d'identifiant de connexion pour le salarié.</span>
+              </div>
+
+              <div class="form-group flex-1">
+                <label for="input-member-password" class="form-label">
+                  <span>Mot de passe ou Code PIN</span>
+                  <span class="required-star">*</span>
+                </label>
+                <div class="input-with-icon" style="position: relative;">
+                  <span class="input-icon">🔒</span>
+                  <input type="text" id="input-member-password" required placeholder="Ex: viti2026 ou PIN 6 chiffres" style="padding-right: 2.4rem;">
+                  <button type="button" onclick="generateMemberPin()" title="Générer un code PIN rapide" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; font-size: 0.95rem; cursor: pointer; color: #52b788;">⚡</button>
+                </div>
+                <span class="form-hint">Code pour se connecter dans les parcelles.</span>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="input-member-phone" class="form-label">
+                <span>Téléphone mobile (optionnel)</span>
+              </label>
+              <div class="input-with-icon">
+                <span class="input-icon">📞</span>
+                <input type="tel" id="input-member-phone" placeholder="06 12 34 56 78">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="input-member-certifications" class="form-label">
+                <span>Habilitations & Spécialités</span>
+              </label>
+              <div class="input-with-icon">
+                <span class="input-icon">📜</span>
+                <input type="text" id="input-member-certifications" placeholder="Ex: Certiphyto Opérateur, CACES tracteur, Taille Guyot, Labour...">
+              </div>
+              <span class="form-hint">Permet d'identifier rapidement les compétences sur le terrain.</span>
+            </div>
+
+            <div class="form-group">
+              <label for="input-member-notes" class="form-label">Notes internes</label>
+              <textarea id="input-member-notes" rows="2" placeholder="Observations, planning ou informations contractuelles..."></textarea>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-ghost" onclick="closeTeamMemberModal()">Annuler</button>
+            <button type="submit" class="btn btn-primary btn-glow" id="btn-save-member">
+              <span id="team-member-modal-submit-text">💾 Enregistrer l'utilisateur</span>
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   </div>

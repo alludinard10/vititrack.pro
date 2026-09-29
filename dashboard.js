@@ -8,6 +8,7 @@ const STORAGE_CLIENTS_BASE = "vititrack_clients_user_v3";
 const STORAGE_INTERVENTIONS_BASE = "vititrack_interventions_user_v3";
 const STORAGE_SERVICES_BASE = "vititrack_services_user_v3";
 const STORAGE_PLANNED_BASE = "vititrack_planned_works_user_v3";
+const STORAGE_TEAM_BASE = "vititrack_team_users_v3";
 
 let currentAuthUser = null;
 
@@ -25,6 +26,11 @@ function getAuthUser() {
 
 function getAuthUserId() {
   const user = getAuthUser();
+  // Si l'utilisateur connecté est un collaborateur / tractoriste invité,
+  // il accède directement au compte et aux chantiers de l'administrateur gérant !
+  if (user && user.isTeamMember && user.ownerUserId) {
+    return user.ownerUserId;
+  }
   if (user && user.id) return user.id;
   if (user && user.email) return user.email.replace(/[^a-zA-Z0-9_-]/g, "_");
   return "guest_user";
@@ -204,6 +210,9 @@ let clients = [];
 let interventions = [];
 let services = [];
 let plannedWorks = [];
+let teamUsers = [];
+let teamSearchFilter = "";
+let teamRoleFilter = "all";
 let currentFilter = {
   search: "",
   client: "all",
@@ -649,6 +658,24 @@ function loadDatabase() {
     savePlannedWorksLocally();
   }
 
+  // ÉQUIPE & UTILISATEURS DU DOMAINE
+  const teamKey = getUserStorageKey(STORAGE_TEAM_BASE);
+  const savedTeam = localStorage.getItem(teamKey);
+  if (savedTeam) {
+    try {
+      teamUsers = JSON.parse(savedTeam);
+    } catch (e) {
+      console.error("Erreur de parsing équipe, réinitialisation", e);
+      teamUsers = [];
+    }
+  } else {
+    // Si compte démo -> 4 utilisateurs démo (1 gérant + 3 salariés/tractoristes).
+    // Si nouvel utilisateur -> 1 utilisateur initial (Gérant)
+    teamUsers = isDemo ? getDemoTeamUsers() : getFreshTeamUsers(user);
+    saveTeamLocally();
+  }
+  syncGlobalTeamDirectory();
+
   // Détection et réparation immédiate des collisions d'IDs dans le stockage local
   repairLocalCollisions();
 }
@@ -668,6 +695,15 @@ function saveServicesLocally() {
 
 function savePlannedWorksLocally() {
   localStorage.setItem(getUserStorageKey(STORAGE_PLANNED_BASE), JSON.stringify(plannedWorks));
+}
+
+function saveTeamLocally() {
+  localStorage.setItem(getUserStorageKey(STORAGE_TEAM_BASE), JSON.stringify(teamUsers));
+}
+
+function saveTeamUsers() {
+  saveTeamLocally();
+  syncGlobalTeamDirectory();
 }
 
 // Unified save functions: Local cache + Background Supabase Sync
@@ -1447,6 +1483,8 @@ function setupEventListeners() {
   setupModalCloser("planned-modal", "planned-modal-close-btn", "planned-modal-cancel-btn", closePlannedModal);
   setupModalCloser("client-dossier-modal", "dossier-modal-close-btn", "dossier-modal-dismiss-btn", closeClientDossier);
   setupModalCloser("subscription-modal", "subscription-modal-close-btn", "sub-modal-close-btn", closeSubscriptionModal);
+  setupModalCloser("team-modal", "team-modal-close-btn", null, closeTeamModal);
+  setupModalCloser("team-member-modal", null, null, closeTeamMemberModal);
 
   // Forms Submissions
   const clientForm = document.getElementById("create-client-form");
@@ -2526,6 +2564,22 @@ function openCreateModal(interventionId = null) {
 
   populateClientSelect();
 
+  // Affichage du bandeau collaborateur terrain si connecté avec son compte
+  const authUser = getAuthUser();
+  const operatorBanner = document.getElementById("intervention-operator-banner");
+  const operatorName = document.getElementById("intervention-operator-name");
+  const operatorDomain = document.getElementById("intervention-operator-domain");
+
+  if (operatorBanner) {
+    if (authUser && authUser.isTeamMember) {
+      operatorBanner.style.display = "flex";
+      if (operatorName) operatorName.textContent = authUser.name || authUser.fullName || "Collaborateur";
+      if (operatorDomain) operatorDomain.textContent = authUser.ownerDomain ? `Compte du ${authUser.ownerDomain}` : "Enregistré pour le domaine";
+    } else {
+      operatorBanner.style.display = "none";
+    }
+  }
+
   if (interventionId) {
     // Mode MODIFIER une intervention existante
     const item = interventions.find(i => i.id === interventionId);
@@ -3339,11 +3393,27 @@ function renderKPIs() {
   setElemText("kpi-billed-ttc", `${billedAmountTTC.toLocaleString("fr-FR", { minimumFractionDigits: 0 })} € TTC`);
   setElemText("kpi-billed-badge", `${billedCount} chantier${billedCount > 1 ? 's' : ''}`);
 
+  // Équipe & Utilisateurs KPIs
+  const totalTeam = Array.isArray(teamUsers) ? teamUsers.length : 0;
+  const gerantsCount = (teamUsers || []).filter(u => (u.roleCategory === "gerant" || (u.role && u.role.toLowerCase().includes("gérant")))).length;
+  const operatorsCount = totalTeam - gerantsCount;
+  const gerantLabel = `${gerantsCount} gérant${gerantsCount > 1 ? 's' : ''}`;
+  const operatorLabel = `${operatorsCount} salarié${operatorsCount > 1 ? 's' : ''}`;
+  const activeCount = (teamUsers || []).filter(u => u.status === "Actif").length;
+
+  setElemText("kpi-team-count", totalTeam);
+  setElemText("kpi-team-roles", `${gerantLabel} • ${operatorLabel}`);
+  setElemText("kpi-team-sub", `${activeCount} utilisateur${activeCount > 1 ? 's' : ''} actif${activeCount > 1 ? 's' : ''}`);
+
   // Sidebar badges
   setElemText("sidebar-clients-count", totalClients);
   setElemText("sidebar-interventions-count", totalInterventions);
   setElemText("sidebar-unbilled-count", unbilledCount);
   setElemText("sidebar-services-count", services.length);
+  setElemText("sidebar-team-count", totalTeam);
+
+  // Topbar badge
+  setElemText("topbar-team-text", `Équipe (${totalTeam})`);
 
   // Clients view stats
   setElemText("clients-total-count", totalClients);
@@ -3917,14 +3987,15 @@ window.switchDossierTab = function(tabName) {
   });
 };
 
-window.closeClientDossier = function() {
+function closeClientDossier() {
   const modal = document.getElementById("client-dossier-modal");
   if (modal) {
     modal.classList.remove("open");
     modal.setAttribute("aria-hidden", "true");
     unlockBodyScroll();
   }
-};
+}
+window.closeClientDossier = closeClientDossier;
 
 window.deleteParcelFromDossier = function(clientId, parcelId) {
   deleteParcel(clientId, parcelId);
@@ -4611,6 +4682,7 @@ function openPlannedModal() {
   }
 
   populateTaskSelects();
+  populatePlannedWorkerSelect();
 
   if (dateInput) {
     const today = new Date().toISOString().split("T")[0];
@@ -4864,6 +4936,30 @@ function updateUserInterface(user) {
   const sidebarUserRole = document.getElementById("sidebar-user-role");
   const sidebarUserAvatar = document.getElementById("sidebar-user-avatar");
 
+  if (user.isTeamMember) {
+    const workerName = user.name || user.fullName || "Collaborateur";
+    const workerRole = user.role || "Tractoriste";
+    const domainName = user.ownerDomain || "Domaine Viticole";
+    const initials = getInitials(workerName);
+
+    if (topbarUserName) {
+      topbarUserName.textContent = `${workerName} (${domainName})`;
+      topbarUserName.title = `Collaborateur terrain : ${workerName} • Compte gérant : ${domainName}`;
+    }
+    if (sidebarUserName) {
+      sidebarUserName.textContent = workerName;
+      sidebarUserName.title = `${workerName} (${user.email || ''})`;
+    }
+    if (sidebarUserRole) {
+      sidebarUserRole.innerHTML = `<span style="color: #60a5fa; font-weight: 600;">🚜 ${escapeHTML(workerRole)}</span><br><span style="font-size: 0.72rem; opacity: 0.85;">${escapeHTML(domainName)}</span>`;
+    }
+    if (sidebarUserAvatar) {
+      sidebarUserAvatar.textContent = initials;
+      sidebarUserAvatar.style.background = "#2563eb";
+    }
+    return;
+  }
+
   const displayName = user.domainName || user.fullName || "Domaine Viticole";
   const displayRole = user.fullName ? `${user.fullName} • ${user.role || 'Exploitant'}` : (user.role || 'Gérant Exploitant');
   const initials = (user.domainName || user.fullName || 'VT')
@@ -5078,4 +5174,595 @@ window.openSubscriptionModal = openSubscriptionModal;
 window.closeSubscriptionModal = closeSubscriptionModal;
 window.updateSubscriptionUI = updateSubscriptionUI;
 window.loadUserSubscription = loadUserSubscription;
+
+// ================================================================
+// GESTION DE L'ÉQUIPE ET DES UTILISATEURS DU DOMAINE
+// ================================================================
+
+function getDemoTeamUsers() {
+  return [
+    {
+      id: "usr-01",
+      name: "Alexis Ludinard",
+      role: "Gérant Exploitant",
+      roleCategory: "gerant",
+      email: "exploitant@domaineludinard.fr",
+      phone: "06 12 34 56 78",
+      password: "viti",
+      status: "Actif",
+      color: "#2d6a4f",
+      certifications: "Certiphyto Décideur, Direction d'exploitation",
+      notes: "Gérant principal du domaine viticole et de la société de travaux."
+    },
+    {
+      id: "usr-02",
+      name: "Thomas Mercier",
+      role: "Chef de culture / Tractoriste",
+      roleCategory: "tractoriste",
+      email: "thomas@domaineludinard.fr",
+      phone: "06 23 45 67 89",
+      password: "viti2026",
+      status: "Actif",
+      color: "#2563eb",
+      certifications: "CACES R482, Certiphyto Opérateur, Taille Cordon",
+      notes: "Responsable des chantiers mécaniques et traitements phytosanitaires."
+    },
+    {
+      id: "usr-03",
+      name: "Sophie Laurent",
+      role: "Ouvrière viticole qualifiée",
+      roleCategory: "ouvrier",
+      email: "sophie@domaineludinard.fr",
+      phone: "06 34 56 78 90",
+      password: "viti2026",
+      status: "Actif",
+      color: "#9333ea",
+      certifications: "Taille Guyot & Poussard, Palissage & Épamprage",
+      notes: "Spécialiste travaux en vert, ébourgeonnage soigné et vendanges."
+    },
+    {
+      id: "usr-04",
+      name: "Julien Beraud",
+      role: "Tractoriste / Chauffeur d'engins",
+      roleCategory: "tractoriste",
+      email: "julien@domaineludinard.fr",
+      phone: "06 45 67 89 01",
+      password: "viti2026",
+      status: "Actif",
+      color: "#d97706",
+      certifications: "CACES Tracteur, Travail du sol & Broyage",
+      notes: "Conduite des tracteurs interlignes, charrues et labour mécanique."
+    }
+  ];
+}
+
+function getFreshTeamUsers(user) {
+  const name = (user && (user.full_name || user.name || user.domainName)) || "Gérant Exploitant";
+  const email = (user && user.email) || "";
+  return [
+    {
+      id: "usr-gerant-01",
+      name: name,
+      role: "Gérant Exploitant",
+      roleCategory: "gerant",
+      email: email,
+      phone: "",
+      password: "",
+      status: "Actif",
+      color: "#2d6a4f",
+      certifications: "Direction d'exploitation",
+      notes: "Administrateur principal du compte."
+    }
+  ];
+}
+
+function getInitials(name) {
+  if (!name) return "VT";
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+function getRoleCategory(role) {
+  if (!role) return "autre";
+  const str = role.toLowerCase();
+  if (str.includes("gérant") || str.includes("directeur") || str.includes("associé")) return "gerant";
+  if (str.includes("chef") || str.includes("responsable")) return "chef";
+  if (str.includes("tractoriste") || str.includes("engin") || str.includes("chauffeur")) return "tractoriste";
+  if (str.includes("saisonnier") || str.includes("vendangeur")) return "saisonnier";
+  if (str.includes("ouvrier") || str.includes("opérateur") || str.includes("tailleur")) return "ouvrier";
+  return "autre";
+}
+
+function getRoleBadgeClass(category) {
+  switch (category) {
+    case "gerant": return "role-gerant";
+    case "chef": return "role-chef";
+    case "tractoriste": return "role-tractoriste";
+    case "ouvrier": return "role-ouvrier";
+    case "saisonnier": return "role-saisonnier";
+    default: return "role-autre";
+  }
+}
+
+function getStatusBadgeClass(status) {
+  switch (status) {
+    case "Actif": return "status-actif";
+    case "En mission": return "status-mission";
+    case "En congé / Absence": return "status-conge";
+    default: return "status-inactif";
+  }
+}
+
+function openTeamModal() {
+  const modal = document.getElementById("team-modal");
+  if (modal) {
+    modal.classList.add("open");
+    modal.setAttribute("aria-hidden", "false");
+    lockBodyScroll();
+    const modalBody = modal.querySelector(".modal-body");
+    if (modalBody) modalBody.scrollTop = 0;
+  }
+  renderTeamList();
+}
+
+function closeTeamModal() {
+  const modal = document.getElementById("team-modal");
+  if (modal) {
+    modal.classList.remove("open");
+    modal.setAttribute("aria-hidden", "true");
+    unlockBodyScroll();
+  }
+}
+
+function renderTeamList() {
+  const container = document.getElementById("team-members-grid");
+  const emptyState = document.getElementById("team-empty-state");
+  if (!container) return;
+
+  const total = Array.isArray(teamUsers) ? teamUsers.length : 0;
+  const gerants = (teamUsers || []).filter(u => u.roleCategory === "gerant" || (u.role && u.role.toLowerCase().includes("gérant"))).length;
+  const operators = total - gerants;
+  const active = (teamUsers || []).filter(u => u.status === "Actif").length;
+
+  setElemText("team-stat-total", total);
+  setElemText("team-stat-gerants", gerants);
+  setElemText("team-stat-operators", operators);
+  setElemText("team-stat-active", active);
+
+  // Filtrage
+  const filtered = (teamUsers || []).filter(user => {
+    if (teamRoleFilter !== "all" && user.roleCategory !== teamRoleFilter) {
+      return false;
+    }
+    if (teamSearchFilter) {
+      const q = teamSearchFilter.toLowerCase();
+      const matchName = (user.name || "").toLowerCase().includes(q);
+      const matchRole = (user.role || "").toLowerCase().includes(q);
+      const matchCertifs = (user.certifications || "").toLowerCase().includes(q);
+      const matchNotes = (user.notes || "").toLowerCase().includes(q);
+      if (!matchName && !matchRole && !matchCertifs && !matchNotes) return false;
+    }
+    return true;
+  });
+
+  if (filtered.length === 0) {
+    container.innerHTML = "";
+    if (emptyState) emptyState.style.display = "block";
+    return;
+  }
+
+  if (emptyState) emptyState.style.display = "none";
+
+  container.innerHTML = filtered.map(user => {
+    const initials = getInitials(user.name);
+    const roleCat = user.roleCategory || getRoleCategory(user.role);
+    const roleBadgeClass = getRoleBadgeClass(roleCat);
+    const statusClass = getStatusBadgeClass(user.status || "Actif");
+    const avatarColor = user.color || "#2d6a4f";
+
+    return `
+      <div class="team-member-card" id="team-card-${escapeHTML(user.id)}">
+        <div class="team-member-header">
+          <div class="team-member-avatar" style="background: ${avatarColor};">
+            ${escapeHTML(initials)}
+          </div>
+          <div class="team-member-title-box">
+            <div class="team-member-name">
+              <span>${escapeHTML(user.name)}</span>
+              ${roleCat === 'gerant' ? '<span title="Gérant Exploitant">👑</span>' : ''}
+            </div>
+            <div class="team-member-role-row">
+              <span class="team-role-pill ${roleBadgeClass}">
+                <span class="team-status-dot ${statusClass}"></span>
+                ${escapeHTML(user.role)}
+              </span>
+              <span style="font-size: 0.72rem; color: var(--color-text-secondary);">${escapeHTML(user.status || 'Actif')}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="team-member-contact">
+          ${user.email ? `
+            <div class="team-contact-line">
+              <span>✉️</span>
+              <a href="mailto:${escapeHTML(user.email)}" class="team-contact-link">${escapeHTML(user.email)}</a>
+            </div>
+          ` : ''}
+          ${user.phone ? `
+            <div class="team-contact-line">
+              <span>📞</span>
+              <a href="tel:${escapeHTML(user.phone)}" class="team-contact-link">${escapeHTML(user.phone)}</a>
+            </div>
+          ` : ''}
+          ${user.password ? `
+            <div class="team-contact-line" style="background: rgba(82, 183, 136, 0.12); border: 1px solid rgba(82, 183, 136, 0.25); border-radius: var(--radius-sm); padding: 3px 7px; font-size: 0.74rem; display: inline-flex; align-items: center; gap: 0.35rem; color: #a7f3d0; margin-top: 0.2rem;">
+              <span>🔑 Mot de passe :</span>
+              <strong style="letter-spacing: 0.5px;">${escapeHTML(user.password)}</strong>
+            </div>
+          ` : ''}
+          ${(!user.email && !user.phone) ? `
+            <div class="team-contact-line" style="font-style: italic; opacity: 0.6;">
+              Coordonnées non renseignées
+            </div>
+          ` : ''}
+        </div>
+
+        ${user.certifications ? `
+          <div class="team-member-certifs" title="Habilitations & Spécialités">
+            📜 <strong>Compétences :</strong> ${escapeHTML(user.certifications)}
+          </div>
+        ` : ''}
+
+        ${user.notes ? `
+          <div style="font-size: 0.76rem; color: var(--color-text-secondary); line-height: 1.35; font-style: italic;">
+            ${escapeHTML(user.notes)}
+          </div>
+        ` : ''}
+
+        <div class="team-member-actions" style="display: flex; gap: 0.4rem; flex-wrap: wrap; margin-top: 0.6rem;">
+          ${user.email ? `
+            <button type="button" class="btn btn-outline btn-xs" onclick="copyMemberAccess('${escapeHTML(user.id)}')" title="Copier les identifiants pour lui envoyer par SMS ou WhatsApp" style="border-color: rgba(82, 183, 136, 0.4); color: #52b788;">
+              📲 Accès terrain
+            </button>
+          ` : ''}
+          <button type="button" class="btn btn-outline btn-xs" onclick="openEditTeamMemberModal('${escapeHTML(user.id)}')" title="Modifier cet utilisateur">
+            ✏️ Modifier
+          </button>
+          <button type="button" class="btn btn-ghost btn-xs text-danger" onclick="deleteTeamMember('${escapeHTML(user.id)}')" title="Retirer de l'équipe">
+            🗑️ Retirer
+          </button>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+function handleTeamSearch(query) {
+  teamSearchFilter = (query || "").trim().toLowerCase();
+  renderTeamList();
+}
+
+function handleTeamRoleFilter(roleCategory) {
+  teamRoleFilter = roleCategory || "all";
+  renderTeamList();
+}
+
+function generateMemberPin() {
+  const pin = Math.floor(100000 + Math.random() * 900000).toString();
+  const pwdInput = document.getElementById("input-member-password");
+  if (pwdInput) {
+    pwdInput.value = pin;
+    pwdInput.focus();
+    showToast(`⚡ Code PIN généré : ${pin}`, "info");
+  }
+}
+
+function copyMemberAccess(userId) {
+  const user = (teamUsers || []).find(u => u.id === userId);
+  if (!user) return;
+  const authUser = getAuthUser();
+  const domainName = (authUser && (authUser.domainName || authUser.name)) || "Domaine Viticole";
+  const loginUrl = window.location.origin ? (window.location.origin + window.location.pathname.replace("dashboard.html", "login.html")) : "https://vititrack.pro/login.html";
+
+  const message = `🍷 VitiTrack Pro — Vos accès terrain
+Exploitation : ${domainName}
+Collaborateur : ${user.name} (${user.role})
+Identifiant (E-mail) : ${user.email || 'Non renseigné'}
+Mot de passe / PIN : ${user.password || 'viti2026'}
+Connexion directe : ${loginUrl}
+
+Connectez-vous depuis votre smartphone pour saisir vos chantiers et interventions directement dans les parcelles.`;
+
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(message).then(() => {
+      showToast("📋 Accès copiés ! Vous pouvez les coller par SMS ou WhatsApp.", "success");
+    }).catch(() => {
+      fallbackCopyAccess(message);
+    });
+  } else {
+    fallbackCopyAccess(message);
+  }
+}
+
+function fallbackCopyAccess(text) {
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  document.body.appendChild(textarea);
+  textarea.select();
+  try {
+    document.execCommand("copy");
+    showToast("📋 Accès copiés dans le presse-papier !", "success");
+  } catch (e) {
+    prompt("Copiez vos accès :", text);
+  }
+  document.body.removeChild(textarea);
+}
+
+function syncGlobalTeamDirectory() {
+  try {
+    const authUser = getAuthUser();
+    const ownerUserId = (authUser && authUser.isTeamMember && authUser.ownerUserId)
+      ? authUser.ownerUserId
+      : ((authUser && authUser.id) ? authUser.id : "demo-user-123");
+
+    const ownerDomain = (authUser && authUser.isTeamMember && authUser.ownerDomain)
+      ? authUser.ownerDomain
+      : ((authUser && (authUser.domainName || authUser.name)) || "Domaine Ludinard & Clair");
+
+    const ownerEmail = (authUser && authUser.isTeamMember && authUser.ownerEmail)
+      ? authUser.ownerEmail
+      : ((authUser && authUser.email) || "exploitant@domaineludinard.fr");
+
+    let directory = [];
+    try {
+      directory = JSON.parse(localStorage.getItem("vititrack_global_team_directory") || "[]");
+      if (!Array.isArray(directory)) directory = [];
+    } catch (e) {
+      directory = [];
+    }
+
+    // Filtrer les entrées de ce domaine pour les réécrire fraîches
+    directory = directory.filter(entry => entry.ownerUserId !== ownerUserId);
+
+    (teamUsers || []).forEach(member => {
+      if (member.email) {
+        directory.push({
+          memberId: member.id,
+          name: member.name,
+          role: member.role,
+          roleCategory: member.roleCategory || getRoleCategory(member.role),
+          email: member.email.trim().toLowerCase(),
+          password: member.password || "viti2026",
+          ownerUserId: ownerUserId,
+          ownerDomain: ownerDomain,
+          ownerEmail: ownerEmail
+        });
+      }
+    });
+
+    localStorage.setItem("vititrack_global_team_directory", JSON.stringify(directory));
+  } catch (err) {
+    console.warn("Notice syncGlobalTeamDirectory :", err);
+  }
+}
+
+function openAddTeamMemberModal() {
+  const form = document.getElementById("team-member-form");
+  if (form) form.reset();
+
+  const idInput = document.getElementById("input-member-id");
+  if (idInput) idInput.value = "";
+
+  const pwdInput = document.getElementById("input-member-password");
+  if (pwdInput) {
+    pwdInput.value = Math.floor(100000 + Math.random() * 900000).toString();
+  }
+
+  const titleEl = document.getElementById("team-member-modal-title");
+  if (titleEl) titleEl.textContent = "Ajouter un utilisateur";
+
+  const btnText = document.getElementById("team-member-modal-submit-text");
+  if (btnText) btnText.textContent = "💾 Enregistrer l'utilisateur";
+
+  const modal = document.getElementById("team-member-modal");
+  if (modal) {
+    modal.classList.add("open");
+    modal.setAttribute("aria-hidden", "false");
+    lockBodyScroll();
+    const modalBody = modal.querySelector(".modal-body");
+    if (modalBody) modalBody.scrollTop = 0;
+  }
+}
+
+function openEditTeamMemberModal(userId) {
+  const user = (teamUsers || []).find(u => u.id === userId);
+  if (!user) {
+    showToast("Utilisateur introuvable.", "error");
+    return;
+  }
+
+  const idInput = document.getElementById("input-member-id");
+  const nameInput = document.getElementById("input-member-name");
+  const roleSelect = document.getElementById("input-member-role");
+  const statusSelect = document.getElementById("input-member-status");
+  const emailInput = document.getElementById("input-member-email");
+  const pwdInput = document.getElementById("input-member-password");
+  const phoneInput = document.getElementById("input-member-phone");
+  const certInput = document.getElementById("input-member-certifications");
+  const notesInput = document.getElementById("input-member-notes");
+
+  if (idInput) idInput.value = user.id;
+  if (nameInput) nameInput.value = user.name || "";
+  if (roleSelect) roleSelect.value = user.role || "Tractoriste / Chauffeur d'engins";
+  if (statusSelect) statusSelect.value = user.status || "Actif";
+  if (emailInput) emailInput.value = user.email || "";
+  if (pwdInput) pwdInput.value = user.password || "viti2026";
+  if (phoneInput) phoneInput.value = user.phone || "";
+  if (certInput) certInput.value = user.certifications || "";
+  if (notesInput) notesInput.value = user.notes || "";
+
+  const titleEl = document.getElementById("team-member-modal-title");
+  if (titleEl) titleEl.textContent = "Modifier l'utilisateur";
+
+  const btnText = document.getElementById("team-member-modal-submit-text");
+  if (btnText) btnText.textContent = "💾 Mettre à jour l'utilisateur";
+
+  const modal = document.getElementById("team-member-modal");
+  if (modal) {
+    modal.classList.add("open");
+    modal.setAttribute("aria-hidden", "false");
+    lockBodyScroll();
+    const modalBody = modal.querySelector(".modal-body");
+    if (modalBody) modalBody.scrollTop = 0;
+  }
+}
+
+function closeTeamMemberModal() {
+  const modal = document.getElementById("team-member-modal");
+  if (modal) {
+    modal.classList.remove("open");
+    modal.setAttribute("aria-hidden", "true");
+    unlockBodyScroll();
+  }
+}
+
+function handleTeamMemberFormSubmit(e) {
+  if (e) e.preventDefault();
+
+  const id = document.getElementById("input-member-id")?.value;
+  const name = document.getElementById("input-member-name")?.value?.trim();
+  const role = document.getElementById("input-member-role")?.value || "Tractoriste / Chauffeur d'engins";
+  const status = document.getElementById("input-member-status")?.value || "Actif";
+  const email = document.getElementById("input-member-email")?.value?.trim() || "";
+  const password = document.getElementById("input-member-password")?.value?.trim() || "viti2026";
+  const phone = document.getElementById("input-member-phone")?.value?.trim() || "";
+  const certifications = document.getElementById("input-member-certifications")?.value?.trim() || "";
+  const notes = document.getElementById("input-member-notes")?.value?.trim() || "";
+
+  if (!name) {
+    showToast("Veuillez renseigner le nom de l'utilisateur.", "warning");
+    return;
+  }
+
+  const roleCategory = getRoleCategory(role);
+
+  // Palette de couleurs pour les avatars
+  const roleColors = {
+    gerant: "#2d6a4f",
+    chef: "#2563eb",
+    tractoriste: "#d97706",
+    ouvrier: "#9333ea",
+    saisonnier: "#f59e0b",
+    autre: "#4b5563"
+  };
+
+  if (id) {
+    // Modification d'un utilisateur existant
+    const idx = (teamUsers || []).findIndex(u => u.id === id);
+    if (idx !== -1) {
+      teamUsers[idx] = {
+        ...teamUsers[idx],
+        name,
+        role,
+        roleCategory,
+        status,
+        email,
+        password,
+        phone,
+        certifications,
+        notes
+      };
+      showToast(`Utilisateur « ${name} » mis à jour !`, "success");
+    }
+  } else {
+    // Création d'un nouvel utilisateur
+    const newMember = {
+      id: generateUniqueId("USR"),
+      name,
+      role,
+      roleCategory,
+      status,
+      email,
+      password,
+      phone,
+      certifications,
+      notes,
+      color: roleColors[roleCategory] || "#2d6a4f"
+    };
+    teamUsers.push(newMember);
+    showToast(`Utilisateur « ${name} » ajouté à l'équipe !`, "success");
+  }
+
+  saveTeamUsers();
+  closeTeamMemberModal();
+  renderTeamList();
+  renderKPIs();
+  populatePlannedWorkerSelect();
+}
+
+function deleteTeamMember(userId) {
+  const user = (teamUsers || []).find(u => u.id === userId);
+  if (!user) return;
+
+  const isGerant = user.roleCategory === "gerant" || (user.role && user.role.toLowerCase().includes("gérant"));
+  const gerantsCount = (teamUsers || []).filter(u => u.roleCategory === "gerant" || (u.role && u.role.toLowerCase().includes("gérant"))).length;
+
+  if (isGerant && gerantsCount <= 1) {
+    alert("Impossible de retirer le seul gérant exploitant du domaine.");
+    return;
+  }
+
+  if (!confirm(`Êtes-vous sûr de vouloir retirer « ${user.name} » de l'équipe ?`)) {
+    return;
+  }
+
+  teamUsers = teamUsers.filter(u => u.id !== userId);
+  saveTeamUsers();
+  renderTeamList();
+  renderKPIs();
+  populatePlannedWorkerSelect();
+  showToast(`Utilisateur « ${user.name} » retiré de l'équipe.`, "info");
+}
+
+function populatePlannedWorkerSelect() {
+  const select = document.getElementById("input-planned-worker");
+  if (!select) return;
+
+  const currentVal = select.value;
+  select.innerHTML = '<option value="">Non assigné (À définir)</option>';
+
+  (teamUsers || []).forEach(u => {
+    const opt = document.createElement("option");
+    opt.value = u.name;
+    opt.textContent = `${u.name} (${u.role})`;
+    select.appendChild(opt);
+  });
+
+  if (currentVal) {
+    select.value = currentVal;
+  }
+}
+
+// Initialisation globale au chargement
+document.addEventListener("DOMContentLoaded", () => {
+  populatePlannedWorkerSelect();
+});
+
+// Exports globaux sur window
+window.openTeamModal = openTeamModal;
+window.closeTeamModal = closeTeamModal;
+window.renderTeamList = renderTeamList;
+window.handleTeamSearch = handleTeamSearch;
+window.handleTeamRoleFilter = handleTeamRoleFilter;
+window.openAddTeamMemberModal = openAddTeamMemberModal;
+window.openEditTeamMemberModal = openEditTeamMemberModal;
+window.closeTeamMemberModal = closeTeamMemberModal;
+window.handleTeamMemberFormSubmit = handleTeamMemberFormSubmit;
+window.deleteTeamMember = deleteTeamMember;
+window.populatePlannedWorkerSelect = populatePlannedWorkerSelect;
+window.generateMemberPin = generateMemberPin;
+window.copyMemberAccess = copyMemberAccess;
+window.syncGlobalTeamDirectory = syncGlobalTeamDirectory;
+
 

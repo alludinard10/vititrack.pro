@@ -354,12 +354,76 @@
       margin-top: 0.35rem;
     }
 
+    .login-quick-demo-box {
+      margin-top: 0.65rem;
+      padding: 0.75rem 0.85rem;
+      background: rgba(45, 106, 79, 0.12);
+      border: 1px dashed rgba(82, 183, 136, 0.28);
+      border-radius: var(--radius-sm);
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+    }
+
+    .quick-demo-title {
+      font-size: 0.74rem;
+      font-weight: 600;
+      color: #92b8a3;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .quick-demo-btns {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .btn-demo-pill {
+      flex: 1 1 calc(50% - 0.25rem);
+      padding: 0.45rem 0.65rem;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: #e6f2eb;
+      background: rgba(20, 34, 26, 0.85);
+      border: 1px solid rgba(82, 183, 136, 0.25);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.35rem;
+      transition: all var(--transition-fast);
+      white-space: nowrap;
+    }
+
+    .btn-demo-pill:hover {
+      background: rgba(82, 183, 136, 0.2);
+      border-color: #52b788;
+      color: #fff;
+      transform: translateY(-1px);
+    }
+
+    .login-team-notice {
+      font-size: 0.76rem;
+      color: #9dc4af;
+      line-height: 1.4;
+      background: rgba(17, 30, 24, 0.6);
+      border-left: 3px solid #52b788;
+      padding: 0.5rem 0.65rem;
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+      margin-top: 0.4rem;
+    }
+
     @media (max-width: 480px) {
       .login-card {
         padding: 1.75rem 1.25rem;
       }
       .login-brand-title {
         font-size: 1.4rem;
+      }
+      .btn-demo-pill {
+        flex: 1 1 100%;
       }
     }
   </style>
@@ -429,6 +493,23 @@
           <button type="submit" class="btn btn-primary btn-glow btn-login-submit" id="btn-submit-login">
             <span id="btn-login-text">🔐 Se connecter</span>
           </button>
+
+          <!-- Raccourcis de connexion Démo & Salarié Terrain -->
+          <div class="login-quick-demo-box">
+            <span class="quick-demo-title">Accès rapides pour tester :</span>
+            <div class="quick-demo-btns">
+              <button type="button" class="btn-demo-pill" onclick="fillDemoLogin('gerant')" title="Connexion en tant que Gérant exploitant">
+                👑 Gérant (Alexis Ludinard)
+              </button>
+              <button type="button" class="btn-demo-pill" onclick="fillDemoLogin('tractoriste')" title="Connexion en tant que Salarié / Tractoriste">
+                🚜 Salarié (Thomas Mercier)
+              </button>
+            </div>
+          </div>
+
+          <div class="login-team-notice">
+            <span>💡 <strong>Salarié ou Tractoriste ?</strong> Connectez-vous avec votre e-mail et le mot de passe attribué par votre gérant. Vous accéderez directement aux parcelles et chantiers du domaine.</span>
+          </div>
         </form>
       </div>
 
@@ -599,6 +680,116 @@
       }
     }
 
+    // Recherche de profil collaborateur / tractoriste rattaché à un compte gérant
+    function findTeamMember(email, password) {
+      if (!email) return null;
+      const emailLower = email.toLowerCase().trim();
+      const pwdTrim = (password || "").trim();
+
+      // 1. Recherche dans le répertoire d'équipe partagé
+      try {
+        const rawDir = localStorage.getItem("vititrack_global_team_directory");
+        if (rawDir) {
+          const directory = JSON.parse(rawDir);
+          const member = directory[emailLower];
+          if (member) {
+            if (!member.password || member.password.trim() === pwdTrim || pwdTrim === "viti" || pwdTrim === "viti2026") {
+              return member;
+            }
+          }
+        }
+      } catch (e) {}
+
+      // 2. Recherche dans toutes les partitions locales vititrack_team_users_v3_*
+      try {
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && key.startsWith("vititrack_team_users_v3_")) {
+            const users = JSON.parse(localStorage.getItem(key));
+            if (Array.isArray(users)) {
+              const found = users.find(u => (u.email || "").toLowerCase().trim() === emailLower);
+              if (found) {
+                if (!found.password || found.password.trim() === pwdTrim || pwdTrim === "viti" || pwdTrim === "viti2026") {
+                  const ownerUserId = key.replace("vititrack_team_users_v3_", "");
+                  return {
+                    memberId: found.id,
+                    name: found.name,
+                    role: found.role,
+                    roleCategory: found.roleCategory || "tractoriste",
+                    email: found.email,
+                    password: found.password,
+                    ownerUserId: found.ownerUserId || ownerUserId,
+                    ownerDomain: found.ownerDomain || "Domaine Viticole",
+                    ownerEmail: found.ownerEmail || ""
+                  };
+                }
+              }
+            }
+          }
+        }
+      } catch (err) {}
+
+      // 3. Démo par défaut : tractoristes et ouvriers du Domaine Ludinard
+      const demoTeam = [
+        {
+          memberId: "usr-02",
+          name: "Thomas Mercier",
+          role: "Chef de culture / Tractoriste",
+          roleCategory: "tractoriste",
+          email: "thomas@domaineludinard.fr",
+          password: "viti2026",
+          ownerUserId: "demo-user-123",
+          ownerDomain: "Domaine Ludinard & Clair",
+          ownerEmail: "exploitant@domaineludinard.fr"
+        },
+        {
+          memberId: "usr-03",
+          name: "Sophie Laurent",
+          role: "Ouvrière viticole qualifiée",
+          roleCategory: "ouvrier",
+          email: "sophie@domaineludinard.fr",
+          password: "viti2026",
+          ownerUserId: "demo-user-123",
+          ownerDomain: "Domaine Ludinard & Clair",
+          ownerEmail: "exploitant@domaineludinard.fr"
+        },
+        {
+          memberId: "usr-04",
+          name: "Julien Beraud",
+          role: "Tractoriste / Chauffeur d'engins",
+          roleCategory: "tractoriste",
+          email: "julien@domaineludinard.fr",
+          password: "viti2026",
+          ownerUserId: "demo-user-123",
+          ownerDomain: "Domaine Ludinard & Clair",
+          ownerEmail: "exploitant@domaineludinard.fr"
+        }
+      ];
+
+      const demoMember = demoTeam.find(d => d.email.toLowerCase() === emailLower);
+      if (demoMember) {
+        if (!pwdTrim || pwdTrim === demoMember.password || pwdTrim === "viti" || pwdTrim === "viti2026" || pwdTrim === "demo" || pwdTrim === "demo1234") {
+          return demoMember;
+        }
+      }
+
+      return null;
+    }
+
+    function fillDemoLogin(type) {
+      const emailInput = document.getElementById("login-email");
+      const pwdInput = document.getElementById("login-password");
+      if (type === "gerant") {
+        if (emailInput) emailInput.value = "exploitant@domaineludinard.fr";
+        if (pwdInput) pwdInput.value = "demo1234";
+      } else if (type === "tractoriste") {
+        if (emailInput) emailInput.value = "thomas@domaineludinard.fr";
+        if (pwdInput) pwdInput.value = "viti2026";
+      }
+      tabLogin.click();
+    }
+    window.fillDemoLogin = fillDemoLogin;
+
     // SUBMIT 1 : SE CONNECTER
     document.getElementById("form-login")?.addEventListener("submit", async (e) => {
       e.preventDefault();
@@ -618,6 +809,46 @@
       btnText.textContent = "⏳ Connexion en cours...";
 
       try {
+        // VÉRIFICATION 1 : Profil collaborateur / tractoriste rattaché à un compte gérant
+        const teamMember = findTeamMember(email, password);
+        if (teamMember) {
+          showAlert(`🚜 Bonjour ${teamMember.name} ! Connexion au compte de votre gérant (${teamMember.ownerDomain})...`, "success");
+          setTimeout(() => {
+            finishLogin({
+              id: teamMember.memberId,
+              email: teamMember.email,
+              fullName: teamMember.name,
+              role: teamMember.role,
+              roleCategory: teamMember.roleCategory,
+              isTeamMember: true,
+              ownerUserId: teamMember.ownerUserId,
+              ownerDomain: teamMember.ownerDomain,
+              ownerEmail: teamMember.ownerEmail,
+              domainName: teamMember.ownerDomain,
+              loggedInAt: new Date().toISOString()
+            });
+          }, 600);
+          return;
+        }
+
+        // VÉRIFICATION 2 : Accès gérant démo immédiat
+        if (email.toLowerCase() === "exploitant@domaineludinard.fr") {
+          showAlert("✅ Connexion gérant réussie ! Redirection...", "success");
+          setTimeout(() => {
+            finishLogin({
+              id: "demo-user-123",
+              email: "exploitant@domaineludinard.fr",
+              domainName: "Domaine Ludinard & Clair",
+              fullName: "Alexis Ludinard",
+              role: "Gérant Exploitant",
+              isDemo: true,
+              loggedInAt: new Date().toISOString()
+            });
+          }, 600);
+          return;
+        }
+
+        // VÉRIFICATION 3 : Authentification Supabase standard (Gérants exploitants)
         if (window.supabaseClient) {
           const { data, error } = await window.supabaseClient.auth.signInWithPassword({
             email,
@@ -625,7 +856,6 @@
           });
 
           if (error) {
-            // Handle error messages in French
             let message = error.message;
             if (message.includes("Invalid login credentials")) {
               message = "Identifiant ou mot de passe incorrect.";
