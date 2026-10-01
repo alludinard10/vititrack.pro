@@ -150,15 +150,21 @@ Vititrack pro/
 
 #### D. Vue 3 : Prestations & Travaux à faire
 - **Sous-onglet 1 : Catalogue des prestations viticoles** :
-  - **Filtres sous forme de menus déroulants** : deux sélecteurs compacts pour filtrer instantanément par *Catégorie viticole* et par *Mode de facturation* (€/h, €/ha, forfait).
+  - **Modes de facturation multiples** : Taux horaire (`€/h`), Forfait à l'hectare (`€/ha`), Forfait fixe global (`€`), et Facturation au kilo (`€/kg` pour vendanges et récoltes au poids).
+  - **Filtres sous forme de menus déroulants** : deux sélecteurs compacts pour filtrer instantanément par *Catégorie viticole* et par *Mode de facturation* (€/h, €/ha, forfait, au kilo).
   - **Organisation en menus déroulants accordéons par catégorie** : affichage soigné regroupé par catégorie avec compteurs de prestations et chevrons repliables.
-  - Unités de facturation : à l'hectare (`ha`), à l'heure (`h`), au forfait (`forfait`).
+  - Unités de facturation : à l'hectare (`ha`), à l'heure (`h`), au forfait (`forfait`), au kilo (`kg`).
   - Tarifs indicatifs HT avec calcul automatique lors de la saisie d'une intervention.
   - Création, modification et suppression de prestations.
 - **Sous-onglet 2 : Planning des travaux à faire (travaux prévisionnels)** :
-  - Liste des chantiers prévus par client, parcelle, salarié et date butoir.
-  - Statuts : *À planifier*, *En cours*, *Terminé*.
-  - **Action de conversion en 1 clic** : transforme un travail planifié en intervention réelle réalisée.
+  - **Planification multi-domaines & multi-parcelles en menus déroulants (Modal 6)** : Deux menus déroulants compacts et élégants (`.modal-dropdown-wrap`) côte à côte :
+    - *Menu déroulant « Domaines / Clients »* : sélecteur avec recherche instantanée, boutons « Tout cocher / Tout décocher », pastilles de statut, et sélection simultanée de multiples domaines avec affichage dynamique des domaines choisis sur le bouton déclencheur.
+    - *Menu déroulant « Parcelles associées »* : activé dès la sélection d'au moins un client, liste déroulante groupée par domaine avec cases à cocher, recherche de parcelles, boutons « Tout / Aucun », et calcul en direct du nombre de parcelles et de la surface cumulée totale (**précision à 4 décimales**).
+    - *Bandeau récapitulatif en temps réel* : affiche instantanément le nombre de clients, le nombre de parcelles et la superficie globale sélectionnée.
+  - Génération automatique des chantiers prévus par client avec report de la surface de leurs parcelles.
+  - **Action de conversion en 1 clic & Sécurité d'annulation** : transforme un travail planifié en intervention réelle avec pré-remplissage complet (client, parcelles cochées, prestation, volume, dates).
+    - **Annulation sécurisée** : Si l'utilisateur clique sur « Annuler » ou ferme la modale, le travail planifié **reste strictement intact dans la liste des travaux à réaliser**.
+    - **Validation & Enregistrement** : Dès que l'utilisateur clique sur « Enregistrer l'intervention », l'intervention est immédiatement inscrite au Tableau de Bord (Journal des interventions), le travail planifié correspondant est supprimé de la liste et de Supabase, et l'application bascule automatiquement sur le Tableau de Bord pour visualiser l'intervention créée.
 
 #### E. Gestion de l'Équipe & des Utilisateurs (Modales 9 & 10)
 - **Compteur & Carte KPI dédiée sur le Tableau de bord** : Affiche en temps réel le nombre total d'utilisateurs, la décomposition (gérant vs salariés/tractoristes) et les membres actifs.
@@ -170,7 +176,97 @@ Vititrack pro/
 - **Formulaire Utilisateur (Modal 10)** : Ajout et édition rapide d'un membre avec assignation du rôle viticole et compétences terrain.
 - **Alimentation dynamique du planning des travaux** : Les travaux prévisionnels proposent automatiquement la liste des membres réels de l'équipe dans le champ « Salarié pressenti ».
 
-#### F. Expérience Mobile / Smartphone
+#### F. Pilotage des Vendanges & Récoltes (Vue 4, Modales 11 & 12)
+- **Accès depuis la section Pilotage** : Entrée dédiée dans la barre latérale sous *Pilotage* avec badge dynamique affichant le nombre de parcelles au suivi des vendanges, et raccourci dans *Outils & Base* (*＋ Nouvelle Vendange*).
+- **Tableau de Bord & 5 KPIs Clés avec Prestations Liées** :
+  1. *Parcelles au suivi* : Total de parcelles et superficie cumulée (**précision à 4 décimales obligatoire**).
+  2. *Effeuillage* : Pourcentage d'avancement et décompte (effeuillée(s) vs à faire), avec badge dynamique affichant la prestation liée (*« Prestation liée : Effeuillage manuel »*).
+  3. *Coupe / Récolte* : Pourcentage récolté et décompte (coupée(s) vs à couper).
+  4. *Volume Récolté* : Total des kilos (kg) récoltés et nombre de caisses pesées, avec badge dynamique affichant la prestation liée (*« Prestation liée : Coupe vendange (0,35 €/kg) »*).
+  5. *Débardage* : Pourcentage acheminé hors des rangs et décompte (débardée(s) vs à sortir).
+- **Lien Prestation Coupe Vendange & Rendement au Kilo** :
+  - La pesée récoltée (kilos) est directement adossée à la prestation « Coupe vendange (au kilo) » du catalogue de services.
+  - Le calcul du montant HT (`kg × €/kg = Total HT`) et TTC est calculé en direct à la pesée et synchronisé avec le Journal des interventions.
+  - Affichage direct dans le tableau de bord vendanges de la formule de calcul, du prix au kg et de la prestation liée.
+- **Lien Prestation Effeuillage & Suivi dans le Pilotage** :
+  - **Affichage du tarif à toutes les étapes nécessaires** : Que l'étape soit sur « 🍃 À effeuiller » ou « ✅ Effeuillée », le bloc de prestation s'affiche avec la prestation catalogue liée, le champ de prix unitaire HT (ex: 550 €/ha configuré dans le catalogue des Prestations) et le rappel textuel clair du tarif préenregistré. Le bloc est masqué uniquement si l'option « 🚫 Non nécessaire » est choisie.
+  - **Ajout automatique au Tableau de Bord lors du passage à « Effeuillée »** :
+    - Dès qu'une parcelle est enregistrée comme « Effeuillée » dans la modale (Modal 11) ou basculée via le menu déroulant/toggle du tableau, l'intervention d'effeuillage est **automatiquement créée dans le Journal des interventions du Tableau de bord au statut « À facturer »** avec le tarif configuré dans Prestations (550 €/ha).
+    - Une case à cocher « *Ajouter automatiquement l'effeuillage au Tableau de Bord (À facturer)* » permet de contrôler cet envoi dans la modale.
+    - Dans le tableau des vendanges, la colonne Effeuillage affiche le statut visuel avec badge de la prestation, le tarif (ex: 550.00 €/ha), ainsi qu'un badge cliquable vers l'intervention créée (`⏳ À facturer` / `✅ Facturée`).
+
+- **Lien Prestation Coupe Vendange & Rendement au Kilo** :
+  - **Affichage du tarif dès « À couper » et « Coupée »** : Dès la programmation de la vendange (« ⏳ À couper »), la prestation vendange liée (ex: *Coupe vendange au kilo* à 0,35 €/kg) et son tarif unitaire s'affichent clairement avec rappel du tarif préenregistré.
+  - Dès le passage à « 🍇 Coupée », la section de pesée (kilos récoltés, nombre de caisses) et la valorisation financière en direct s'activent.
+  - Case à cocher « *Ajouter automatiquement la coupe au Tableau de Bord pour la Facturation* » créant immédiatement l'intervention dans le Journal des interventions au statut « À facturer ».
+
+- **Lien Prestation Débardage & Tarif préenregistré dans le Pilotage** :
+  - Prestation dédiée préenregistrée dans le catalogue *Prestations Travaux* : **« Débardage vendange (tracteur / porteur) »** à **0,15 €/kg** (facturée au kilo récolté ou prestations associées).
+  - **Affichage du tarif à toutes les étapes nécessaires** : Que l'étape soit sur « 🚜 À débarder » ou « ✅ Débardée », le bloc de prestation s'affiche avec le sélecteur dynamique, le prix unitaire modifiable et l'indication claire du tarif catalogue (0,15 €/kg). Le bloc se replie uniquement si l'option « ⚪ Non nécessaire » est cochée.
+  - **Ajout automatique au Tableau de Bord lors du passage à « Débardée »** :
+    - Dès qu'une parcelle est marquée « Débardée » (dans Modal 11 ou via les menus déroulants/toggles du tableau), le chantier de débardage est **automatiquement transféré dans le Journal des interventions du Tableau de bord au statut « À facturer »** avec le tarif configuré (0,15 €/kg).
+    - Case à cocher « *Ajouter automatiquement le débardage au Tableau de Bord (À facturer)* » intégrée dans la modale.
+  - Dans le tableau des vendanges (Colonne *Débardage*) : affichage du badge de statut, rappel du tarif (0.15 €/kg) et badge interactif reliant directement au chantier dans le Tableau de Bord.
+
+- **Filtre Multi-Sélection des Domaines Viticoles** :
+  - Menu déroulant multi-sélection à encoches (cases à cocher) identique au tableau de bord principal.
+  - Champ de recherche textuelle en direct, boutons rapides « Tout cocher » et « Tout décocher ».
+  - Badge dynamique du nombre de domaines sélectionnés.
+  - Permet de filtrer et afficher les parcelles vendangées de plusieurs domaines viticoles simultanément.
+
+- **Filtre Multi-Sélection des Parcelles Cadastrales (Menu Déroulant à Encoches)** :
+  - Disposé stratégiquement entre le filtre *Domaine Viticole* et le filtre *Étape Vendange*.
+  - Menu déroulant avec cases à cocher (`#wrap-vendanges-filter-parcel`) permettant de sélectionner simultanément une ou plusieurs parcelles spécifiques.
+  - Adaptation dynamique en direct selon le ou les domaines sélectionnés (regroupement élégant par domaine viticole avec boutons « Tout » / « Aucun » par domaine si plusieurs clients sont actifs).
+  - Champ de recherche instantanée par nom de parcelle, domaine et cépage.
+  - Commandes rapides « Tout cocher » et « Tout décocher » avec affichage dynamique du nombre de parcelles sélectionnées sur le bouton déclencheur.
+
+- **Création & Planification Multi-Domaines & Multi-Parcelles (Modal 11)** :
+  - Identique à l'ergonomie de Modal 6 (Travaux prévisionnels), le formulaire de nouvelle vendange propose deux menus déroulants élégants à encoches :
+    - *Menu déroulant « Domaine(s) / Client(s) »* : recherche instantanée, boutons « Tout cocher / Tout décocher », et sélection multi-domaines simultanée avec affichage dynamique sur le déclencheur.
+    - *Menu déroulant « Parcelle(s) à vendanger »* : activé dès qu'au moins un client est coché, liste regroupée par domaine viticole avec bouton « Tout cocher » par domaine, superficie précise à 4 décimales, cépage et badges clairs.
+    - *Bandeau récapitulatif en direct* : affiche instantanément le nombre de domaines, le nombre de parcelles et la superficie globale cumulée (en ha à 4 décimales).
+    - *Création par lot* : la validation du formulaire crée automatiquement un chantier de suivi de vendange pour chaque parcelle cochée avec automatisation de facturation associée (effeuillage, pesée coupe, débardage).
+
+- **Feuille de Route des Vendanges & Robustesse du Filtrage** :
+  - Filtrage sécurisé par domaine, parcelle et étape (`leaf_todo`, `leaf_done`, `cut_todo`, `cut_done`, `haul_todo`, `haul_done`) garantissant la visibilité permanente des parcelles suivies sans masquage intempestif.
+  - Bouton de réinitialisation rapide des filtres en 1 clic intégré directement dans l'état vide si des parcelles existent au suivi.
+
+- **Cloisonnement Strict des Prestations par Étape dans Modal 11** :
+  - **Étape 1 (Effeuillage)** : Liste déroulante et tarif réservés **exclusivement aux prestations d'effeuillage** (ex: *Effeuillage manuel face levante* à 550 €/ha), excluant toute autre prestation de relevage, rognage ou palissage.
+  - **Étape 2 (Coupe / Récolte)** : Liste déroulante et tarif réservés **exclusivement à la coupe vendange / récolte** (ex: *Coupe vendange (au kilo)* à 0,35 €/kg), excluant strictement le débardage.
+  - **Étape 3 (Débardage)** : Liste déroulante et tarif réservés **exclusivement au débardage** (ex: *Débardage vendange (tracteur / porteur)* à 0,15 €/kg), excluant strictement la coupe ou la récolte.
+
+- **Épuration Visuelle & Facturation Automatique Directe du Tableau des Vendanges** :
+  - **Colonnes épurées sans encombrement sous les boutons** : Les colonnes *Effeuillage*, *Coupe / Récolte* et *Débardage* affichent exclusivement leur bouton menu déroulant respectif (`🍃 À effeuiller / 🚫 Non nécessaire / ✅ Effeuillée`, `⏳ À couper / 🍇 Coupée`, `🚜 À débarder / ⚪ Non nécessaire / ✅ Débardée`). Tous les encadrés, mentions superflues de prestation ou de tarif sous les sélecteurs ont été retirés.
+  - **Envoi automatique direct à « À facturer » (zéro action manuelle requise)** :
+    - Dès le passage à **« ✅ Effeuillée »**, l'intervention d'effeuillage est créée immédiatement dans le Journal du Tableau de bord au statut « À facturer » avec le tarif catalogue (550 €/ha).
+    - Dès la validation de **« 🍇 Coupée »** (dans le tableau ou lors de la saisie de pesée), l'intervention de coupe est créée immédiatement au statut « À facturer » avec le prix au kilo configuré.
+    - Dès le passage à **« ✅ Débardée »**, l'intervention de débardage est créée immédiatement au statut « À facturer » avec le tarif préenregistré (0,15 €/kg).
+
+- **Export CSV enrichi** : Le fichier CSV exporté intègre les colonnes *Prix au Kilo (€ HT/kg)*, *Montant Total HT (€)*, *Statut Facturation*, *Prestation Débardage* et *Tarif Débardage (€ HT)*.
+
+#### G. Vue 5 : Historique & Suivi par Client (Onglet Client dans Pilotage)
+- **Accès dédié depuis la section Pilotage** : Onglet `📋 Historique Client` (`#nav-btn-client-history`) situé dans la sidebar sous *PILOTAGE*, permettant un accès direct au suivi complet par client.
+- **Sélecteur Biparti Multi-Domaines & Parcelles en Menus Déroulants** :
+  - *Étape 1 : Choix Multi-Domaines / Clients à encoches (cases à cocher)* : Menu déroulant élégant avec recherche instantanée, boutons « Tout cocher » / « Tout décocher », pastilles de statut, et sélection simultanée de multiples domaines avec affichage dynamique sur le bouton déclencheur.
+  - *Étape 2 : Menu Déroulant Multi-Sélection des Parcelles associées* :
+    - Menu déroulant avec cases à cocher (`#wrap-ch-filter-parcel`) affichant la superficie cadastrale exacte (4 décimales), le cépage, un champ de recherche instantanée, et les commandes rapides « Tout cocher » / « Tout décocher ».
+    - Si plusieurs domaines sélectionnés : regroupement automatique par domaine viticole dans la liste déroulante avec en-têtes dédiés et commandes « Tout » / « Aucun » spécifiques à chaque domaine.
+  - *Bandeau récapitulatif en direct* : Compteur de parcelles cochées, superficie cadastrale cumulée en hectares (précision à 4 décimales), et nombre de chantiers correspondants.
+- **Synthèse & 4 KPIs Financiers & Travaux en Direct** :
+  1. *Interventions réalisées* : Nombre total de chantiers trouvés, superficie totale travaillée (ha à 4 décimales) et total d'heures machines.
+  2. *Montant total HT* : Chiffre d'affaires HT cumulé et conversion TTC estimée.
+  3. *À Facturer (En attente)* : Montant restant en attente de facturation avec décompte des chantiers (badge ambre).
+  4. *Déjà Facturé* : Montant encaissé/clôturé avec décompte des chantiers (badge vert émeraude).
+- **Journal Complet des Travaux du/des Client(s)** :
+  - Tableau pleine largeur (`.interventions-table`) filtrable par statut (*Tous*, *À facturer*, *Facturée*), par période (*Tout l'historique*, *Année en cours*, *Ce mois-ci*, *30 derniers jours*) et par recherche textuelle.
+  - Badge de domaine viticole affiché dans la colonne parcellaire lors de consultations multi-domaines pour une lisibilité parfaite.
+  - Bascule directe de statut de facturation en 1 clic.
+  - Export CSV dédié de l'historique filtré (monoclient ou multi-domaines) avec téléchargement instantané compatible Excel.
+  - Bouton rapide d'ajout d'intervention pré-assigné.
+
+#### H. Expérience Mobile / Smartphone
 - **Barre de Navigation Inférieure Fixe (`.mobile-bottom-nav`)** :
   - Toujours accessible au pouce sur smartphone.
   - Icônes claires : *Tableau*, *Clients*, *Prestations*, *Menu*.
@@ -214,6 +310,9 @@ L'application propose deux thèmes haut de gamme avec bascule instantanée sans 
   - Typographie à fort contraste vert forêt et fusain : `#14241d`, `#2d4a3e`.
   - Bordures nettes et badges viticoles pastel haut de gamme.
   - Switch accessible via la topbar (desktop/mobile), le menu latéral (tiroir) et la barre de navigation du site vitrine.
+- **Boutons Export CSV & Équipe** :
+  - **Mode Nuit** : Texte et icônes obligatoirement en **blanc pur (`#ffffff`)** pour une lisibilité optimale sur fond sombre (#0c1210).
+  - **Mode Jour** : Style sombre d'origine conservé à l'identique (`#13241b` / vert fusain) pour éviter tout texte blanc illisible sur fond clair.
 
 ### Règle 5 : Isolation Multi-Utilisateurs & Tableau de Bord Initial Vierge (Nu)
 - **Isolation stricte par compte (`user_id`)** : Chaque utilisateur (ou domaine exploitant) possède sa propre partition de base de données. Aucune donnée d'un compte ne doit fuiter ou être visible par un autre compte (`eq("user_id", getAuthUserId())` dans Supabase et clés localStorage partitionnées `_user_<id>`).

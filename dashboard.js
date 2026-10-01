@@ -9,6 +9,7 @@ const STORAGE_INTERVENTIONS_BASE = "vititrack_interventions_user_v3";
 const STORAGE_SERVICES_BASE = "vititrack_services_user_v3";
 const STORAGE_PLANNED_BASE = "vititrack_planned_works_user_v3";
 const STORAGE_TEAM_BASE = "vititrack_team_users_v3";
+const STORAGE_HARVEST_BASE = "vititrack_harvest_works_user_v3";
 
 let currentAuthUser = null;
 
@@ -117,9 +118,9 @@ const DEFAULT_SERVICES = [
     id: "srv-07",
     name: "Effeuillage manuel face levante",
     category: "Palissage & Écimage",
-    rateType: "hourly",
-    price: 37,
-    description: "Découverte raisonnée des grappes côté soleil levant pour optimiser l'état sanitaire."
+    rateType: "surface",
+    price: 550,
+    description: "Découverte raisonnée des grappes côté soleil levant pour optimiser l'état sanitaire (550 €/ha)."
   },
   {
     id: "srv-08",
@@ -188,6 +189,30 @@ const DEFAULT_SERVICES = [
     description: "Acheminement sécurisé de la récolte depuis la parcelle jusqu'au pressoir du domaine."
   },
   {
+    id: "srv-debardage-vendange",
+    name: "Débardage vendange (tracteur / porteur)",
+    category: "Vendanges & Récolte",
+    rateType: "kilo",
+    price: 0.15,
+    description: "Évacuation des caisses et sorties de rang au tracteur interligne ou chenillard (0,15 €/kg)."
+  },
+  {
+    id: "srv-coupe-vendange-kg",
+    name: "Coupe vendange (au kilo)",
+    category: "Vendanges & Récolte",
+    rateType: "kilo",
+    price: 0.35,
+    description: "Coupe et récolte du raisin rémunérée directement au kilo récolté (€/kg)."
+  },
+  {
+    id: "srv-recolte-kg",
+    name: "Récolte & Vendanges au kilo",
+    category: "Vendanges & Récolte",
+    rateType: "kilo",
+    price: 0.35,
+    description: "Cueillette et récolte du raisin rémunérée au poids récolté (€/kg)."
+  },
+  {
     id: "srv-14",
     name: "Complantation & Remplacement de ceps",
     category: "Aménagement & Plantations",
@@ -210,6 +235,7 @@ let clients = [];
 let interventions = [];
 let services = [];
 let plannedWorks = [];
+let convertingPlannedWorkId = null;
 let teamUsers = [];
 let teamSearchFilter = "";
 let teamRoleFilter = "all";
@@ -230,6 +256,15 @@ let servicesCategoryFilter = "all";
 let servicesRateTypeFilter = "all";
 let servicesActiveSubtab = "catalog";
 let pendingInterventionFormState = null;
+
+// Vendanges & Récoltes State
+let harvestWorks = [];
+let vendangesSearchFilter = "";
+let vendangesClientFilter = "all";
+let vendangesClientFilters = [];
+let vendangesParcelFilters = [];
+let vendangesStageFilter = "all";
+let vendangesStageFilters = ["leaf_todo", "leaf_done", "cut_todo", "cut_done", "haul_todo", "haul_done"];
 
 // ==================== UNIQUE IDENTIFIER GENERATORS & REPAIR UTILS ====================
 
@@ -549,6 +584,20 @@ function getDemoClients() {
         { id: "PAR-02", name: "Le Clos du Moulin", surface: 1.8200, grape: "Merlot", soil: "Argilo-calcaire" }
       ],
       createdAt: new Date().toISOString()
+    },
+    {
+      id: "CLI-1002",
+      name: "Domaine Belle Vue",
+      commune: "Saint-Émilion",
+      contact: "Claire Bernard",
+      phone: "06 98 76 54 32",
+      email: "contact@domainebellevue.fr",
+      notes: "Vignoble sur coteaux argilo-calcaires.",
+      parcels: [
+        { id: "PAR-03", name: "Le Plateau Sud", surface: 3.1250, grape: "Merlot", soil: "Calcaire à astéries" },
+        { id: "PAR-04", name: "Les Terrasses", surface: 1.6400, grape: "Cabernet Franc", soil: "Argilo-sableux" }
+      ],
+      createdAt: new Date().toISOString()
     }
   ];
 }
@@ -593,6 +642,112 @@ function getDemoPlannedWorks() {
   ];
 }
 
+function getDemoHarvestWorks() {
+  const today = new Date().toISOString().split("T")[0];
+  return [
+    {
+      id: "harv-demo-01",
+      clientId: "CLI-1001",
+      clientName: "Château Grand Chêne",
+      parcelId: "PAR-01",
+      parcelName: "Les Hauts de Chêne",
+      surface: 2.4500,
+      grapeVariety: "Cabernet Sauvignon",
+      leafStatus: "effeuillee",
+      leafServiceName: "Effeuillage manuel face levante",
+      leafPrice: 550,
+      cutStatus: "coupee",
+      yieldKg: 12250,
+      boxesCount: 612,
+      yieldPricePerKg: 0.35,
+      harvestServiceName: "Coupe vendange (au kilo)",
+      totalAmountHT: 4287.50,
+      haulStatus: "debardee",
+      haulServiceName: "Débardage vendange (tracteur / porteur)",
+      haulPrice: 0.15,
+      worker: "Alexandre L.",
+      harvestDate: today,
+      notes: "Grappes saines, vendange manuelle terminée, caisses débardées au chai.",
+      createdAt: new Date().toISOString()
+    },
+    {
+      id: "harv-demo-02",
+      clientId: "CLI-1001",
+      clientName: "Château Grand Chêne",
+      parcelId: "PAR-02",
+      parcelName: "Le Clos du Moulin",
+      surface: 1.8200,
+      grapeVariety: "Merlot",
+      leafStatus: "effeuillee",
+      leafServiceName: "Effeuillage manuel face levante",
+      leafPrice: 550,
+      cutStatus: "coupee",
+      yieldKg: 9100,
+      boxesCount: 455,
+      yieldPricePerKg: 0.35,
+      harvestServiceName: "Coupe vendange (au kilo)",
+      totalAmountHT: 3185.00,
+      haulStatus: "a_debarder",
+      haulServiceName: "Débardage vendange (tracteur / porteur)",
+      haulPrice: 0.15,
+      worker: "Alexandre L.",
+      harvestDate: today,
+      notes: "Coupe terminée en matinée. Caisses pleines en bout de rang à débarder.",
+      createdAt: new Date().toISOString()
+    },
+    {
+      id: "harv-demo-03",
+      clientId: "CLI-1002",
+      clientName: "Domaine Belle Vue",
+      parcelId: "PAR-03",
+      parcelName: "Le Plateau Sud",
+      surface: 3.1250,
+      grapeVariety: "Merlot",
+      leafStatus: "effeuillee",
+      leafServiceName: "Effeuillage manuel face levante",
+      leafPrice: 550,
+      cutStatus: "a_couper",
+      yieldKg: 0,
+      boxesCount: 0,
+      yieldPricePerKg: 0.35,
+      harvestServiceName: "Coupe vendange (au kilo)",
+      totalAmountHT: 0,
+      haulStatus: "a_debarder",
+      haulServiceName: "Débardage vendange (tracteur / porteur)",
+      haulPrice: 0.15,
+      worker: "Thomas M.",
+      harvestDate: today,
+      notes: "Parcelle effeuillée côté levant, coupe programmée demain matin.",
+      createdAt: new Date().toISOString()
+    },
+    {
+      id: "harv-demo-04",
+      clientId: "CLI-1002",
+      clientName: "Domaine Belle Vue",
+      parcelId: "PAR-04",
+      parcelName: "Les Terrasses",
+      surface: 1.6400,
+      grapeVariety: "Cabernet Franc",
+      leafStatus: "a_effeuiller",
+      leafServiceName: "Effeuillage manuel face levante",
+      leafPrice: 550,
+      cutStatus: "a_couper",
+      yieldKg: 0,
+      boxesCount: 0,
+      yieldPricePerKg: 0.35,
+      harvestServiceName: "Coupe vendange (au kilo)",
+      totalAmountHT: 0,
+      haulStatus: "a_debarder",
+      haulServiceName: "Débardage vendange (tracteur / porteur)",
+      haulPrice: 0.15,
+      worker: "Claire B.",
+      harvestDate: "",
+      notes: "Fin de véraison, à effeuiller avant vendange fin de semaine.",
+      createdAt: new Date().toISOString()
+    }
+  ];
+}
+
 // Load isolated user database from localStorage (cache local immédiat)
 function loadDatabase() {
   const user = getAuthUser();
@@ -633,6 +788,38 @@ function loadDatabase() {
   if (savedServices) {
     try {
       services = JSON.parse(savedServices);
+      let servicesChanged = false;
+      if (Array.isArray(services)) {
+        // Synchronisation automatique des tarifs effeuillage (550 €/ha) et débardage (0,15 €/kg) du catalogue Prestations
+        services.forEach(s => {
+          if (s.id === "srv-07" && (s.price === 37 || s.rateType === "hourly")) {
+            s.price = 550;
+            s.rateType = "surface";
+            servicesChanged = true;
+          }
+          if ((s.id === "srv-debardage-vendange" || (s.name && (s.name.toLowerCase().includes("débardage") || s.name.toLowerCase().includes("debardage")))) && (s.price === 45 || s.rateType === "hourly")) {
+            s.price = 0.15;
+            s.rateType = "kilo";
+            servicesChanged = true;
+          }
+        });
+
+        if (services.length > 0 && !services.some(s => s.name && (s.name.toLowerCase().includes("débardage") || s.name.toLowerCase().includes("debardage")))) {
+          services.push({
+            id: "srv-debardage-vendange",
+            name: "Débardage vendange (tracteur / porteur)",
+            category: "Vendanges & Récolte",
+            rateType: "kilo",
+            price: 0.15,
+            description: "Évacuation des caisses et sorties de rang au tracteur interligne ou chenillard (0,15 €/kg)."
+          });
+          servicesChanged = true;
+        }
+
+        if (servicesChanged) {
+          saveServicesLocally();
+        }
+      }
     } catch (e) {
       console.error("Erreur de parsing prestations", e);
       services = [];
@@ -656,6 +843,50 @@ function loadDatabase() {
     // NOUVEL UTILISATEUR -> 0 TRAVAIL PLANIFIÉ (TABLEAU DE BORD NU)
     plannedWorks = isDemo ? getDemoPlannedWorks() : [];
     savePlannedWorksLocally();
+  }
+
+  // VENDANGES & RÉCOLTES PAR PARCELLE
+  const harvestKey = getUserStorageKey(STORAGE_HARVEST_BASE);
+  const savedHarvest = localStorage.getItem(harvestKey);
+  if (savedHarvest) {
+    try {
+      harvestWorks = JSON.parse(savedHarvest);
+      let harvestChanged = false;
+      if (Array.isArray(harvestWorks)) {
+        harvestWorks.forEach(h => {
+          if (h.leafPrice === 37) {
+            h.leafPrice = 550;
+            harvestChanged = true;
+          }
+          if (h.leafServiceName && !h.leafServiceName.toLowerCase().includes("effeuillage")) {
+            h.leafServiceName = "Effeuillage manuel face levante";
+            harvestChanged = true;
+          }
+          if (h.harvestServiceName && (h.harvestServiceName.toLowerCase().includes("débardage") || h.harvestServiceName.toLowerCase().includes("debardage"))) {
+            h.harvestServiceName = "Coupe vendange (au kilo)";
+            harvestChanged = true;
+          }
+          if (h.haulPrice === 45) {
+            h.haulPrice = 0.15;
+            harvestChanged = true;
+          }
+          if (h.haulServiceName && (h.haulServiceName.toLowerCase().includes("coupe") || h.haulServiceName.toLowerCase().includes("récolte") || h.haulServiceName.toLowerCase().includes("recolte"))) {
+            h.haulServiceName = "Débardage vendange (tracteur / porteur)";
+            harvestChanged = true;
+          }
+        });
+        if (harvestChanged) {
+          saveHarvestWorksLocally();
+        }
+      }
+    } catch (e) {
+      console.error("Erreur de parsing vendanges", e);
+      harvestWorks = [];
+    }
+  } else {
+    // NOUVEL UTILISATEUR -> 0 PARCELLE EN VENDANGE (TABLEAU DE BORD NU)
+    harvestWorks = isDemo ? getDemoHarvestWorks() : [];
+    saveHarvestWorksLocally();
   }
 
   // ÉQUIPE & UTILISATEURS DU DOMAINE
@@ -695,6 +926,14 @@ function saveServicesLocally() {
 
 function savePlannedWorksLocally() {
   localStorage.setItem(getUserStorageKey(STORAGE_PLANNED_BASE), JSON.stringify(plannedWorks));
+}
+
+function saveHarvestWorksLocally() {
+  localStorage.setItem(getUserStorageKey(STORAGE_HARVEST_BASE), JSON.stringify(harvestWorks));
+}
+
+function saveHarvestWorks() {
+  saveHarvestWorksLocally();
 }
 
 function saveTeamLocally() {
@@ -1298,12 +1537,16 @@ function setupEventListeners() {
   const navOverview = document.getElementById("nav-btn-overview");
   const navClients = document.getElementById("nav-btn-clients");
   const navServices = document.getElementById("nav-btn-services");
+  const navVendanges = document.getElementById("nav-btn-vendanges");
+  const navClientHistory = document.getElementById("nav-btn-client-history");
   const navInterventions = document.getElementById("nav-btn-interventions");
   const navBilling = document.getElementById("nav-btn-billing");
 
   if (navOverview) navOverview.addEventListener("click", (e) => { e.preventDefault(); switchView("overview"); closeSidebar(); });
+  if (navClientHistory) navClientHistory.addEventListener("click", (e) => { e.preventDefault(); switchView("client-history"); closeSidebar(); });
   if (navClients) navClients.addEventListener("click", (e) => { e.preventDefault(); switchView("clients"); closeSidebar(); });
   if (navServices) navServices.addEventListener("click", (e) => { e.preventDefault(); switchView("services"); closeSidebar(); });
+  if (navVendanges) navVendanges.addEventListener("click", (e) => { e.preventDefault(); switchView("vendanges"); closeSidebar(); });
   if (navInterventions) navInterventions.addEventListener("click", (e) => {
     e.preventDefault();
     switchView("interventions");
@@ -1485,6 +1728,8 @@ function setupEventListeners() {
   setupModalCloser("subscription-modal", "subscription-modal-close-btn", "sub-modal-close-btn", closeSubscriptionModal);
   setupModalCloser("team-modal", "team-modal-close-btn", null, closeTeamModal);
   setupModalCloser("team-member-modal", null, null, closeTeamMemberModal);
+  setupModalCloser("harvest-modal", "harvest-modal-close-btn", null, closeHarvestModal);
+  setupModalCloser("harvest-yield-modal", null, null, closeYieldModal);
 
   // Forms Submissions
   const clientForm = document.getElementById("create-client-form");
@@ -1501,6 +1746,95 @@ function setupEventListeners() {
 
   const plannedForm = document.getElementById("create-planned-form");
   if (plannedForm) plannedForm.addEventListener("submit", handleCreatePlannedSubmit);
+
+  // Vendanges Forms & Buttons
+  const harvestForm = document.getElementById("harvest-form");
+  if (harvestForm) harvestForm.addEventListener("submit", handleHarvestFormSubmit);
+
+  const yieldQuickForm = document.getElementById("yield-quick-form");
+  if (yieldQuickForm) yieldQuickForm.addEventListener("submit", handleYieldQuickFormSubmit);
+
+  const quickYieldKg = document.getElementById("quick-input-yield-kg");
+  const quickYieldPrice = document.getElementById("quick-input-yield-price");
+  if (quickYieldKg) quickYieldKg.addEventListener("input", updateYieldModalLiveCalculation);
+  if (quickYieldPrice) quickYieldPrice.addEventListener("input", updateYieldModalLiveCalculation);
+
+  const harvestYieldKg = document.getElementById("input-harvest-yield-kg");
+  const harvestYieldPrice = document.getElementById("input-harvest-price-kg");
+  if (harvestYieldKg) harvestYieldKg.addEventListener("input", updateHarvestModalLiveCalculation);
+  if (harvestYieldPrice) harvestYieldPrice.addEventListener("input", updateHarvestModalLiveCalculation);
+
+  const sidebarAddHarvestBtn = document.getElementById("sidebar-add-harvest-btn");
+  const btnOpenHarvestModal = document.getElementById("btn-open-harvest-modal");
+  if (sidebarAddHarvestBtn) sidebarAddHarvestBtn.addEventListener("click", (e) => { e.preventDefault(); openHarvestModal(); closeSidebar(); });
+  if (btnOpenHarvestModal) btnOpenHarvestModal.addEventListener("click", () => openHarvestModal());
+
+  const harvestClientSelect = document.getElementById("input-harvest-client");
+  if (harvestClientSelect) harvestClientSelect.addEventListener("change", handleHarvestClientChange);
+
+  const harvestParcelSelect = document.getElementById("input-harvest-parcel");
+  if (harvestParcelSelect) harvestParcelSelect.addEventListener("change", handleHarvestParcelChange);
+
+  const harvestCutSelect = document.getElementById("input-harvest-cut");
+  if (harvestCutSelect) {
+    harvestCutSelect.addEventListener("change", (e) => {
+      const yieldBox = document.getElementById("harvest-yield-box");
+      if (yieldBox) {
+        yieldBox.style.display = e.target.value === "coupee" ? "block" : "none";
+      }
+    });
+  }
+
+  const vendangesSearchInput = document.getElementById("vendanges-search-input");
+  const vendangesSearchClear = document.getElementById("vendanges-search-clear");
+  const vendangesFilterClient = document.getElementById("vendanges-filter-client");
+  const vendangesFilterStage = document.getElementById("vendanges-filter-stage");
+
+  if (vendangesSearchInput) {
+    vendangesSearchInput.addEventListener("input", (e) => {
+      vendangesSearchFilter = e.target.value.toLowerCase().trim();
+      if (vendangesSearchClear) vendangesSearchClear.style.display = vendangesSearchFilter ? "block" : "none";
+      renderVendangesTable();
+    });
+  }
+  if (vendangesSearchClear) {
+    vendangesSearchClear.addEventListener("click", () => {
+      if (vendangesSearchInput) vendangesSearchInput.value = "";
+      vendangesSearchFilter = "";
+      vendangesSearchClear.style.display = "none";
+      renderVendangesTable();
+    });
+  }
+  initVendangesClientFilterMultiSelect();
+  initVendangesStageFilterDropdown();
+  initClientHistoryFilterMultiSelect();
+  initClientHistoryParcelFilterMultiSelect();
+
+  const btnResetVendanges = document.getElementById("btn-reset-vendanges-filters");
+  if (btnResetVendanges) {
+    btnResetVendanges.addEventListener("click", () => {
+      resetVendangesFilters();
+    });
+  }
+
+  // Historique Client Search Listener
+  const chSearchInput = document.getElementById("ch-search-input");
+  const chSearchClear = document.getElementById("ch-search-clear");
+  if (chSearchInput) {
+    chSearchInput.addEventListener("input", (e) => {
+      clientHistorySearchFilter = e.target.value.toLowerCase().trim();
+      if (chSearchClear) chSearchClear.style.display = clientHistorySearchFilter ? "block" : "none";
+      updateClientHistoryData();
+    });
+  }
+  if (chSearchClear) {
+    chSearchClear.addEventListener("click", () => {
+      if (chSearchInput) chSearchInput.value = "";
+      clientHistorySearchFilter = "";
+      chSearchClear.style.display = "none";
+      updateClientHistoryData();
+    });
+  }
 
   // Client Selection in Intervention Modal -> Updates Parcelles Dropdown
   const modalClientSelect = document.getElementById("input-client");
@@ -1549,35 +1883,10 @@ function setupEventListeners() {
     });
   }
 
-  // Client Selection in Planned Work Modal
-  const plannedClientSelect = document.getElementById("input-planned-client");
-  const plannedParcelSelect = document.getElementById("input-planned-parcel");
-  if (plannedClientSelect) {
-    plannedClientSelect.addEventListener("change", (e) => {
-      const clientId = e.target.value;
-      if (plannedParcelSelect) {
-        if (!clientId) {
-          plannedParcelSelect.innerHTML = '<option value="">Sélectionnez d\'abord un client...</option>';
-          plannedParcelSelect.disabled = true;
-          return;
-        }
-        const client = clients.find(c => c.id === clientId);
-        if (client && client.parcels && client.parcels.length > 0) {
-          plannedParcelSelect.innerHTML = '<option value="">Sélectionner une parcelle...</option>';
-          client.parcels.forEach(p => {
-            const opt = document.createElement("option");
-            opt.value = p.name;
-            opt.textContent = `${p.name} (${formatSurface(p.surface)} ha${p.grape ? ' - ' + p.grape : ''})`;
-            plannedParcelSelect.appendChild(opt);
-          });
-          plannedParcelSelect.disabled = false;
-        } else {
-          plannedParcelSelect.innerHTML = '<option value="Toutes parcelles">Toutes parcelles / Général</option>';
-          plannedParcelSelect.disabled = false;
-        }
-      }
-    });
-  }
+  // Multi-sélection Clients & Parcelles dans le Modal de Planification
+  setupPlannedModalEvents();
+  // Multi-sélection Clients & Parcelles dans le Modal Vendanges
+  setupHarvestModalDropdownEvents();
 
   // Task Selection in Intervention Modal -> auto sets rate type and unit price
   const modalTaskSelect = document.getElementById("input-task");
@@ -1619,19 +1928,22 @@ function setupEventListeners() {
     rateTypeSelect.addEventListener("change", (e) => {
       const mode = e.target.value;
       const badgeUnit = document.getElementById("badge-quantity-unit");
+      if (inputUnitPrice) inputUnitPrice.step = "0.01";
       if (mode === "hourly") {
         labelQuantity.innerHTML = '<span>Durée travaillée</span> <span class="required">*</span>';
         if (badgeUnit) badgeUnit.textContent = "heures";
         inputQuantity.step = "0.25";
+        inputQuantity.min = "0.25";
         inputQuantity.value = "4.0";
         labelUnitPrice.innerHTML = '<span>Taux horaire HT (€/h)</span>';
-        if (!inputUnitPrice.value || inputUnitPrice.value === "110" || inputUnitPrice.value === "95" || inputUnitPrice.value === "250") {
+        if (!inputUnitPrice.value || inputUnitPrice.value === "110" || inputUnitPrice.value === "95" || inputUnitPrice.value === "250" || inputUnitPrice.value === "0.35") {
           inputUnitPrice.value = "38";
         }
       } else if (mode === "surface") {
         labelQuantity.innerHTML = '<span>Surface travaillée</span> <span class="required">*</span>';
         if (badgeUnit) badgeUnit.textContent = "ha";
         inputQuantity.step = "0.0001";
+        inputQuantity.min = "0.0001";
         
         // Auto-detect parcel surfaces from checked boxes!
         const parcelContainer = document.getElementById("parcel-checkbox-list");
@@ -1644,16 +1956,27 @@ function setupEventListeners() {
         }
 
         labelUnitPrice.innerHTML = '<span>Forfait par hectare HT (€/ha)</span>';
-        if (!inputUnitPrice.value || inputUnitPrice.value === "38" || inputUnitPrice.value === "250") {
+        if (!inputUnitPrice.value || inputUnitPrice.value === "38" || inputUnitPrice.value === "250" || inputUnitPrice.value === "0.35") {
           inputUnitPrice.value = "95";
+        }
+      } else if (mode === "kilo") {
+        labelQuantity.innerHTML = '<span>Poids récolté / travaillé</span> <span class="required">*</span>';
+        if (badgeUnit) badgeUnit.textContent = "kg";
+        inputQuantity.step = "1";
+        inputQuantity.min = "0.1";
+        inputQuantity.value = "1000";
+        labelUnitPrice.innerHTML = '<span>Tarif au kilo HT (€/kg)</span>';
+        if (!inputUnitPrice.value || inputUnitPrice.value === "38" || inputUnitPrice.value === "110" || inputUnitPrice.value === "95" || inputUnitPrice.value === "250") {
+          inputUnitPrice.value = "0.35";
         }
       } else {
         labelQuantity.innerHTML = '<span>Quantité forfaitaire</span> <span class="required">*</span>';
         if (badgeUnit) badgeUnit.textContent = "forfait";
         inputQuantity.step = "1";
+        inputQuantity.min = "1";
         inputQuantity.value = "1";
         labelUnitPrice.innerHTML = '<span>Montant forfaitaire HT (€)</span>';
-        if (!inputUnitPrice.value || inputUnitPrice.value === "38" || inputUnitPrice.value === "110" || inputUnitPrice.value === "95") {
+        if (!inputUnitPrice.value || inputUnitPrice.value === "38" || inputUnitPrice.value === "110" || inputUnitPrice.value === "95" || inputUnitPrice.value === "0.35") {
           inputUnitPrice.value = "250";
         }
       }
@@ -1908,19 +2231,23 @@ function setupModalCloser(overlayId, closeBtnId, cancelBtnId, closeFn) {
 }
 
 // ==================== VIEW SWITCHING ====================
-function switchView(viewName) {
+function switchView(viewName, preselectedClientId = null) {
   const viewOverview = document.getElementById("view-overview");
   const viewClients = document.getElementById("view-clients");
   const viewServices = document.getElementById("view-services");
+  const viewVendanges = document.getElementById("view-vendanges");
+  const viewClientHistory = document.getElementById("view-client-history");
 
   const navOverview = document.getElementById("nav-btn-overview");
+  const navClientHistory = document.getElementById("nav-btn-client-history");
   const navClients = document.getElementById("nav-btn-clients");
   const navServices = document.getElementById("nav-btn-services");
+  const navVendanges = document.getElementById("nav-btn-vendanges");
   const navInterventions = document.getElementById("nav-btn-interventions");
   const navBilling = document.getElementById("nav-btn-billing");
 
   // Deactivate all navigation links
-  [navOverview, navClients, navServices, navInterventions, navBilling].forEach(b => {
+  [navOverview, navClientHistory, navClients, navServices, navVendanges, navInterventions, navBilling].forEach(b => {
     if (b) b.classList.remove("active");
   });
 
@@ -1931,15 +2258,22 @@ function switchView(viewName) {
     if (b) b.classList.remove("active");
   });
 
-  if (viewName === "clients") {
-    if (viewOverview) {
-      viewOverview.style.display = "none";
-      viewOverview.classList.remove("active");
+  if (viewName === "client-history") {
+    if (viewOverview) { viewOverview.style.display = "none"; viewOverview.classList.remove("active"); }
+    if (viewClients) { viewClients.style.display = "none"; viewClients.classList.remove("active"); }
+    if (viewServices) { viewServices.style.display = "none"; viewServices.classList.remove("active"); }
+    if (viewVendanges) { viewVendanges.style.display = "none"; viewVendanges.classList.remove("active"); }
+    if (viewClientHistory) {
+      viewClientHistory.style.display = "flex";
+      viewClientHistory.classList.add("active");
     }
-    if (viewServices) {
-      viewServices.style.display = "none";
-      viewServices.classList.remove("active");
-    }
+    if (navClientHistory) navClientHistory.classList.add("active");
+    renderClientHistoryView(preselectedClientId);
+  } else if (viewName === "clients") {
+    if (viewOverview) { viewOverview.style.display = "none"; viewOverview.classList.remove("active"); }
+    if (viewServices) { viewServices.style.display = "none"; viewServices.classList.remove("active"); }
+    if (viewVendanges) { viewVendanges.style.display = "none"; viewVendanges.classList.remove("active"); }
+    if (viewClientHistory) { viewClientHistory.style.display = "none"; viewClientHistory.classList.remove("active"); }
     if (viewClients) {
       viewClients.style.display = "flex";
       viewClients.classList.add("active");
@@ -1948,14 +2282,10 @@ function switchView(viewName) {
     if (mNavClients) mNavClients.classList.add("active");
     renderClientsView();
   } else if (viewName === "services") {
-    if (viewOverview) {
-      viewOverview.style.display = "none";
-      viewOverview.classList.remove("active");
-    }
-    if (viewClients) {
-      viewClients.style.display = "none";
-      viewClients.classList.remove("active");
-    }
+    if (viewOverview) { viewOverview.style.display = "none"; viewOverview.classList.remove("active"); }
+    if (viewClients) { viewClients.style.display = "none"; viewClients.classList.remove("active"); }
+    if (viewVendanges) { viewVendanges.style.display = "none"; viewVendanges.classList.remove("active"); }
+    if (viewClientHistory) { viewClientHistory.style.display = "none"; viewClientHistory.classList.remove("active"); }
     if (viewServices) {
       viewServices.style.display = "flex";
       viewServices.classList.add("active");
@@ -1963,15 +2293,22 @@ function switchView(viewName) {
     if (navServices) navServices.classList.add("active");
     if (mNavServices) mNavServices.classList.add("active");
     renderServicesView();
+  } else if (viewName === "vendanges") {
+    if (viewOverview) { viewOverview.style.display = "none"; viewOverview.classList.remove("active"); }
+    if (viewClients) { viewClients.style.display = "none"; viewClients.classList.remove("active"); }
+    if (viewServices) { viewServices.style.display = "none"; viewServices.classList.remove("active"); }
+    if (viewClientHistory) { viewClientHistory.style.display = "none"; viewClientHistory.classList.remove("active"); }
+    if (viewVendanges) {
+      viewVendanges.style.display = "flex";
+      viewVendanges.classList.add("active");
+    }
+    if (navVendanges) navVendanges.classList.add("active");
+    renderVendangesView();
   } else if (viewName === "interventions") {
-    if (viewClients) {
-      viewClients.style.display = "none";
-      viewClients.classList.remove("active");
-    }
-    if (viewServices) {
-      viewServices.style.display = "none";
-      viewServices.classList.remove("active");
-    }
+    if (viewClients) { viewClients.style.display = "none"; viewClients.classList.remove("active"); }
+    if (viewServices) { viewServices.style.display = "none"; viewServices.classList.remove("active"); }
+    if (viewVendanges) { viewVendanges.style.display = "none"; viewVendanges.classList.remove("active"); }
+    if (viewClientHistory) { viewClientHistory.style.display = "none"; viewClientHistory.classList.remove("active"); }
     if (viewOverview) {
       viewOverview.style.display = "flex";
       viewOverview.classList.add("active");
@@ -1982,14 +2319,10 @@ function switchView(viewName) {
     renderTable();
     renderKPIs();
   } else if (viewName === "billing") {
-    if (viewClients) {
-      viewClients.style.display = "none";
-      viewClients.classList.remove("active");
-    }
-    if (viewServices) {
-      viewServices.style.display = "none";
-      viewServices.classList.remove("active");
-    }
+    if (viewClients) { viewClients.style.display = "none"; viewClients.classList.remove("active"); }
+    if (viewServices) { viewServices.style.display = "none"; viewServices.classList.remove("active"); }
+    if (viewVendanges) { viewVendanges.style.display = "none"; viewVendanges.classList.remove("active"); }
+    if (viewClientHistory) { viewClientHistory.style.display = "none"; viewClientHistory.classList.remove("active"); }
     if (viewOverview) {
       viewOverview.style.display = "flex";
       viewOverview.classList.add("active");
@@ -2001,14 +2334,10 @@ function switchView(viewName) {
     renderKPIs();
   } else {
     // Default Overview
-    if (viewClients) {
-      viewClients.style.display = "none";
-      viewClients.classList.remove("active");
-    }
-    if (viewServices) {
-      viewServices.style.display = "none";
-      viewServices.classList.remove("active");
-    }
+    if (viewClients) { viewClients.style.display = "none"; viewClients.classList.remove("active"); }
+    if (viewServices) { viewServices.style.display = "none"; viewServices.classList.remove("active"); }
+    if (viewVendanges) { viewVendanges.style.display = "none"; viewVendanges.classList.remove("active"); }
+    if (viewClientHistory) { viewClientHistory.style.display = "none"; viewClientHistory.classList.remove("active"); }
     if (viewOverview) {
       viewOverview.style.display = "flex";
       viewOverview.classList.add("active");
@@ -2547,6 +2876,7 @@ function updateParcelSelectionSummary(client, autoUpdateQuantity = true) {
 
 // ==================== INTERVENTION CREATION & MODIFICATION ====================
 function openCreateModal(interventionId = null) {
+  convertingPlannedWorkId = null;
   const modal = document.getElementById("create-modal");
   const form = document.getElementById("create-intervention-form");
   const editIdInput = document.getElementById("intervention-edit-id");
@@ -2628,26 +2958,44 @@ function openCreateModal(interventionId = null) {
     }
 
     // Mode facturation & Labels
-    const mode = item.rateType || (item.unit === 'ha' ? 'surface' : (item.unit === 'heures' ? 'hourly' : 'fixed'));
+    const mode = item.rateType || (item.unit === 'ha' ? 'surface' : (item.unit === 'heures' ? 'hourly' : (item.unit === 'kg' ? 'kilo' : 'fixed')));
     if (rateTypeSelect) {
       rateTypeSelect.value = mode;
       const badgeUnit = document.getElementById("badge-quantity-unit");
       const labelQuantity = document.getElementById("label-quantity");
       const labelUnitPrice = document.getElementById("label-unit-price");
+      if (unitPriceInput) unitPriceInput.step = "0.01";
       if (mode === "hourly") {
         if (labelQuantity) labelQuantity.innerHTML = '<span>Durée travaillée</span> <span class="required">*</span>';
         if (badgeUnit) badgeUnit.textContent = "heures";
-        if (quantityInput) quantityInput.step = "0.25";
+        if (quantityInput) {
+          quantityInput.step = "0.25";
+          quantityInput.min = "0.25";
+        }
         if (labelUnitPrice) labelUnitPrice.innerHTML = '<span>Taux horaire HT (€/h)</span>';
       } else if (mode === "surface") {
         if (labelQuantity) labelQuantity.innerHTML = '<span>Surface travaillée</span> <span class="required">*</span>';
         if (badgeUnit) badgeUnit.textContent = "ha";
-        if (quantityInput) quantityInput.step = "0.0001";
+        if (quantityInput) {
+          quantityInput.step = "0.0001";
+          quantityInput.min = "0.0001";
+        }
         if (labelUnitPrice) labelUnitPrice.innerHTML = '<span>Forfait par hectare HT (€/ha)</span>';
+      } else if (mode === "kilo") {
+        if (labelQuantity) labelQuantity.innerHTML = '<span>Poids récolté / travaillé</span> <span class="required">*</span>';
+        if (badgeUnit) badgeUnit.textContent = "kg";
+        if (quantityInput) {
+          quantityInput.step = "1";
+          quantityInput.min = "0.1";
+        }
+        if (labelUnitPrice) labelUnitPrice.innerHTML = '<span>Tarif au kilo HT (€/kg)</span>';
       } else {
         if (labelQuantity) labelQuantity.innerHTML = '<span>Quantité forfaitaire</span> <span class="required">*</span>';
         if (badgeUnit) badgeUnit.textContent = "forfait";
-        if (quantityInput) quantityInput.step = "1";
+        if (quantityInput) {
+          quantityInput.step = "1";
+          quantityInput.min = "1";
+        }
         if (labelUnitPrice) labelUnitPrice.innerHTML = '<span>Montant forfaitaire HT (€)</span>';
       }
     }
@@ -2693,10 +3041,14 @@ function openCreateModal(interventionId = null) {
       if (badgeUnit) badgeUnit.textContent = "ha";
       if (quantityInput) {
         quantityInput.step = "0.0001";
+        quantityInput.min = "0.0001";
         quantityInput.value = "1.0000";
       }
       if (labelUnitPrice) labelUnitPrice.innerHTML = '<span>Forfait par hectare HT (€/ha)</span>';
-      if (unitPriceInput) unitPriceInput.value = "95";
+      if (unitPriceInput) {
+        unitPriceInput.step = "0.01";
+        unitPriceInput.value = "95";
+      }
     }
 
     if (clientSelect) clientSelect.value = "";
@@ -2721,6 +3073,7 @@ function closeCreateModal() {
   const modal = document.getElementById("create-modal");
   const editIdInput = document.getElementById("intervention-edit-id");
   if (editIdInput) editIdInput.value = "";
+  convertingPlannedWorkId = null;
   if (modal) {
     modal.classList.remove("open");
     modal.setAttribute("aria-hidden", "true");
@@ -2919,7 +3272,13 @@ function initFilterMultiSelects() {
 
   // Fermeture lors d'un clic en dehors
   document.addEventListener("click", (e) => {
-    if (!e.target.closest("#wrap-filter-client") && !e.target.closest("#wrap-filter-task")) {
+    if (!e.target.closest("#wrap-filter-client") &&
+        !e.target.closest("#wrap-filter-task") &&
+        !e.target.closest("#wrap-vendanges-filter-client") &&
+        !e.target.closest("#wrap-vendanges-filter-parcel") &&
+        !e.target.closest("#wrap-vendanges-filter-stage") &&
+        !e.target.closest("#wrap-ch-filter-client") &&
+        !e.target.closest("#wrap-ch-filter-parcel")) {
       closeAllFilterMultiSelects();
     }
   });
@@ -2941,6 +3300,26 @@ function closeAllFilterMultiSelects() {
   const wrapTask = document.getElementById("wrap-filter-task");
   const btnTask = document.getElementById("btn-filter-task");
 
+  const dropdownVendanges = document.getElementById("dropdown-vendanges-filter-client");
+  const wrapVendanges = document.getElementById("wrap-vendanges-filter-client");
+  const btnVendanges = document.getElementById("btn-vendanges-filter-client");
+
+  const dropdownVendangesParcel = document.getElementById("dropdown-vendanges-filter-parcel");
+  const wrapVendangesParcel = document.getElementById("wrap-vendanges-filter-parcel");
+  const btnVendangesParcel = document.getElementById("btn-vendanges-filter-parcel");
+
+  const dropdownVendangesStage = document.getElementById("dropdown-vendanges-filter-stage");
+  const wrapVendangesStage = document.getElementById("wrap-vendanges-filter-stage");
+  const btnVendangesStage = document.getElementById("btn-vendanges-filter-stage");
+
+  const dropdownCH = document.getElementById("dropdown-ch-filter-client");
+  const wrapCH = document.getElementById("wrap-ch-filter-client");
+  const btnCH = document.getElementById("btn-ch-filter-client");
+
+  const dropdownCHParcel = document.getElementById("dropdown-ch-filter-parcel");
+  const wrapCHParcel = document.getElementById("wrap-ch-filter-parcel");
+  const btnCHParcel = document.getElementById("btn-ch-filter-parcel");
+
   if (dropdownClient) dropdownClient.style.display = "none";
   if (wrapClient) wrapClient.classList.remove("is-open");
   if (btnClient) btnClient.setAttribute("aria-expanded", "false");
@@ -2948,6 +3327,26 @@ function closeAllFilterMultiSelects() {
   if (dropdownTask) dropdownTask.style.display = "none";
   if (wrapTask) wrapTask.classList.remove("is-open");
   if (btnTask) btnTask.setAttribute("aria-expanded", "false");
+
+  if (dropdownVendanges) dropdownVendanges.style.display = "none";
+  if (wrapVendanges) wrapVendanges.classList.remove("is-open");
+  if (btnVendanges) btnVendanges.setAttribute("aria-expanded", "false");
+
+  if (dropdownVendangesParcel) dropdownVendangesParcel.style.display = "none";
+  if (wrapVendangesParcel) wrapVendangesParcel.classList.remove("is-open");
+  if (btnVendangesParcel) btnVendangesParcel.setAttribute("aria-expanded", "false");
+
+  if (dropdownVendangesStage) dropdownVendangesStage.style.display = "none";
+  if (wrapVendangesStage) wrapVendangesStage.classList.remove("is-open");
+  if (btnVendangesStage) btnVendangesStage.setAttribute("aria-expanded", "false");
+
+  if (dropdownCH) dropdownCH.style.display = "none";
+  if (wrapCH) wrapCH.classList.remove("is-open");
+  if (btnCH) btnCH.setAttribute("aria-expanded", "false");
+
+  if (dropdownCHParcel) dropdownCHParcel.style.display = "none";
+  if (wrapCHParcel) wrapCHParcel.classList.remove("is-open");
+  if (btnCHParcel) btnCHParcel.setAttribute("aria-expanded", "false");
 }
 
 function renderClientMultiSelectFilter() {
@@ -3094,7 +3493,7 @@ function renderTaskMultiSelectFilter() {
       nameSpan.textContent = s.name;
       infoWrap.appendChild(nameSpan);
 
-      const rateLabel = s.rateType === "hourly" ? `${s.price} €/h` : (s.rateType === "surface" ? `${s.price} €/ha` : `${s.price} € forfait`);
+      const rateLabel = s.rateType === "hourly" ? `${s.price} €/h` : (s.rateType === "surface" ? `${s.price} €/ha` : (s.rateType === "kilo" ? `${s.price} €/kg` : `${s.price} € forfait`));
       const badge = document.createElement("span");
       badge.className = "filter-ms-rate-badge";
       badge.textContent = rateLabel;
@@ -3236,7 +3635,7 @@ function handleCreateInterventionSubmit(e) {
 
   const clientObj = clients.find(c => c.id === clientId);
   const clientName = clientObj ? clientObj.name : "Client Inconnu";
-  const unit = rateType === "hourly" ? "heures" : (rateType === "surface" ? "ha" : "forfait");
+  const unit = rateType === "hourly" ? "heures" : (rateType === "surface" ? "ha" : (rateType === "kilo" ? "kg" : "forfait"));
   const total = quantity * unitPrice;
   const tvaRate = getTvaRate(task);
   const totalTTC = total * (1 + tvaRate);
@@ -3314,6 +3713,16 @@ function handleCreateInterventionSubmit(e) {
   // Synchronisation Cloud Supabase si session active
   syncInterventionToSupabase(newIntervention);
 
+  // Si cette intervention provient de la validation d'un travail planifié
+  const wasPlannedWork = !!convertingPlannedWorkId;
+  if (convertingPlannedWorkId) {
+    const pId = convertingPlannedWorkId;
+    convertingPlannedWorkId = null;
+    plannedWorks = plannedWorks.filter(w => w.id !== pId);
+    savePlannedWorksLocally();
+    deletePlannedWorkFromSupabase(pId);
+  }
+
   closeCreateModal();
   renderAll();
 
@@ -3324,7 +3733,12 @@ function handleCreateInterventionSubmit(e) {
     }
   }
 
-  showToast(`✅ Intervention #${id} enregistrée avec succès (${clientName}) !`, "success");
+  if (wasPlannedWork) {
+    switchView("overview");
+    showToast(`✅ Intervention #${id} enregistrée et ajoutée au Tableau de Bord (${clientName}) !`, "success");
+  } else {
+    showToast(`✅ Intervention #${id} enregistrée avec succès (${clientName}) !`, "success");
+  }
 }
 
 // ==================== RENDERING ALL ====================
@@ -3335,6 +3749,13 @@ function renderAll() {
   renderTable();
   renderClientsView();
   renderServicesView();
+  renderVendangesView();
+  if (typeof populateClientHistoryClientSelect === "function") {
+    populateClientHistoryClientSelect();
+  }
+  if (typeof updateClientHistoryData === "function" && clientHistorySelectedClientId) {
+    updateClientHistoryData();
+  }
 }
 
 function renderKPIs() {
@@ -3560,7 +3981,7 @@ function renderTable() {
           <span class="task-tag">✂️ ${escapeHTML(item.task)}</span>
         </td>
         <td>
-          <span class="volume-value">${item.unit === 'ha' ? formatSurface(item.quantity) : item.quantity} ${item.unit}</span>
+          <span class="volume-value">${item.unit === 'ha' ? formatSurface(item.quantity) : (item.unit === 'kg' ? Number(item.quantity).toLocaleString('fr-FR') : item.quantity)} ${item.unit}</span>
         </td>
         <td>
           <span class="amount-value">${item.total.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € HT</span>
@@ -3804,6 +4225,9 @@ window.openClientDossier = function(clientId, retainTab = false) {
   const btnEditClient = document.getElementById("dossier-btn-edit-client");
   if (btnEditClient) btnEditClient.onclick = () => { closeClientDossier(); openEditClientModal(client.id); };
 
+  const btnOpenInHistory = document.getElementById("dossier-btn-open-history");
+  if (btnOpenInHistory) btnOpenInHistory.onclick = () => { closeClientDossier(); switchView("client-history", client.id); };
+
   if (!retainTab) {
     switchDossierTab("parcels");
   }
@@ -3920,7 +4344,7 @@ function populateDossierContent(clientId) {
             </td>
             <td>🌿 <strong>${escapeHTML(item.parcel)}</strong></td>
             <td><span class="task-tag">✂️ ${escapeHTML(item.task)}</span></td>
-            <td>${item.unit === 'ha' ? formatSurface(item.quantity) : item.quantity} ${item.unit}</td>
+            <td>${item.unit === 'ha' ? formatSurface(item.quantity) : (item.unit === 'kg' ? Number(item.quantity).toLocaleString('fr-FR') : item.quantity)} ${item.unit}</td>
             <td><strong>${(item.total || 0).toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € HT</strong></td>
             <td>
               <strong style="color: var(--color-accent-light, #74c69d);">${((item.total || 0) * (1 + getTvaRate(item))).toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € TTC</strong>
@@ -4103,7 +4527,7 @@ window.openDetailModal = function(id) {
         </div>
         <div class="detail-item">
           <span class="detail-label">Volume / Tarif</span>
-          <span class="detail-value">${item.unit === 'ha' ? formatSurface(item.quantity) : item.quantity} ${item.unit} (@ ${item.unitPrice} €)</span>
+          <span class="detail-value">${item.unit === 'ha' ? formatSurface(item.quantity) : (item.unit === 'kg' ? Number(item.quantity).toLocaleString('fr-FR') : item.quantity)} ${item.unit} (@ ${item.unitPrice} €)</span>
         </div>
         <div class="detail-item">
           <span class="detail-label">Total estimé HT</span>
@@ -4234,7 +4658,7 @@ function populateTaskSelects() {
       categories[cat].forEach(s => {
         const opt = document.createElement("option");
         opt.value = s.name;
-        const rateLabel = s.rateType === "hourly" ? `${s.price} €/h` : (s.rateType === "surface" ? `${s.price} €/ha` : `${s.price} € forfait`);
+        const rateLabel = s.rateType === "hourly" ? `${s.price} €/h` : (s.rateType === "surface" ? `${s.price} €/ha` : (s.rateType === "kilo" ? `${s.price} €/kg` : `${s.price} € forfait`));
         opt.textContent = `${s.name} (${rateLabel})`;
         optgroup.appendChild(opt);
       });
@@ -4281,6 +4705,7 @@ function renderServicesKPIs() {
   const hourlyCount = services.filter(s => s.rateType === "hourly").length;
   const surfaceCount = services.filter(s => s.rateType === "surface").length;
   const fixedCount = services.filter(s => s.rateType === "fixed").length;
+  const kiloCount = services.filter(s => s.rateType === "kilo").length;
   const plannedCount = plannedWorks.length;
 
   setElemText("services-total-count", total);
@@ -4316,7 +4741,8 @@ function renderServicesKPIs() {
       { val: "all", label: "Tous les modes de facturation", count: total },
       { val: "hourly", label: "Taux horaire (€/h)", count: hourlyCount },
       { val: "surface", label: "À l'hectare (€/ha)", count: surfaceCount },
-      { val: "fixed", label: "Forfait fixe (€)", count: fixedCount }
+      { val: "fixed", label: "Forfait fixe (€)", count: fixedCount },
+      { val: "kilo", label: "Au kilo (€/kg)", count: kiloCount }
     ];
     const currentRateVal = servicesRateTypeFilter || "all";
     rateSelect.innerHTML = rates.map(r => `<option value="${escapeHTML(r.val)}" ${r.val === currentRateVal ? "selected" : ""}>${escapeHTML(r.label)} (${r.count})</option>`).join("");
@@ -4363,6 +4789,10 @@ function renderSingleServiceCard(s) {
     rateBadgeClass = "rate-surface";
     rateUnit = "€/ha";
     rateModeText = "À la surface";
+  } else if (s.rateType === "kilo") {
+    rateBadgeClass = "rate-kilo";
+    rateUnit = "€/kg";
+    rateModeText = "Au kilo";
   } else if (s.rateType === "fixed") {
     rateBadgeClass = "";
     rateUnit = "€";
@@ -4528,6 +4958,8 @@ function updateServicePriceLabel(rateType) {
     label.textContent = "Tarif horaire HT (€ / heure)";
   } else if (rateType === "surface") {
     label.textContent = "Tarif à l'hectare HT (€ / hectare)";
+  } else if (rateType === "kilo") {
+    label.textContent = "Tarif au kilo HT (€ / kg)";
   } else {
     label.textContent = "Tarif forfaitaire HT (€)";
   }
@@ -4656,30 +5088,504 @@ window.seedStandardServices = function() {
   showToast("15 prestations viticoles standards ajoutées à votre catalogue !", "success");
 };
 
-// Planned Work Modal logic
-function openPlannedModal() {
-  const modal = document.getElementById("planned-modal");
-  const form = document.getElementById("create-planned-form");
-  const clientSelect = document.getElementById("input-planned-client");
-  const parcelSelect = document.getElementById("input-planned-parcel");
-  const dateInput = document.getElementById("input-planned-date");
+// Menus Déroulants Multi-sélection Clients & Parcelles dans le Modal de Planification
+function openPlannedClientDropdown() {
+  const wrap = document.getElementById("wrap-planned-client-dropdown");
+  const menu = document.getElementById("menu-planned-client-dropdown");
+  const trigger = document.getElementById("btn-planned-client-trigger");
+  closePlannedParcelDropdown();
+  if (wrap && menu) {
+    wrap.classList.add("is-open");
+    menu.style.display = "flex";
+    if (trigger) trigger.setAttribute("aria-expanded", "true");
+    const searchInput = document.getElementById("search-planned-clients");
+    if (searchInput && searchInput.offsetParent !== null) {
+      setTimeout(() => searchInput.focus(), 60);
+    }
+  }
+}
 
-  if (form) form.reset();
+function closePlannedClientDropdown() {
+  const wrap = document.getElementById("wrap-planned-client-dropdown");
+  const menu = document.getElementById("menu-planned-client-dropdown");
+  const trigger = document.getElementById("btn-planned-client-trigger");
+  if (wrap && menu) {
+    wrap.classList.remove("is-open");
+    menu.style.display = "none";
+    if (trigger) trigger.setAttribute("aria-expanded", "false");
+  }
+}
 
-  if (clientSelect) {
-    clientSelect.innerHTML = '<option value="">Sélectionner un client...</option>';
-    clients.forEach(c => {
-      const opt = document.createElement("option");
-      opt.value = c.id;
-      opt.textContent = c.name + (c.commune ? ` (${c.commune})` : '');
-      clientSelect.appendChild(opt);
+function togglePlannedClientDropdown() {
+  const wrap = document.getElementById("wrap-planned-client-dropdown");
+  if (wrap && wrap.classList.contains("is-open")) {
+    closePlannedClientDropdown();
+  } else {
+    openPlannedClientDropdown();
+  }
+}
+
+function openPlannedParcelDropdown() {
+  const wrap = document.getElementById("wrap-planned-parcel-dropdown");
+  const menu = document.getElementById("menu-planned-parcel-dropdown");
+  const trigger = document.getElementById("btn-planned-parcel-trigger");
+  if (trigger && trigger.disabled) return;
+  closePlannedClientDropdown();
+  if (wrap && menu) {
+    wrap.classList.add("is-open");
+    menu.style.display = "flex";
+    if (trigger) trigger.setAttribute("aria-expanded", "true");
+  }
+}
+
+function closePlannedParcelDropdown() {
+  const wrap = document.getElementById("wrap-planned-parcel-dropdown");
+  const menu = document.getElementById("menu-planned-parcel-dropdown");
+  const trigger = document.getElementById("btn-planned-parcel-trigger");
+  if (wrap && menu) {
+    wrap.classList.remove("is-open");
+    menu.style.display = "none";
+    if (trigger) trigger.setAttribute("aria-expanded", "false");
+  }
+}
+
+function togglePlannedParcelDropdown() {
+  const wrap = document.getElementById("wrap-planned-parcel-dropdown");
+  if (wrap && wrap.classList.contains("is-open")) {
+    closePlannedParcelDropdown();
+  } else {
+    openPlannedParcelDropdown();
+  }
+}
+
+function setupPlannedModalEvents() {
+  const clientTrigger = document.getElementById("btn-planned-client-trigger");
+  if (clientTrigger) {
+    clientTrigger.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      togglePlannedClientDropdown();
     });
   }
 
-  if (parcelSelect) {
-    parcelSelect.innerHTML = '<option value="">Sélectionnez d\'abord un client...</option>';
-    parcelSelect.disabled = true;
+  const parcelTrigger = document.getElementById("btn-planned-parcel-trigger");
+  if (parcelTrigger) {
+    parcelTrigger.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      togglePlannedParcelDropdown();
+    });
   }
+
+  const clientMenu = document.getElementById("menu-planned-client-dropdown");
+  if (clientMenu) {
+    clientMenu.addEventListener("click", (e) => {
+      e.stopPropagation();
+    });
+  }
+
+  const parcelMenu = document.getElementById("menu-planned-parcel-dropdown");
+  if (parcelMenu) {
+    parcelMenu.addEventListener("click", (e) => {
+      e.stopPropagation();
+    });
+  }
+
+  // Close dropdowns when clicking outside
+  document.addEventListener("click", (e) => {
+    if (!e.target.closest("#wrap-planned-client-dropdown")) {
+      closePlannedClientDropdown();
+    }
+    if (!e.target.closest("#wrap-planned-parcel-dropdown")) {
+      closePlannedParcelDropdown();
+    }
+  });
+
+  const searchInput = document.getElementById("search-planned-clients");
+  if (searchInput) {
+    searchInput.addEventListener("input", (e) => {
+      const val = e.target.value.toLowerCase().trim();
+      const items = document.querySelectorAll("#planned-client-checkbox-list .planned-client-item");
+      items.forEach(item => {
+        const name = item.dataset.clientName || "";
+        const commune = item.dataset.commune || "";
+        const match = !val || name.includes(val) || commune.includes(val);
+        item.style.display = match ? "flex" : "none";
+      });
+    });
+  }
+
+  const btnToggleClients = document.getElementById("btn-toggle-all-planned-clients");
+  if (btnToggleClients) {
+    btnToggleClients.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const allCbs = Array.from(document.querySelectorAll("#planned-client-checkbox-list .planned-client-cb"));
+      if (allCbs.length === 0) return;
+      const allChecked = allCbs.every(cb => cb.checked);
+      allCbs.forEach(cb => {
+        cb.checked = !allChecked;
+        const item = cb.closest(".planned-client-item");
+        if (item) {
+          if (!allChecked) item.classList.add("selected");
+          else item.classList.remove("selected");
+        }
+      });
+      onPlannedClientsChanged();
+    });
+  }
+
+  const btnToggleParcels = document.getElementById("btn-toggle-all-planned-parcels");
+  if (btnToggleParcels) {
+    btnToggleParcels.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const allCbs = Array.from(document.querySelectorAll("#planned-parcel-checkbox-list .planned-parcel-cb"));
+      if (allCbs.length === 0) return;
+      const allChecked = allCbs.every(cb => cb.checked);
+      allCbs.forEach(cb => {
+        cb.checked = !allChecked;
+        const item = cb.closest(".planned-parcel-item");
+        if (item) {
+          if (!allChecked) item.classList.add("selected");
+          else item.classList.remove("selected");
+        }
+      });
+      updatePlannedParcelsSummary();
+    });
+  }
+
+  const qtyInput = document.getElementById("input-planned-quantity");
+  if (qtyInput) {
+    qtyInput.addEventListener("input", () => {
+      qtyInput.dataset.autoFilled = "false";
+    });
+  }
+}
+
+function renderPlannedClientsList() {
+  const listEl = document.getElementById("planned-client-checkbox-list");
+  const searchWrap = document.getElementById("planned-clients-search-wrap");
+  const toggleBtn = document.getElementById("btn-toggle-all-planned-clients");
+
+  if (!listEl) return;
+
+  if (!clients || clients.length === 0) {
+    listEl.innerHTML = '<div class="parcel-list-empty">Aucun domaine enregistré. Créez d\'abord un client.</div>';
+    if (searchWrap) searchWrap.style.display = "none";
+    if (toggleBtn) toggleBtn.style.display = "none";
+    return;
+  }
+
+  if (searchWrap) {
+    searchWrap.style.display = clients.length > 4 ? "block" : "none";
+  }
+  if (toggleBtn) {
+    toggleBtn.style.display = "inline-block";
+    toggleBtn.textContent = "Tout cocher";
+  }
+
+  listEl.innerHTML = clients.map(c => {
+    const pCount = (c.parcels || []).length;
+    const pCountText = pCount === 0 ? "0 parcelle" : (pCount === 1 ? "1 parcelle" : `${pCount} parcelles`);
+    return `
+      <label class="parcel-checkbox-item planned-client-item" data-client-id="${c.id}" data-client-name="${escapeHTML(c.name.toLowerCase())}" data-commune="${escapeHTML((c.commune || '').toLowerCase())}">
+        <input type="checkbox" class="planned-client-cb" value="${c.id}" id="cb-pln-cli-${c.id}">
+        <div class="parcel-item-info">
+          <div class="parcel-item-text">
+            <span class="parcel-item-name">🏰 ${escapeHTML(c.name)}</span>
+            ${c.commune ? `<span class="parcel-item-sub">📍 ${escapeHTML(c.commune)}</span>` : ''}
+          </div>
+          <span class="parcel-item-surface-badge">${pCountText}</span>
+        </div>
+      </label>
+    `;
+  }).join("");
+
+  const clientCbs = listEl.querySelectorAll(".planned-client-cb");
+  clientCbs.forEach(cb => {
+    cb.addEventListener("change", () => {
+      const item = cb.closest(".planned-client-item");
+      if (item) {
+        if (cb.checked) item.classList.add("selected");
+        else item.classList.remove("selected");
+      }
+      onPlannedClientsChanged(cb.value, cb.checked);
+    });
+  });
+}
+
+function onPlannedClientsChanged(changedClientId = null, isChecked = false) {
+  const allClientCbs = Array.from(document.querySelectorAll("#planned-client-checkbox-list .planned-client-cb"));
+  const checkedClientCbs = allClientCbs.filter(cb => cb.checked);
+  const checkedClientIds = checkedClientCbs.map(cb => cb.value);
+
+  const clientTriggerText = document.getElementById("planned-client-trigger-text");
+  const clientTriggerBadge = document.getElementById("planned-client-trigger-badge");
+  const parcelTrigger = document.getElementById("btn-planned-parcel-trigger");
+  const parcelTriggerText = document.getElementById("planned-parcel-trigger-text");
+
+  const count = checkedClientIds.length;
+  if (clientTriggerText) {
+    if (count === 0) {
+      clientTriggerText.textContent = "Sélectionner les domaines...";
+    } else if (count === 1) {
+      const c = clients.find(item => item.id === checkedClientIds[0]);
+      clientTriggerText.textContent = c ? c.name : "1 domaine sélectionné";
+    } else if (count === 2) {
+      const c1 = clients.find(item => item.id === checkedClientIds[0]);
+      const c2 = clients.find(item => item.id === checkedClientIds[1]);
+      clientTriggerText.textContent = `${c1 ? c1.name : ''}, ${c2 ? c2.name : ''}`;
+    } else {
+      clientTriggerText.textContent = `${count} domaines sélectionnés`;
+    }
+  }
+
+  if (clientTriggerBadge) {
+    if (count > 0) {
+      clientTriggerBadge.textContent = count;
+      clientTriggerBadge.style.display = "inline-block";
+    } else {
+      clientTriggerBadge.style.display = "none";
+    }
+  }
+
+  // Enable/disable parcel dropdown trigger
+  if (parcelTrigger) {
+    if (count === 0) {
+      parcelTrigger.disabled = true;
+      if (parcelTriggerText) parcelTriggerText.textContent = "Sélectionnez d'abord un domaine...";
+      closePlannedParcelDropdown();
+    } else {
+      parcelTrigger.disabled = false;
+    }
+  }
+
+  const toggleBtn = document.getElementById("btn-toggle-all-planned-clients");
+  if (toggleBtn) {
+    const allChecked = allClientCbs.length > 0 && checkedClientCbs.length === allClientCbs.length;
+    toggleBtn.textContent = allChecked ? "Tout décocher" : "Tout cocher";
+  }
+
+  updatePlannedParcelsList(changedClientId, isChecked);
+}
+
+function updatePlannedParcelsList(changedClientId = null, isClientChecked = false) {
+  const parcelListEl = document.getElementById("planned-parcel-checkbox-list");
+  const toggleAllParcelsBtn = document.getElementById("btn-toggle-all-planned-parcels");
+
+  if (!parcelListEl) return;
+
+  const checkedClientCbs = Array.from(document.querySelectorAll("#planned-client-checkbox-list .planned-client-cb:checked"));
+  const checkedClientIds = checkedClientCbs.map(cb => cb.value);
+
+  if (checkedClientIds.length === 0) {
+    parcelListEl.innerHTML = '<div class="parcel-list-empty">Sélectionnez d\'abord au moins un client pour afficher ses parcelles.</div>';
+    if (toggleAllParcelsBtn) toggleAllParcelsBtn.style.display = "none";
+    updatePlannedParcelsSummary();
+    return;
+  }
+
+  if (toggleAllParcelsBtn) toggleAllParcelsBtn.style.display = "inline-block";
+
+  // Remember which parcels were previously checked
+  const previouslyCheckedKeys = new Set();
+  const currentParcelCbs = parcelListEl.querySelectorAll(".planned-parcel-cb:checked");
+  currentParcelCbs.forEach(cb => {
+    previouslyCheckedKeys.add(`${cb.dataset.clientId}:::${cb.value}`);
+  });
+
+  const isMultiClients = checkedClientIds.length > 1;
+  let html = "";
+
+  checkedClientIds.forEach(cId => {
+    const client = clients.find(c => c.id === cId);
+    if (!client) return;
+
+    if (isMultiClients) {
+      html += `
+        <div class="planned-parcel-domain-header" data-domain-id="${client.id}">
+          <span>🏰 ${escapeHTML(client.name)}</span>
+          <button type="button" class="btn-group-toggle-domain-parcels" data-client-id="${client.id}">Tout cocher</button>
+        </div>
+      `;
+    }
+
+    if (client.parcels && client.parcels.length > 0) {
+      client.parcels.forEach(p => {
+        const key = `${client.id}:::${p.name}`;
+        const shouldBeChecked = (changedClientId === client.id && isClientChecked)
+          ? true
+          : (previouslyCheckedKeys.has(key) || changedClientId === null);
+
+        html += `
+          <label class="parcel-checkbox-item planned-parcel-item ${shouldBeChecked ? 'selected' : ''}" data-client-id="${client.id}">
+            <input type="checkbox" class="planned-parcel-cb" 
+                   data-client-id="${client.id}" 
+                   data-surface="${p.surface || 0}" 
+                   value="${escapeHTML(p.name)}" 
+                   ${shouldBeChecked ? 'checked' : ''}>
+            <div class="parcel-item-info">
+              <div class="parcel-item-text">
+                <span class="parcel-item-name">📍 ${escapeHTML(p.name)}</span>
+                ${p.grape ? `<span class="parcel-item-sub">🍇 ${escapeHTML(p.grape)}</span>` : ''}
+              </div>
+              <span class="parcel-item-surface-badge">${formatSurface(p.surface)} ha</span>
+            </div>
+          </label>
+        `;
+      });
+    } else {
+      const key = `${client.id}:::Toutes parcelles`;
+      const shouldBeChecked = (changedClientId === client.id && isClientChecked)
+        ? true
+        : (previouslyCheckedKeys.has(key) || changedClientId === null);
+
+      html += `
+        <label class="parcel-checkbox-item planned-parcel-item ${shouldBeChecked ? 'selected' : ''}" data-client-id="${client.id}">
+          <input type="checkbox" class="planned-parcel-cb fallback-domain-cb" 
+                 data-client-id="${client.id}" 
+                 data-surface="0" 
+                 value="Toutes parcelles" 
+                 ${shouldBeChecked ? 'checked' : ''}>
+          <div class="parcel-item-info">
+            <div class="parcel-item-text">
+              <span class="parcel-item-name">📍 Tout le domaine</span>
+              <span class="parcel-item-sub">Toutes parcelles / Général</span>
+            </div>
+            <span class="parcel-item-surface-badge">Ensemble</span>
+          </div>
+        </label>
+      `;
+    }
+  });
+
+  parcelListEl.innerHTML = html;
+
+  const parcelCbs = parcelListEl.querySelectorAll(".planned-parcel-cb");
+  parcelCbs.forEach(cb => {
+    cb.addEventListener("change", () => {
+      const item = cb.closest(".planned-parcel-item");
+      if (item) {
+        if (cb.checked) item.classList.add("selected");
+        else item.classList.remove("selected");
+      }
+      updatePlannedParcelsSummary();
+    });
+  });
+
+  const domainToggleBtns = parcelListEl.querySelectorAll(".btn-group-toggle-domain-parcels");
+  domainToggleBtns.forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const domainId = btn.dataset.clientId;
+      const domainCbs = Array.from(parcelListEl.querySelectorAll(`.planned-parcel-cb[data-client-id="${domainId}"]`));
+      const allChecked = domainCbs.length > 0 && domainCbs.every(cb => cb.checked);
+      domainCbs.forEach(cb => {
+        cb.checked = !allChecked;
+        const item = cb.closest(".planned-parcel-item");
+        if (item) {
+          if (!allChecked) item.classList.add("selected");
+          else item.classList.remove("selected");
+        }
+      });
+      btn.textContent = allChecked ? "Tout cocher" : "Tout décocher";
+      updatePlannedParcelsSummary();
+    });
+  });
+
+  updatePlannedParcelsSummary();
+}
+
+function updatePlannedParcelsSummary() {
+  const parcelListEl = document.getElementById("planned-parcel-checkbox-list");
+  const toggleAllBtn = document.getElementById("btn-toggle-all-planned-parcels");
+  const qtyInput = document.getElementById("input-planned-quantity");
+  const parcelTriggerText = document.getElementById("planned-parcel-trigger-text");
+  const parcelTriggerBadge = document.getElementById("planned-parcel-trigger-badge");
+  const recapBar = document.getElementById("planned-selection-recap-bar");
+  const recapClients = document.getElementById("recap-clients-count");
+  const recapParcels = document.getElementById("recap-parcels-count");
+  const recapSurface = document.getElementById("recap-surface-total");
+
+  if (!parcelListEl) return;
+
+  const allParcelCbs = Array.from(parcelListEl.querySelectorAll(".planned-parcel-cb"));
+  const checkedParcelCbs = Array.from(parcelListEl.querySelectorAll(".planned-parcel-cb:checked"));
+
+  let totalSurface = 0;
+  checkedParcelCbs.forEach(cb => {
+    const s = parseFloat(cb.dataset.surface || 0);
+    if (!isNaN(s)) totalSurface += s;
+  });
+
+  const count = checkedParcelCbs.length;
+  const checkedClientsCount = document.querySelectorAll("#planned-client-checkbox-list .planned-client-cb:checked").length;
+
+  if (toggleAllBtn) {
+    toggleAllBtn.style.display = allParcelCbs.length > 0 ? "inline-block" : "none";
+    toggleAllBtn.textContent = (checkedParcelCbs.length === allParcelCbs.length && allParcelCbs.length > 0)
+      ? "Tout décocher"
+      : "Tout cocher";
+  }
+
+  // Update parcel trigger text and badge
+  if (parcelTriggerText) {
+    if (checkedClientsCount === 0) {
+      parcelTriggerText.textContent = "Sélectionnez d'abord un domaine...";
+    } else if (count === 0) {
+      parcelTriggerText.textContent = "Sélectionner les parcelles...";
+    } else if (count === 1) {
+      parcelTriggerText.textContent = `${checkedParcelCbs[0].value} (${formatSurface(totalSurface)} ha)`;
+    } else {
+      parcelTriggerText.textContent = `${count} parcelles (${formatSurface(totalSurface)} ha)`;
+    }
+  }
+
+  if (parcelTriggerBadge) {
+    if (count > 0) {
+      parcelTriggerBadge.textContent = count;
+      parcelTriggerBadge.style.display = "inline-block";
+    } else {
+      parcelTriggerBadge.style.display = "none";
+    }
+  }
+
+  // Update recap bar
+  if (recapBar) {
+    if (checkedClientsCount > 0 && count > 0) {
+      recapBar.style.display = "flex";
+      if (recapClients) recapClients.textContent = `🏰 ${checkedClientsCount} domaine${checkedClientsCount > 1 ? 's' : ''}`;
+      if (recapParcels) recapParcels.textContent = `📍 ${count} parcelle${count > 1 ? 's' : ''}`;
+      if (recapSurface) recapSurface.textContent = `📐 ${formatSurface(totalSurface)} ha cumulés`;
+    } else {
+      recapBar.style.display = "none";
+    }
+  }
+
+  if (qtyInput && totalSurface > 0 && (!qtyInput.value || qtyInput.dataset.autoFilled === "true")) {
+    qtyInput.value = formatSurface(totalSurface);
+    qtyInput.dataset.autoFilled = "true";
+  }
+}
+
+function openPlannedModal() {
+  const modal = document.getElementById("planned-modal");
+  const form = document.getElementById("create-planned-form");
+  const dateInput = document.getElementById("input-planned-date");
+  const searchInput = document.getElementById("search-planned-clients");
+  const qtyInput = document.getElementById("input-planned-quantity");
+
+  closePlannedClientDropdown();
+  closePlannedParcelDropdown();
+
+  if (form) form.reset();
+  if (searchInput) searchInput.value = "";
+  if (qtyInput) qtyInput.dataset.autoFilled = "false";
+
+  renderPlannedClientsList();
+  updatePlannedParcelsList(null, false);
 
   populateTaskSelects();
   populatePlannedWorkerSelect();
@@ -4699,6 +5605,8 @@ function openPlannedModal() {
 }
 
 function closePlannedModal() {
+  closePlannedClientDropdown();
+  closePlannedParcelDropdown();
   const modal = document.getElementById("planned-modal");
   if (modal) {
     modal.classList.remove("open");
@@ -4710,39 +5618,90 @@ function closePlannedModal() {
 function handleCreatePlannedSubmit(e) {
   e.preventDefault();
 
-  const clientId = document.getElementById("input-planned-client")?.value;
-  const parcel = document.getElementById("input-planned-parcel")?.value;
-  const service = document.getElementById("input-planned-service")?.value;
-  const date = document.getElementById("input-planned-date")?.value;
-  const worker = document.getElementById("input-planned-worker")?.value || "Non assigné";
-  const quantity = parseFloat(document.getElementById("input-planned-quantity")?.value || 0);
-  const notes = document.getElementById("input-planned-notes")?.value || "";
+  const selectedClientCbs = Array.from(document.querySelectorAll("#planned-client-checkbox-list .planned-client-cb:checked"));
+  const selectedClientIds = selectedClientCbs.map(cb => cb.value);
 
-  if (!clientId || !parcel || !service || !date) {
-    showToast("Veuillez renseigner le client, la parcelle, la prestation et la date prévue.", "warning");
+  if (selectedClientIds.length === 0) {
+    showToast("Veuillez sélectionner au moins un domaine / client.", "warning");
     return;
   }
 
-  const client = clients.find(c => c.id === clientId);
-  const clientName = client ? client.name : "Client Inconnu";
+  const checkedParcelCbs = Array.from(document.querySelectorAll("#planned-parcel-checkbox-list .planned-parcel-cb:checked"));
+  if (checkedParcelCbs.length === 0) {
+    showToast("Veuillez sélectionner au moins une parcelle viticole.", "warning");
+    return;
+  }
 
-  const newPlanned = {
-    id: generateUniqueId("PLN"),
-    clientId,
-    clientName,
-    parcel,
-    service,
-    date,
-    worker,
-    quantity,
-    notes
-  };
+  const service = document.getElementById("input-planned-service")?.value;
+  const date = document.getElementById("input-planned-date")?.value;
+  const worker = document.getElementById("input-planned-worker")?.value || "Non assigné";
+  const userQuantity = parseFloat(document.getElementById("input-planned-quantity")?.value || 0);
+  const notes = document.getElementById("input-planned-notes")?.value || "";
 
-  plannedWorks.unshift(newPlanned);
+  if (!service || !date) {
+    showToast("Veuillez renseigner la prestation et la date prévue.", "warning");
+    return;
+  }
+
+  // Regrouper les parcelles cochées par client
+  const clientParcelMap = {};
+  checkedParcelCbs.forEach(cb => {
+    const cId = cb.dataset.clientId;
+    const pName = cb.value;
+    const pSurface = parseFloat(cb.dataset.surface || 0);
+    if (!clientParcelMap[cId]) {
+      clientParcelMap[cId] = { names: [], surface: 0 };
+    }
+    clientParcelMap[cId].names.push(pName);
+    clientParcelMap[cId].surface += isNaN(pSurface) ? 0 : pSurface;
+  });
+
+  const clientEntries = Object.entries(clientParcelMap);
+  if (clientEntries.length === 0) {
+    showToast("Veuillez sélectionner au moins une parcelle pour un client sélectionné.", "warning");
+    return;
+  }
+
+  const createdWorks = [];
+
+  clientEntries.forEach(([cId, pData]) => {
+    const client = clients.find(c => c.id === cId);
+    const clientName = client ? client.name : "Client Inconnu";
+    const parcelText = pData.names.join(", ");
+
+    let workQuantity = 0;
+    if (clientEntries.length === 1) {
+      workQuantity = userQuantity > 0 ? userQuantity : (pData.surface > 0 ? parseFloat(pData.surface.toFixed(4)) : 0);
+    } else {
+      // Pour multi-clients : si la surface de ce client est définie, on l'utilise, sinon quantité globale
+      workQuantity = pData.surface > 0 ? parseFloat(pData.surface.toFixed(4)) : userQuantity;
+    }
+
+    const newPlanned = {
+      id: generateUniqueId("PLN"),
+      clientId: cId,
+      clientName,
+      parcel: parcelText,
+      service,
+      date,
+      worker,
+      quantity: workQuantity,
+      notes
+    };
+
+    plannedWorks.unshift(newPlanned);
+    createdWorks.push(newPlanned);
+  });
+
   savePlannedWorks();
   closePlannedModal();
   renderServicesView();
-  showToast(`Travail à faire « ${service} » planifié pour ${clientName} !`, "success");
+
+  if (createdWorks.length === 1) {
+    showToast(`Travail à faire « ${service} » planifié pour ${createdWorks[0].clientName} (${createdWorks[0].parcel}) !`, "success");
+  } else {
+    showToast(`${createdWorks.length} travaux « ${service} » planifiés pour ${createdWorks.length} domaines viticoles !`, "success");
+  }
 }
 
 window.deletePlannedWork = function(id) {
@@ -4761,6 +5720,7 @@ window.convertPlannedWork = function(id) {
 
   // Open intervention modal and pre-fill
   openCreateModal();
+  convertingPlannedWorkId = id;
 
   const clientSelect = document.getElementById("input-client");
   const dateInput = document.getElementById("input-datetime");
@@ -4774,10 +5734,12 @@ window.convertPlannedWork = function(id) {
     populateParcelSelectForClient(planned.clientId);
     const parcelContainer = document.getElementById("parcel-checkbox-list");
     if (parcelContainer && planned.parcel) {
+      const plannedNames = planned.parcel.split(",").map(s => s.trim().toLowerCase());
       const cbs = Array.from(parcelContainer.querySelectorAll(".parcel-checkbox-input"));
       let found = false;
       cbs.forEach(cb => {
-        if (cb.value === planned.parcel || planned.parcel.includes(cb.value)) {
+        const valLower = cb.value.trim().toLowerCase();
+        if (plannedNames.includes(valLower) || planned.parcel.toLowerCase().includes(valLower)) {
           cb.checked = true;
           cb.closest(".parcel-checkbox-item")?.classList.add("selected");
           found = true;
@@ -4787,7 +5749,7 @@ window.convertPlannedWork = function(id) {
         }
       });
       const client = clients.find(c => c.id === planned.clientId);
-      if (found) updateParcelSelectionSummary(client);
+      if (found && client) updateParcelSelectionSummary(client);
     }
   }
 
@@ -4813,11 +5775,9 @@ window.convertPlannedWork = function(id) {
     notesInput.value = planned.notes ? `[Planifié] ${planned.notes}` : "";
   }
 
-  // Remove from planned works list
-  plannedWorks = plannedWorks.filter(w => w.id !== id);
-  savePlannedWorks();
-  renderServicesView();
-  showToast(`Formulaire d'intervention prérempli pour ${planned.clientName}. Ajustez les heures si besoin et validez.`, "info");
+  // Le travail planifié n'est supprimé QUE lors de l'enregistrement effectif de l'intervention.
+  // En cas de clic sur "Annuler", la planification reste intacte dans la liste !
+  showToast(`Formulaire d'intervention prérempli pour ${planned.clientName}. Ajustez les données et cliquez sur « Enregistrer » pour valider.`, "info");
 };
 
 // ==================== HELPERS ====================
@@ -4846,6 +5806,28 @@ function formatDateDisplay(isoString) {
   } catch (e) {
     return { date: isoString, time: "" };
   }
+}
+
+function formatDateFr(isoString) {
+  return formatDateDisplay(isoString).date;
+}
+
+function formatTime(isoString) {
+  return formatDateDisplay(isoString).time;
+}
+
+function formatCurrency(val) {
+  const num = parseFloat(val) || 0;
+  return `${num.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`;
+}
+
+function formatVolumeUnit(volume, rateType) {
+  const vol = parseFloat(volume) || 0;
+  const unit = rateType || 'ha';
+  if (unit === 'ha') return `${formatSurface(vol)} ha`;
+  if (unit === 'kg') return `${vol.toLocaleString('fr-FR')} kg`;
+  if (unit === 'h') return `${vol.toFixed(1)} h`;
+  return `${vol} ${unit}`;
 }
 
 function escapeHTML(str) {
@@ -5749,6 +6731,2925 @@ document.addEventListener("DOMContentLoaded", () => {
   populatePlannedWorkerSelect();
 });
 
+// ==================== VENDANGES & RÉCOLTES PAR PARCELLE ====================
+
+function renderVendangesView() {
+  updateSidebarVendangesCount();
+  populateVendangesClientFilter();
+  populateVendangesParcelFilter();
+  renderVendangesKPIs();
+  renderVendangesTable();
+}
+
+function updateSidebarVendangesCount() {
+  const badge = document.getElementById("sidebar-vendanges-count");
+  if (badge) {
+    const count = (harvestWorks || []).length;
+    badge.textContent = count;
+    badge.style.display = count > 0 ? "inline-flex" : "none";
+  }
+}
+
+function renderVendangesKPIs() {
+  const list = harvestWorks || [];
+  const totalParcels = list.length;
+  const totalSurface = list.reduce((acc, h) => acc + (parseFloat(h.surface) || 0), 0);
+
+  // Parcelles au suivi
+  setElemText("kpi-harvest-parcels-count", totalParcels);
+  setElemText("kpi-harvest-surface-total", `${formatSurface(totalSurface)} ha`);
+
+  // Effeuillage
+  const effeuilleeCount = list.filter(h => h.leafStatus === "effeuillee").length;
+  const aEffeuillerCount = list.filter(h => h.leafStatus === "a_effeuiller").length;
+  const leafApplicable = list.filter(h => h.leafStatus !== "non_necessaire").length;
+  const leafPercent = leafApplicable > 0 ? Math.round((effeuilleeCount / leafApplicable) * 100) : (totalParcels > 0 ? 100 : 0);
+  setElemText("kpi-harvest-leaf-progress", `${leafPercent}%`);
+  setElemText("kpi-harvest-leaf-details", `${effeuilleeCount} effeuillée(s) • ${aEffeuillerCount} à faire`);
+  const leafBar = document.getElementById("kpi-harvest-leaf-bar");
+  if (leafBar) leafBar.style.width = `${leafPercent}%`;
+
+  const leafSrvTag = document.getElementById("kpi-harvest-leaf-srv-tag");
+  if (leafSrvTag) {
+    const defaultLeafSrv = (services || []).find(s => s.name && s.name.toLowerCase().includes("effeuillage")) || { name: "Effeuillage manuel", price: 550, rateType: "surface" };
+    const leafRateLabel = defaultLeafSrv.rateType === "surface" ? "€/ha" : (defaultLeafSrv.rateType === "hourly" ? "€/h" : (defaultLeafSrv.rateType === "kilo" ? "€/kg" : "€"));
+    leafSrvTag.textContent = `Prestation liée : ${defaultLeafSrv.name} (${defaultLeafSrv.price} ${leafRateLabel})`;
+  }
+
+  // Coupe / Récolte
+  const coupeeCount = list.filter(h => h.cutStatus === "coupee").length;
+  const aCouperCount = list.filter(h => h.cutStatus === "a_couper").length;
+  const cutPercent = totalParcels > 0 ? Math.round((coupeeCount / totalParcels) * 100) : 0;
+  setElemText("kpi-harvest-cut-progress", `${cutPercent}%`);
+  setElemText("kpi-harvest-cut-details", `${coupeeCount} coupée(s) • ${aCouperCount} à couper`);
+  const cutBar = document.getElementById("kpi-harvest-cut-bar");
+  if (cutBar) cutBar.style.width = `${cutPercent}%`;
+
+  // Volume Récolté (Kilos & Caisses & Valorisation HT)
+  const totalKg = list.reduce((acc, h) => acc + (parseFloat(h.yieldKg) || 0), 0);
+  const totalBoxes = list.reduce((acc, h) => acc + (parseInt(h.boxesCount, 10) || 0), 0);
+  const totalHarvestRevenueHT = list.reduce((acc, h) => {
+    const kg = parseFloat(h.yieldKg) || 0;
+    const price = parseFloat(h.yieldPricePerKg) || 0;
+    return acc + (kg * price);
+  }, 0);
+  setElemText("kpi-harvest-volume-total", `${totalKg.toLocaleString("fr-FR")} kg`);
+  setElemText("kpi-harvest-boxes-total", `${totalBoxes.toLocaleString("fr-FR")} caisse(s)`);
+  setElemText("kpi-harvest-revenue-total", `${formatCurrency(totalHarvestRevenueHT)} valorisé`);
+
+  const cutSrvTag = document.getElementById("kpi-harvest-cut-srv-tag");
+  if (cutSrvTag) {
+    cutSrvTag.textContent = `Prestation : Coupe vendange (${coupeeCount} récoltée${coupeeCount > 1 ? "s" : ""})`;
+  }
+
+  // Débardage
+  const debardeeCount = list.filter(h => h.haulStatus === "debardee").length;
+  const aDebarderCount = list.filter(h => h.haulStatus === "a_debarder").length;
+  const haulApplicable = list.filter(h => h.haulStatus !== "non_necessaire").length;
+  const haulPercent = haulApplicable > 0 ? Math.round((debardeeCount / haulApplicable) * 100) : (totalParcels > 0 ? 100 : 0);
+  setElemText("kpi-harvest-haul-progress", `${haulPercent}%`);
+  setElemText("kpi-harvest-haul-details", `${debardeeCount} débardée(s) • ${aDebarderCount} à sortir`);
+  const haulBar = document.getElementById("kpi-harvest-haul-bar");
+  if (haulBar) haulBar.style.width = `${haulPercent}%`;
+
+  const haulSrvTag = document.getElementById("kpi-harvest-haul-srv-tag");
+  if (haulSrvTag) {
+    const defaultHaulSrv = (services || []).find(s => s.name && (s.name.toLowerCase().includes("débardage") || s.name.toLowerCase().includes("debardage"))) || { name: "Débardage vendange (tracteur / porteur)", price: 0.15, rateType: "kilo" };
+    const haulRateLabel = defaultHaulSrv.rateType === "kilo" ? "€/kg" : (defaultHaulSrv.rateType === "surface" ? "€/ha" : (defaultHaulSrv.rateType === "hourly" ? "€/h" : "€"));
+    haulSrvTag.textContent = `Prestation liée : ${defaultHaulSrv.name} (${defaultHaulSrv.price} ${haulRateLabel})`;
+  }
+
+  // Badges des onglets segmentés
+  setElemText("count-vendanges-all", totalParcels);
+  setElemText("count-vendanges-leaf", aEffeuillerCount);
+  setElemText("count-vendanges-cut-todo", aCouperCount);
+  setElemText("count-vendanges-cut-done", coupeeCount);
+  setElemText("count-vendanges-haul-todo", aDebarderCount);
+  setElemText("count-vendanges-haul-done", debardeeCount);
+}
+
+let _vendangesFilterMsInitialized = false;
+function initVendangesClientFilterMultiSelect() {
+  if (_vendangesFilterMsInitialized) return;
+  _vendangesFilterMsInitialized = true;
+
+  const wrap = document.getElementById("wrap-vendanges-filter-client");
+  const btn = document.getElementById("btn-vendanges-filter-client");
+  const dropdown = document.getElementById("dropdown-vendanges-filter-client");
+  const searchInput = document.getElementById("search-vendanges-filter-client");
+  const btnAll = document.getElementById("btn-vendanges-select-all-clients");
+  const btnClear = document.getElementById("btn-vendanges-clear-clients");
+
+  if (btn && dropdown) {
+    btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const isOpen = dropdown.style.display === "flex";
+      closeAllFilterMultiSelects();
+      if (!isOpen) {
+        dropdown.style.display = "flex";
+        if (wrap) wrap.classList.add("is-open");
+        btn.setAttribute("aria-expanded", "true");
+        if (searchInput) setTimeout(() => searchInput.focus(), 60);
+      }
+    });
+  }
+
+  if (dropdown) {
+    dropdown.addEventListener("click", (e) => e.stopPropagation());
+  }
+
+  if (searchInput) {
+    searchInput.addEventListener("input", (e) => {
+      const q = e.target.value.toLowerCase().trim();
+      const items = document.querySelectorAll("#list-vendanges-filter-client .filter-ms-item");
+      items.forEach(item => {
+        const text = item.textContent.toLowerCase();
+        item.style.display = text.includes(q) ? "flex" : "none";
+      });
+    });
+  }
+
+  if (btnAll) {
+    btnAll.addEventListener("click", (e) => {
+      e.preventDefault();
+      const checkboxes = document.querySelectorAll("#list-vendanges-filter-client .vendanges-client-cb");
+      vendangesClientFilters = [];
+      checkboxes.forEach(cb => {
+        cb.checked = true;
+        const item = cb.closest(".filter-ms-item");
+        if (item) item.classList.add("is-checked");
+        vendangesClientFilters.push(cb.value);
+      });
+      updateVendangesClientFilterUI();
+      populateVendangesParcelFilter();
+      renderVendangesTable();
+    });
+  }
+
+  if (btnClear) {
+    btnClear.addEventListener("click", (e) => {
+      e.preventDefault();
+      const checkboxes = document.querySelectorAll("#list-vendanges-filter-client .vendanges-client-cb");
+      checkboxes.forEach(cb => {
+        cb.checked = false;
+        const item = cb.closest(".filter-ms-item");
+        if (item) item.classList.remove("is-checked");
+      });
+      vendangesClientFilters = [];
+      updateVendangesClientFilterUI();
+      populateVendangesParcelFilter();
+      renderVendangesTable();
+    });
+  }
+}
+
+let _vendangesStageDropdownInitialized = false;
+function initVendangesStageFilterDropdown() {
+  if (_vendangesStageDropdownInitialized) return;
+  _vendangesStageDropdownInitialized = true;
+
+  const wrap = document.getElementById("wrap-vendanges-filter-stage");
+  const btn = document.getElementById("btn-vendanges-filter-stage");
+  const dropdown = document.getElementById("dropdown-vendanges-filter-stage");
+  const btnAll = document.getElementById("btn-vendanges-select-all-stages");
+  const btnClear = document.getElementById("btn-vendanges-clear-stages");
+
+  if (btn && dropdown) {
+    btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const isOpen = dropdown.style.display === "flex";
+      closeAllFilterMultiSelects();
+      if (!isOpen) {
+        dropdown.style.display = "flex";
+        if (wrap) wrap.classList.add("is-open");
+        btn.setAttribute("aria-expanded", "true");
+      }
+    });
+  }
+
+  if (dropdown) {
+    dropdown.addEventListener("click", (e) => e.stopPropagation());
+  }
+
+  // Checkboxes change listeners
+  const checkboxes = document.querySelectorAll("#list-vendanges-filter-stage .vendanges-stage-cb");
+  checkboxes.forEach(cb => {
+    cb.addEventListener("change", (e) => {
+      toggleVendangesStage(e.target.value, e.target.checked);
+    });
+  });
+
+  if (btnAll) {
+    btnAll.addEventListener("click", (e) => {
+      e.preventDefault();
+      toggleAllVendangesStages(true);
+    });
+  }
+
+  if (btnClear) {
+    btnClear.addEventListener("click", (e) => {
+      e.preventDefault();
+      toggleAllVendangesStages(false);
+    });
+  }
+
+  updateVendangesStageFilterUI();
+}
+
+function updateVendangesStageFilterUI() {
+  const allStages = ["leaf_todo", "leaf_done", "cut_todo", "cut_done", "haul_todo", "haul_done"];
+  const stageNames = {
+    leaf_todo: { icon: "🍃", label: "À effeuiller" },
+    leaf_done: { icon: "✅", label: "Effeuillées" },
+    cut_todo: { icon: "⏳", label: "À couper" },
+    cut_done: { icon: "🍇", label: "Coupées" },
+    haul_todo: { icon: "🚜", label: "À débarder" },
+    haul_done: { icon: "✅", label: "Débardées" }
+  };
+
+  const iconEl = document.getElementById("vendanges-stage-icon");
+  const textEl = document.getElementById("vendanges-filter-stage-text");
+  const badgeEl = document.getElementById("vendanges-stage-dropdown-badge");
+  const count = vendangesStageFilters.length;
+
+  if (count === 0) {
+    if (iconEl) iconEl.textContent = "⚠️";
+    if (textEl) textEl.textContent = "Aucune étape sélectionnée";
+    if (badgeEl) badgeEl.textContent = "0";
+  } else if (count === allStages.length) {
+    if (iconEl) iconEl.textContent = "📋";
+    if (textEl) textEl.textContent = "Toutes les étapes";
+    if (badgeEl) badgeEl.textContent = "Toutes";
+  } else if (count === 1) {
+    const single = stageNames[vendangesStageFilters[0]];
+    if (iconEl) iconEl.textContent = single ? single.icon : "📋";
+    if (textEl) textEl.textContent = single ? single.label : "1 étape";
+    if (badgeEl) badgeEl.textContent = "1 sélectionnée";
+  } else {
+    const first = stageNames[vendangesStageFilters[0]];
+    if (iconEl) iconEl.textContent = first ? first.icon : "📋";
+    if (textEl) textEl.textContent = `${first ? first.label : 'Étape'} +${count - 1}`;
+    if (badgeEl) badgeEl.textContent = `${count} sélectionnées`;
+  }
+}
+
+function toggleVendangesStage(stage, isChecked) {
+  if (isChecked) {
+    if (!vendangesStageFilters.includes(stage)) {
+      vendangesStageFilters.push(stage);
+    }
+  } else {
+    vendangesStageFilters = vendangesStageFilters.filter(s => s !== stage);
+  }
+
+  const item = document.querySelector(`#list-vendanges-filter-stage .filter-ms-item[data-stage="${stage}"]`);
+  if (item) {
+    item.classList.toggle("is-checked", isChecked);
+    const cb = item.querySelector(".vendanges-stage-cb");
+    if (cb) cb.checked = isChecked;
+  }
+
+  updateVendangesStageFilterUI();
+  renderVendangesTable();
+}
+
+function toggleAllVendangesStages(checkAll) {
+  const allStages = ["leaf_todo", "leaf_done", "cut_todo", "cut_done", "haul_todo", "haul_done"];
+  vendangesStageFilters = checkAll ? [...allStages] : [];
+
+  const checkboxes = document.querySelectorAll("#list-vendanges-filter-stage .vendanges-stage-cb");
+  checkboxes.forEach(cb => {
+    cb.checked = checkAll;
+    const item = cb.closest(".filter-ms-item");
+    if (item) item.classList.toggle("is-checked", checkAll);
+  });
+
+  updateVendangesStageFilterUI();
+  renderVendangesTable();
+}
+
+function filterVendangesByStage(stage) {
+  const allStages = ["leaf_todo", "leaf_done", "cut_todo", "cut_done", "haul_todo", "haul_done"];
+  if (stage === "all") {
+    vendangesStageFilters = [...allStages];
+  } else {
+    vendangesStageFilters = [stage];
+  }
+
+  const checkboxes = document.querySelectorAll("#list-vendanges-filter-stage .vendanges-stage-cb");
+  checkboxes.forEach(cb => {
+    const isChecked = vendangesStageFilters.includes(cb.value);
+    cb.checked = isChecked;
+    const item = cb.closest(".filter-ms-item");
+    if (item) item.classList.toggle("is-checked", isChecked);
+  });
+
+  updateVendangesStageFilterUI();
+  renderVendangesTable();
+
+  const tableSec = document.getElementById("vendanges-table-section");
+  if (tableSec) {
+    tableSec.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+}
+
+function populateVendangesClientFilter() {
+  initVendangesClientFilterMultiSelect();
+  initVendangesStageFilterDropdown();
+  const listEl = document.getElementById("list-vendanges-filter-client");
+  if (!listEl) return;
+
+  listEl.innerHTML = "";
+
+  // Collecte des clients uniques avec domaines dans harvestWorks ou dans clients
+  const clientMap = new Map();
+  (clients || []).forEach(c => clientMap.set(c.id, { name: c.name, commune: c.location || c.commune || "" }));
+  (harvestWorks || []).forEach(h => {
+    if (h.clientId && h.clientName && !clientMap.has(h.clientId)) {
+      clientMap.set(h.clientId, { name: h.clientName, commune: "" });
+    }
+  });
+
+  if (clientMap.size === 0) {
+    listEl.innerHTML = '<div class="filter-ms-empty">Aucun domaine viticole</div>';
+    updateVendangesClientFilterUI();
+    return;
+  }
+
+  clientMap.forEach((info, id) => {
+    const isChecked = Array.isArray(vendangesClientFilters) && vendangesClientFilters.includes(id);
+    const label = document.createElement("label");
+    label.className = `filter-ms-item ${isChecked ? "is-checked" : ""}`;
+
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.className = "filter-ms-cb vendanges-client-cb";
+    checkbox.value = id;
+    checkbox.checked = isChecked;
+
+    checkbox.addEventListener("change", () => {
+      const allChecked = Array.from(document.querySelectorAll("#list-vendanges-filter-client .vendanges-client-cb:checked")).map(cb => cb.value);
+      vendangesClientFilters = allChecked;
+      label.classList.toggle("is-checked", checkbox.checked);
+      updateVendangesClientFilterUI();
+      populateVendangesParcelFilter();
+      renderVendangesTable();
+    });
+
+    const infoWrap = document.createElement("div");
+    infoWrap.className = "filter-ms-item-info";
+
+    const nameSpan = document.createElement("span");
+    nameSpan.className = "filter-ms-item-name";
+    nameSpan.textContent = info.name;
+    infoWrap.appendChild(nameSpan);
+
+    if (info.commune) {
+      const subSpan = document.createElement("span");
+      subSpan.className = "filter-ms-item-sub";
+      subSpan.textContent = info.commune;
+      infoWrap.appendChild(subSpan);
+    }
+
+    label.appendChild(checkbox);
+    label.appendChild(infoWrap);
+    listEl.appendChild(label);
+  });
+
+  updateVendangesClientFilterUI();
+}
+
+function updateVendangesClientFilterUI() {
+  const textEl = document.getElementById("vendanges-filter-client-text");
+  const badgeEl = document.getElementById("vendanges-filter-client-badge");
+  const wrapEl = document.getElementById("wrap-vendanges-filter-client");
+
+  const checkboxes = document.querySelectorAll("#list-vendanges-filter-client .vendanges-client-cb");
+  const total = checkboxes.length;
+  const count = Array.isArray(vendangesClientFilters) ? vendangesClientFilters.length : 0;
+
+  if (textEl) {
+    if (count === 0 || count === total) {
+      textEl.textContent = "Tous les domaines";
+    } else if (count === 1) {
+      const foundClient = (clients || []).find(c => c.id === vendangesClientFilters[0]);
+      textEl.textContent = foundClient ? foundClient.name : "1 domaine sélectionné";
+    } else {
+      textEl.textContent = `${count} domaines sélectionnés`;
+    }
+  }
+
+  if (badgeEl) {
+    if (count === 0 || count === total) {
+      badgeEl.textContent = "Tous";
+    } else {
+      badgeEl.textContent = `${count} sélectionné${count > 1 ? "s" : ""}`;
+    }
+  }
+
+  if (wrapEl) {
+    wrapEl.classList.toggle("is-active", count > 0 && count < total);
+  }
+}
+
+// ==================== FILTRE MULTI-SÉLECTION PARCELLES VENDANGES ====================
+
+let _vendangesParcelDropdownInitialized = false;
+function initVendangesParcelFilterMultiSelect() {
+  if (_vendangesParcelDropdownInitialized) return;
+  _vendangesParcelDropdownInitialized = true;
+
+  const wrap = document.getElementById("wrap-vendanges-filter-parcel");
+  const btn = document.getElementById("btn-vendanges-filter-parcel");
+  const dropdown = document.getElementById("dropdown-vendanges-filter-parcel");
+  const searchInput = document.getElementById("search-vendanges-filter-parcel");
+  const btnAll = document.getElementById("btn-vendanges-select-all-parcels");
+  const btnClear = document.getElementById("btn-vendanges-clear-parcels");
+
+  if (btn && dropdown) {
+    btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const isOpen = dropdown.style.display === "flex";
+      closeAllFilterMultiSelects();
+      if (!isOpen) {
+        dropdown.style.display = "flex";
+        if (wrap) wrap.classList.add("is-open");
+        btn.setAttribute("aria-expanded", "true");
+        if (searchInput) setTimeout(() => searchInput.focus(), 60);
+      }
+    });
+  }
+
+  if (dropdown) {
+    dropdown.addEventListener("click", (e) => e.stopPropagation());
+  }
+
+  if (searchInput) {
+    searchInput.addEventListener("input", (e) => {
+      const q = e.target.value.toLowerCase().trim();
+      const items = document.querySelectorAll("#list-vendanges-filter-parcel .filter-ms-item");
+      items.forEach(item => {
+        const text = item.textContent.toLowerCase();
+        item.style.display = text.includes(q) ? "flex" : "none";
+      });
+      const groupHeaders = document.querySelectorAll("#list-vendanges-filter-parcel .filter-ms-group-header");
+      groupHeaders.forEach(hdr => {
+        let sibling = hdr.nextElementSibling;
+        let hasVisible = false;
+        while (sibling && sibling.classList.contains("filter-ms-item")) {
+          if (sibling.style.display !== "none") hasVisible = true;
+          sibling = sibling.nextElementSibling;
+        }
+        hdr.style.display = hasVisible ? "flex" : "none";
+      });
+    });
+  }
+
+  if (btnAll) {
+    btnAll.addEventListener("click", (e) => {
+      e.preventDefault();
+      toggleAllVendangesParcels(true);
+    });
+  }
+
+  if (btnClear) {
+    btnClear.addEventListener("click", (e) => {
+      e.preventDefault();
+      toggleAllVendangesParcels(false);
+    });
+  }
+}
+
+function createVendangesParcelItem(p) {
+  const isChecked = vendangesParcelFilters.includes(p.key);
+  const label = document.createElement("label");
+  label.className = `filter-ms-item ${isChecked ? "is-checked" : ""}`;
+  label.dataset.parcelKey = p.key;
+  label.dataset.clientId = p.clientId || p.clientName;
+
+  const checkbox = document.createElement("input");
+  checkbox.type = "checkbox";
+  checkbox.className = "filter-ms-cb vendanges-parcel-cb";
+  checkbox.value = p.key;
+  checkbox.checked = isChecked;
+
+  checkbox.addEventListener("change", () => {
+    toggleVendangesParcel(p.key, checkbox.checked);
+  });
+
+  const grape = p.grapeVariety ? ` • ${escapeHTML(p.grapeVariety)}` : "";
+  const surf = p.surface ? `${formatSurface(p.surface)} ha` : "";
+
+  label.innerHTML = `
+    <span class="filter-ms-checkbox-box"></span>
+    <div class="filter-ms-item-text">
+      <span class="filter-ms-item-title">📍 ${escapeHTML(p.name)}</span>
+      <span class="filter-ms-item-sub">${surf}${grape}</span>
+    </div>
+  `;
+  label.prepend(checkbox);
+  return label;
+}
+
+function populateVendangesParcelFilter() {
+  initVendangesParcelFilterMultiSelect();
+  const listEl = document.getElementById("list-vendanges-filter-parcel");
+  if (!listEl) return;
+
+  listEl.innerHTML = "";
+
+  // 1. Filtrer les récoltes disponibles selon le filtre Domaine
+  let availableHarvests = [...(harvestWorks || [])];
+  if (Array.isArray(vendangesClientFilters) && vendangesClientFilters.length > 0) {
+    const totalClientsCount = document.querySelectorAll("#list-vendanges-filter-client .vendanges-client-cb").length;
+    if (vendangesClientFilters.length < totalClientsCount) {
+      availableHarvests = availableHarvests.filter(h =>
+        vendangesClientFilters.includes(h.clientId) ||
+        vendangesClientFilters.includes(h.clientName)
+      );
+    }
+  } else if (vendangesClientFilter && vendangesClientFilter !== "all") {
+    availableHarvests = availableHarvests.filter(h =>
+      h.clientId === vendangesClientFilter || h.clientName === vendangesClientFilter
+    );
+  }
+
+  // 2. Extraire les parcelles uniques
+  const parcelMap = new Map();
+  availableHarvests.forEach(h => {
+    const key = (h.clientId || "") + "___" + (h.parcelId || h.parcelName);
+    if (!parcelMap.has(key)) {
+      parcelMap.set(key, {
+        key: key,
+        parcelId: h.parcelId,
+        name: h.parcelName || "Parcelle sans nom",
+        clientId: h.clientId || "",
+        clientName: h.clientName || "Domaine",
+        surface: h.surface,
+        grapeVariety: h.grapeVariety || ""
+      });
+    }
+  });
+
+  const allParcels = Array.from(parcelMap.values());
+
+  if (allParcels.length === 0) {
+    listEl.innerHTML = '<div class="filter-ms-empty">Aucune parcelle répertoriée</div>';
+    vendangesParcelFilters = [];
+    updateVendangesParcelFilterUI();
+    return;
+  }
+
+  // Synchronisation des clés valides dans vendangesParcelFilters
+  const allKeys = allParcels.map(p => p.key);
+  if (!Array.isArray(vendangesParcelFilters) || vendangesParcelFilters.length === 0 || vendangesParcelFilters.some(k => !allKeys.includes(k))) {
+    vendangesParcelFilters = [...allKeys];
+  }
+
+  const distinctClientIds = [...new Set(allParcels.map(p => p.clientId || p.clientName))];
+
+  if (distinctClientIds.length > 1) {
+    // Regroupement élégant par domaine viticole
+    const grouped = new Map();
+    allParcels.forEach(p => {
+      const cId = p.clientId || p.clientName;
+      if (!grouped.has(cId)) grouped.set(cId, { clientName: p.clientName, clientId: p.clientId, parcels: [] });
+      grouped.get(cId).parcels.push(p);
+    });
+
+    grouped.forEach((grp, cId) => {
+      const grpHdr = document.createElement("div");
+      grpHdr.className = "filter-ms-group-header";
+      grpHdr.innerHTML = `
+        <span>🍇 ${escapeHTML(grp.clientName)} (${grp.parcels.length})</span>
+        <div class="filter-ms-group-actions">
+          <button type="button" class="btn-link" onclick="toggleVendangesClientGroupParcels('${escapeHTML(cId)}', true)">Tout</button>
+          <span>•</span>
+          <button type="button" class="btn-link" onclick="toggleVendangesClientGroupParcels('${escapeHTML(cId)}', false)">Aucun</button>
+        </div>
+      `;
+      listEl.appendChild(grpHdr);
+
+      grp.parcels.forEach(p => {
+        listEl.appendChild(createVendangesParcelItem(p));
+      });
+    });
+  } else {
+    // Liste directe simple
+    allParcels.forEach(p => {
+      listEl.appendChild(createVendangesParcelItem(p));
+    });
+  }
+
+  updateVendangesParcelFilterUI();
+}
+
+function updateVendangesParcelFilterUI() {
+  const textEl = document.getElementById("vendanges-filter-parcel-text");
+  const badgeEl = document.getElementById("vendanges-filter-parcel-badge");
+  const wrapEl = document.getElementById("wrap-vendanges-filter-parcel");
+
+  const checkboxes = document.querySelectorAll("#list-vendanges-filter-parcel .vendanges-parcel-cb");
+  const total = checkboxes.length;
+  const count = Array.isArray(vendangesParcelFilters) ? vendangesParcelFilters.length : 0;
+
+  if (textEl) {
+    if (total === 0) {
+      textEl.textContent = "Aucune parcelle";
+    } else if (count === 0) {
+      textEl.textContent = "⚠️ Aucune sélectionnée";
+    } else if (count === total) {
+      textEl.textContent = "Toutes les parcelles";
+    } else if (count === 1) {
+      const checkedItem = document.querySelector("#list-vendanges-filter-parcel .filter-ms-item.is-checked .filter-ms-item-title");
+      textEl.textContent = checkedItem ? checkedItem.textContent.trim() : "1 parcelle sélectionnée";
+    } else {
+      textEl.textContent = `${count} parcelles sélectionnées`;
+    }
+  }
+
+  if (badgeEl) {
+    if (total === 0 || count === 0) {
+      badgeEl.textContent = "0";
+    } else if (count === total) {
+      badgeEl.textContent = "Toutes";
+    } else {
+      badgeEl.textContent = `${count} / ${total}`;
+    }
+  }
+
+  if (wrapEl) {
+    wrapEl.classList.toggle("is-active", count > 0 && count < total);
+  }
+}
+
+function toggleVendangesParcel(parcelKey, isChecked) {
+  if (isChecked) {
+    if (!vendangesParcelFilters.includes(parcelKey)) {
+      vendangesParcelFilters.push(parcelKey);
+    }
+  } else {
+    vendangesParcelFilters = vendangesParcelFilters.filter(k => k !== parcelKey);
+  }
+
+  const item = document.querySelector(`#list-vendanges-filter-parcel .filter-ms-item[data-parcel-key="${parcelKey}"]`);
+  if (item) {
+    item.classList.toggle("is-checked", isChecked);
+    const cb = item.querySelector(".vendanges-parcel-cb");
+    if (cb) cb.checked = isChecked;
+  }
+
+  updateVendangesParcelFilterUI();
+  renderVendangesTable();
+}
+
+function toggleAllVendangesParcels(checkAll) {
+  const checkboxes = document.querySelectorAll("#list-vendanges-filter-parcel .vendanges-parcel-cb");
+  vendangesParcelFilters = [];
+
+  checkboxes.forEach(cb => {
+    cb.checked = checkAll;
+    const item = cb.closest(".filter-ms-item");
+    if (item) item.classList.toggle("is-checked", checkAll);
+    if (checkAll) {
+      vendangesParcelFilters.push(cb.value);
+    }
+  });
+
+  updateVendangesParcelFilterUI();
+  renderVendangesTable();
+}
+
+function toggleVendangesClientGroupParcels(cId, checkAll) {
+  const items = document.querySelectorAll(`#list-vendanges-filter-parcel .filter-ms-item[data-client-id="${cId}"]`);
+  items.forEach(item => {
+    const cb = item.querySelector(".vendanges-parcel-cb");
+    if (cb) {
+      cb.checked = checkAll;
+      item.classList.toggle("is-checked", checkAll);
+      const key = cb.value;
+      if (checkAll) {
+        if (!vendangesParcelFilters.includes(key)) vendangesParcelFilters.push(key);
+      } else {
+        vendangesParcelFilters = vendangesParcelFilters.filter(k => k !== key);
+      }
+    }
+  });
+
+  updateVendangesParcelFilterUI();
+  renderVendangesTable();
+}
+
+function renderVendangesTable() {
+  const tbody = document.getElementById("vendanges-table-tbody");
+  const emptyState = document.getElementById("vendanges-empty-state");
+  const table = document.getElementById("vendanges-table");
+  if (!tbody) return;
+
+  let filtered = [...(harvestWorks || [])];
+
+  // 1. Filtre par Domaine / Client (Multi-sélection à encoches)
+  if (Array.isArray(vendangesClientFilters) && vendangesClientFilters.length > 0) {
+    const totalCount = document.querySelectorAll("#list-vendanges-filter-client .vendanges-client-cb").length;
+    if (vendangesClientFilters.length < totalCount) {
+      filtered = filtered.filter(h =>
+        vendangesClientFilters.includes(h.clientId) ||
+        vendangesClientFilters.includes(h.clientName)
+      );
+    }
+  } else if (vendangesClientFilter && vendangesClientFilter !== "all") {
+    filtered = filtered.filter(h => h.clientId === vendangesClientFilter || h.clientName === vendangesClientFilter);
+  }
+
+  // 1b. Filtre par Parcelle (Multi-sélection à encoches)
+  const totalVendangesParcels = document.querySelectorAll("#list-vendanges-filter-parcel .vendanges-parcel-cb").length;
+  if (totalVendangesParcels > 0 && Array.isArray(vendangesParcelFilters)) {
+    const checkedParcelCbs = document.querySelectorAll("#list-vendanges-filter-parcel .vendanges-parcel-cb:checked");
+    if (checkedParcelCbs.length === 0 && vendangesParcelFilters.length === 0) {
+      filtered = [];
+    } else if (vendangesParcelFilters.length > 0 && vendangesParcelFilters.length < totalVendangesParcels) {
+      filtered = filtered.filter(h => {
+        const pKey = (h.clientId || "") + "___" + (h.parcelId || h.parcelName);
+        return vendangesParcelFilters.includes(pKey) ||
+               vendangesParcelFilters.includes(h.parcelId) ||
+               vendangesParcelFilters.includes(h.parcelName);
+      });
+    }
+  }
+
+  // 2. Filtre par Étape / Statut (Multi-sélection à encoches)
+  const allStages = ["leaf_todo", "leaf_done", "cut_todo", "cut_done", "haul_todo", "haul_done"];
+  if (Array.isArray(vendangesStageFilters) && vendangesStageFilters.length < allStages.length) {
+    if (vendangesStageFilters.length === 0) {
+      filtered = [];
+    } else {
+      filtered = filtered.filter(h => {
+        if (vendangesStageFilters.includes("leaf_todo") && h.leafStatus === "a_effeuiller") return true;
+        if (vendangesStageFilters.includes("leaf_done") && h.leafStatus === "effeuillee") return true;
+        if (vendangesStageFilters.includes("cut_todo") && h.cutStatus === "a_couper") return true;
+        if (vendangesStageFilters.includes("cut_done") && h.cutStatus === "coupee") return true;
+        if (vendangesStageFilters.includes("haul_todo") && h.haulStatus === "a_debarder") return true;
+        if (vendangesStageFilters.includes("haul_done") && h.haulStatus === "debardee") return true;
+        return false;
+      });
+    }
+  }
+
+  // 3. Filtre par Recherche texte
+  if (vendangesSearchFilter) {
+    const q = vendangesSearchFilter.toLowerCase();
+    filtered = filtered.filter(h =>
+      (h.clientName && h.clientName.toLowerCase().includes(q)) ||
+      (h.parcelName && h.parcelName.toLowerCase().includes(q)) ||
+      (h.grapeVariety && h.grapeVariety.toLowerCase().includes(q)) ||
+      (h.worker && h.worker.toLowerCase().includes(q)) ||
+      (h.notes && h.notes.toLowerCase().includes(q))
+    );
+  }
+
+  // Compteurs & Bouton de réinitialisation
+  setElemText("vendanges-table-count", `${filtered.length} parcelle${filtered.length > 1 ? "s" : ""}`);
+  setElemText("vendanges-footer-count", `${filtered.length} parcelle(s) affichée(s)`);
+
+  const resetBtn = document.getElementById("btn-reset-vendanges-filters");
+  const totalVendangesCount = document.querySelectorAll("#list-vendanges-filter-client .vendanges-client-cb").length;
+  const isParcelFiltered = totalVendangesParcels > 0 && vendangesParcelFilters.length < totalVendangesParcels;
+  const isFiltered = (Array.isArray(vendangesClientFilters) && vendangesClientFilters.length > 0 && vendangesClientFilters.length < totalVendangesCount) ||
+                     (vendangesClientFilter && vendangesClientFilter !== "all") ||
+                     isParcelFiltered ||
+                     (Array.isArray(vendangesStageFilters) && vendangesStageFilters.length < allStages.length) ||
+                     (vendangesSearchFilter && vendangesSearchFilter.trim() !== "");
+  if (resetBtn) resetBtn.style.display = isFiltered ? "inline-flex" : "none";
+
+  const emptyResetBtn = document.getElementById("btn-vendanges-empty-reset");
+  const emptyDesc = document.getElementById("vendanges-empty-desc");
+  if (filtered.length === 0) {
+    tbody.innerHTML = "";
+    if (table) table.style.display = "none";
+    if (emptyState) emptyState.style.display = "block";
+    if (harvestWorks && harvestWorks.length > 0) {
+      if (emptyDesc) emptyDesc.textContent = "Aucune parcelle ne correspond aux filtres appliqués (domaine, parcelle ou étape). Réinitialisez les filtres pour réafficher toutes les parcelles suivies.";
+      if (emptyResetBtn) emptyResetBtn.style.display = "inline-flex";
+    } else {
+      if (emptyDesc) emptyDesc.textContent = "Aucune parcelle n'est actuellement inscrite pour la récolte des vendanges.";
+      if (emptyResetBtn) emptyResetBtn.style.display = "none";
+    }
+    return;
+  }
+
+  if (emptyResetBtn) emptyResetBtn.style.display = "none";
+
+  if (table) table.style.display = "table";
+  if (emptyState) emptyState.style.display = "none";
+
+  tbody.innerHTML = filtered.map(h => {
+    // Menu Déroulant Effeuillage épuré (statut direct sans encombrement)
+    const leafClass = h.leafStatus === "effeuillee" ? "badge-leaf-done" : (h.leafStatus === "non_necessaire" ? "badge-leaf-none" : "badge-leaf-todo");
+    const leafSelect = `
+      <select class="harvest-table-select ${leafClass}" onchange="changeHarvestLeaf('${h.id}', this.value)" aria-label="Statut effeuillage">
+        <option value="a_effeuiller" ${h.leafStatus === 'a_effeuiller' || !h.leafStatus ? 'selected' : ''}>🍃 À effeuiller</option>
+        <option value="non_necessaire" ${h.leafStatus === 'non_necessaire' ? 'selected' : ''}>🚫 Non nécessaire</option>
+        <option value="effeuillee" ${h.leafStatus === 'effeuillee' ? 'selected' : ''}>✅ Effeuillée</option>
+      </select>
+    `;
+
+    // Menu Déroulant Coupe & Récolte épuré (statut direct sans encombrement)
+    const cutClass = h.cutStatus === "coupee" ? "badge-cut-done" : "badge-cut-todo";
+    const harvestServiceName = h.harvestServiceName || "Coupe vendange (au kilo)";
+    const cutPrice = parseFloat(h.yieldPricePerKg) || 0.35;
+    const cutSelect = `
+      <select class="harvest-table-select ${cutClass}" onchange="changeHarvestCut('${h.id}', this.value)" aria-label="Statut coupe et récolte">
+        <option value="a_couper" ${h.cutStatus === 'a_couper' || !h.cutStatus ? 'selected' : ''}>⏳ À couper</option>
+        <option value="coupee" ${h.cutStatus === 'coupee' ? 'selected' : ''}>🍇 Coupée</option>
+      </select>
+    `;
+
+    // Section Kilos / Caisses & Facturation
+    let yieldCell = "";
+    if (h.cutStatus === "coupee") {
+      const kg = parseFloat(h.yieldKg) || 0;
+      const boxes = parseInt(h.boxesCount, 10) || 0;
+      const price = parseFloat(h.yieldPricePerKg) || 0;
+      const totalHT = Math.round(kg * price * 100) / 100;
+
+      if (kg > 0 || boxes > 0) {
+        yieldCell = `
+          <div style="display: flex; flex-direction: column; gap: 3px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.4rem;">
+              <div style="font-weight: 700; color: var(--text-heading); font-size: 0.92rem;">
+                ⚖️ ${kg.toLocaleString("fr-FR")} kg ${boxes > 0 ? `<span style="font-size: 0.77rem; font-weight: normal; color: var(--text-muted);">(📦 ${boxes})</span>` : ""}
+              </div>
+              <button type="button" class="btn-yield-action" onclick="openYieldModal('${h.id}')" title="Modifier la pesée">✏️</button>
+            </div>
+            ${price > 0 ? `
+              <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.35rem; font-size: 0.78rem; background: rgba(82, 183, 136, 0.08); padding: 2px 6px; border-radius: 4px;">
+                <span style="color: var(--text-muted); font-size: 0.74rem;">${kg.toLocaleString("fr-FR")} kg × ${price.toFixed(2)} €/kg =</span>
+                <span style="font-weight: 700; color: #52b788; font-family: monospace;">${formatCurrency(totalHT)}</span>
+              </div>
+            ` : ''}
+          </div>
+        `;
+      } else {
+        yieldCell = `
+          <button type="button" class="btn-yield-action" onclick="openYieldModal('${h.id}')" title="Renseigner les kilos et le prix récolté">
+            <span>⚖️ Entrer pesée (kg / prix)</span>
+          </button>
+        `;
+      }
+    } else {
+      yieldCell = `
+        <div style="font-size: 0.8rem; color: var(--text-muted); font-style: italic;">
+          ⏳ En attente de coupe
+        </div>
+      `;
+    }
+
+    // Menu Déroulant Débardage épuré (statut direct sans encombrement)
+    const haulClass = h.haulStatus === "debardee" ? "badge-haul-done" : (h.haulStatus === "non_necessaire" ? "badge-haul-none" : "badge-haul-todo");
+    const haulSelect = `
+      <select class="harvest-table-select ${haulClass}" onchange="changeHarvestHaul('${h.id}', this.value)" aria-label="Statut débardage">
+        <option value="a_debarder" ${h.haulStatus === 'a_debarder' || !h.haulStatus ? 'selected' : ''}>🚜 À débarder</option>
+        <option value="non_necessaire" ${h.haulStatus === 'non_necessaire' ? 'selected' : ''}>⚪ Non nécessaire</option>
+        <option value="debardee" ${h.haulStatus === 'debardee' ? 'selected' : ''}>✅ Débardée</option>
+      </select>
+    `;
+
+    // Localisation / Commune du client si disponible
+    const clientObj = (clients || []).find(c => c.id === h.clientId || c.name === h.clientName);
+    const clientLocation = clientObj && clientObj.location ? clientObj.location : "";
+
+    return `
+      <tr data-harvest-id="${escapeHTML(h.id)}">
+        <td>
+          <div style="font-weight: 700; color: var(--text-heading); font-size: 0.92rem; display: flex; align-items: center; gap: 0.4rem;">
+            <span style="font-size: 1.05rem;">🍇</span>
+            <span>${escapeHTML(h.clientName)}</span>
+          </div>
+          ${clientLocation ? `<div style="font-size: 0.78rem; color: var(--text-muted); margin-left: 1.45rem; margin-top: 2px;">📍 ${escapeHTML(clientLocation)}</div>` : ''}
+        </td>
+        <td>
+          <div style="font-weight: 600; color: var(--text-heading); display: flex; align-items: center; gap: 0.35rem;">
+            <span style="color: #52b788; font-size: 0.95rem;">📍</span>
+            <span>${escapeHTML(h.parcelName)}</span>
+          </div>
+          ${h.terroir ? `<div style="font-size: 0.78rem; color: var(--text-muted); margin-left: 1.3rem; margin-top: 2px;">Terroir : ${escapeHTML(h.terroir)}</div>` : ''}
+        </td>
+        <td>
+          <div style="font-family: monospace; font-weight: 700; color: #52b788; font-size: 0.92rem;">📐 ${formatSurface(h.surface)} ha</div>
+          <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">🍇 ${escapeHTML(h.grapeVariety || "Cépage non précisé")}</div>
+        </td>
+        <td>${leafSelect}</td>
+        <td>${cutSelect}</td>
+        <td>${yieldCell}</td>
+        <td>${haulSelect}</td>
+        <td>
+          <div style="font-size: 0.86rem; font-weight: 600; color: var(--text-heading); display: flex; align-items: center; gap: 0.35rem;">
+            <span>👤</span> <span>${escapeHTML(h.worker || "Non assigné")}</span>
+          </div>
+          ${h.harvestDate ? `<div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 2px;">📅 ${escapeHTML(h.harvestDate)}</div>` : ""}
+          ${h.notes ? `<div style="font-size: 0.78rem; color: var(--text-muted); max-width: 170px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px;" title="${escapeHTML(h.notes)}">📝 ${escapeHTML(h.notes)}</div>` : ""}
+        </td>
+        <td class="text-right">
+          <div class="table-actions" style="justify-content: flex-end;">
+            <button type="button" class="action-btn" onclick="openHarvestModal('${h.id}')" title="Modifier le suivi de la parcelle">✏️</button>
+            <button type="button" class="action-btn" onclick="openYieldModal('${h.id}')" title="Pesée rapide (kg / caisses)">⚖️</button>
+            <button type="button" class="action-btn action-btn-danger" onclick="deleteHarvestWork('${h.id}')" title="Supprimer du suivi des vendanges">🗑️</button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join("");
+}
+
+// Réinitialisation de l'ensemble des filtres vendanges
+function resetVendangesFilters() {
+  vendangesClientFilter = "all";
+  vendangesClientFilters = [];
+  const cCheckboxes = document.querySelectorAll("#list-vendanges-filter-client .vendanges-client-cb");
+  cCheckboxes.forEach(cb => {
+    cb.checked = false;
+    const item = cb.closest(".filter-ms-item");
+    if (item) item.classList.remove("is-checked");
+  });
+  updateVendangesClientFilterUI();
+
+  populateVendangesParcelFilter();
+  toggleAllVendangesParcels(true);
+
+  toggleAllVendangesStages(true);
+  vendangesSearchFilter = "";
+  const sInput = document.getElementById("vendanges-search-input");
+  if (sInput) sInput.value = "";
+  const sClear = document.getElementById("vendanges-search-clear");
+  if (sClear) sClear.style.display = "none";
+  renderVendangesTable();
+}
+
+// Changement d'état direct via les menus déroulants du tableau
+function changeHarvestLeaf(id, newStatus) {
+  const item = (harvestWorks || []).find(h => h.id === id);
+  if (!item) return;
+  item.leafStatus = newStatus;
+
+  // Récupération de la prestation configurée dans Prestations (ex: 550 €/ha)
+  const leafSrv = (services || []).find(s => s.name === item.leafServiceName) ||
+    (services || []).find(s => s.name && s.name.toLowerCase().includes("effeuillage")) ||
+    { name: "Effeuillage manuel face levante", price: 550, rateType: "surface" };
+  item.leafServiceName = leafSrv.name;
+  if (!item.leafPrice || item.leafPrice === 37) {
+    item.leafPrice = leafSrv.price;
+  }
+
+  saveHarvestWorks();
+
+  if (newStatus === "effeuillee") {
+    billLeafHarvestToDashboard(id);
+  } else {
+    renderVendangesKPIs();
+    renderVendangesTable();
+    const label = newStatus === "non_necessaire" ? "Non nécessaire" : "À effeuiller";
+    showToast(`🍃 Effeuillage mis à jour : « ${label} » pour ${item.parcelName}.`, "info");
+  }
+}
+
+function changeHarvestCut(id, newStatus) {
+  const item = (harvestWorks || []).find(h => h.id === id);
+  if (!item) return;
+  item.cutStatus = newStatus;
+
+  if (newStatus === "coupee") {
+    // Si la pesée n'a pas encore de kilos, on prend l'estimation par surface pour envoyer immédiatement dans le Journal à facturer
+    const kg = parseFloat(item.yieldKg) || 0;
+    const surface = parseFloat(item.surface) || 1;
+    const estKg = kg > 0 ? kg : (surface > 0 ? Math.round(surface * 6000) : 1000);
+    const price = parseFloat(item.yieldPricePerKg) || 0.35;
+    const srvName = item.harvestServiceName || "Coupe vendange (au kilo)";
+
+    if (kg <= 0) {
+      item.yieldKg = estKg;
+      item.totalAmountHT = Math.round(estKg * price * 100) / 100;
+    }
+    syncHarvestToIntervention(item, srvName, item.yieldKg, item.boxesCount || 0, price);
+    saveHarvestWorks();
+    renderVendangesKPIs();
+    renderVendangesTable();
+    showToast(`🍇 Parcelle « ${item.parcelName} » coupée : intervention envoyée directement à facturer (${formatCurrency(item.totalAmountHT)}) !`, "success");
+    if (kg <= 0) {
+      setTimeout(() => openYieldModal(id), 250);
+    }
+  } else {
+    saveHarvestWorks();
+    renderVendangesKPIs();
+    renderVendangesTable();
+    showToast(`⏳ Parcelle « ${item.parcelName} » remise en attente de coupe.`, "info");
+  }
+}
+
+function changeHarvestHaul(id, newStatus) {
+  const item = (harvestWorks || []).find(h => h.id === id);
+  if (!item) return;
+  item.haulStatus = newStatus;
+
+  // Récupération de la prestation configurée dans Prestations (ex: 0,15 €/kg)
+  const haulSrv = (services || []).find(s => s.name === item.haulServiceName) ||
+    (services || []).find(s => s.name && (s.name.toLowerCase().includes("débardage") || s.name.toLowerCase().includes("debardage"))) ||
+    { name: "Débardage vendange (tracteur / porteur)", price: 0.15, rateType: "kilo" };
+  item.haulServiceName = haulSrv.name;
+  if (!item.haulPrice || item.haulPrice === 45) {
+    item.haulPrice = haulSrv.price;
+  }
+
+  saveHarvestWorks();
+
+  if (newStatus === "debardee") {
+    billHaulHarvestToDashboard(id);
+  } else {
+    renderVendangesKPIs();
+    renderVendangesTable();
+    const label = newStatus === "non_necessaire" ? "Non nécessaire" : "À débarder";
+    showToast(`🚜 Débardage mis à jour : « ${label} » pour ${item.parcelName}.`, "info");
+  }
+}
+
+// Bascules rapides directes depuis le tableau
+function quickToggleHarvestLeaf(id) {
+  const item = (harvestWorks || []).find(h => h.id === id);
+  if (!item) return;
+
+  if (item.leafStatus === "a_effeuiller") {
+    item.leafStatus = "effeuillee";
+    const leafSrv = (services || []).find(s => s.name === item.leafServiceName) ||
+      (services || []).find(s => s.name && s.name.toLowerCase().includes("effeuillage")) ||
+      { name: "Effeuillage manuel face levante", price: 550, rateType: "surface" };
+    item.leafServiceName = leafSrv.name;
+    if (!item.leafPrice || item.leafPrice === 37) {
+      item.leafPrice = leafSrv.price;
+    }
+    saveHarvestWorks();
+    billLeafHarvestToDashboard(id);
+  } else if (item.leafStatus === "effeuillee") {
+    item.leafStatus = "non_necessaire";
+    saveHarvestWorks();
+    renderVendangesKPIs();
+    renderVendangesTable();
+    showToast(`🚫 Effeuillage marqué non nécessaire pour « ${item.parcelName} ».`, "info");
+  } else {
+    item.leafStatus = "a_effeuiller";
+    saveHarvestWorks();
+    renderVendangesKPIs();
+    renderVendangesTable();
+    showToast(`🍃 Parcelle « ${item.parcelName} » marquée à effeuiller.`, "info");
+  }
+}
+
+function quickToggleHarvestCut(id) {
+  const item = (harvestWorks || []).find(h => h.id === id);
+  if (!item) return;
+
+  if (item.cutStatus === "a_couper") {
+    item.cutStatus = "coupee";
+    const kg = parseFloat(item.yieldKg) || 0;
+    const surface = parseFloat(item.surface) || 1;
+    const estKg = kg > 0 ? kg : (surface > 0 ? Math.round(surface * 6000) : 1000);
+    const price = parseFloat(item.yieldPricePerKg) || 0.35;
+    const srvName = item.harvestServiceName || "Coupe vendange (au kilo)";
+
+    if (kg <= 0) {
+      item.yieldKg = estKg;
+      item.totalAmountHT = Math.round(estKg * price * 100) / 100;
+    }
+    syncHarvestToIntervention(item, srvName, item.yieldKg, item.boxesCount || 0, price);
+    saveHarvestWorks();
+    renderVendangesKPIs();
+    renderVendangesTable();
+    showToast(`🍇 Parcelle « ${item.parcelName} » coupée : intervention envoyée directement à facturer (${formatCurrency(item.totalAmountHT)}) !`, "success");
+    if (kg <= 0) {
+      setTimeout(() => openYieldModal(id), 250);
+    }
+  } else {
+    item.cutStatus = "a_couper";
+    saveHarvestWorks();
+    renderVendangesKPIs();
+    renderVendangesTable();
+    showToast(`⏳ Parcelle « ${item.parcelName} » remise à couper.`, "info");
+  }
+}
+
+function quickToggleHarvestHaul(id) {
+  const item = (harvestWorks || []).find(h => h.id === id);
+  if (!item) return;
+
+  if (item.haulStatus === "a_debarder") {
+    item.haulStatus = "debardee";
+    const haulSrv = (services || []).find(s => s.name === item.haulServiceName) ||
+      (services || []).find(s => s.name && (s.name.toLowerCase().includes("débardage") || s.name.toLowerCase().includes("debardage"))) ||
+      { name: "Débardage vendange (tracteur / porteur)", price: 0.15, rateType: "kilo" };
+    item.haulServiceName = haulSrv.name;
+    if (!item.haulPrice || item.haulPrice === 45) {
+      item.haulPrice = haulSrv.price;
+    }
+    saveHarvestWorks();
+    billHaulHarvestToDashboard(id);
+  } else if (item.haulStatus === "debardee") {
+    item.haulStatus = "non_necessaire";
+    saveHarvestWorks();
+    renderVendangesKPIs();
+    renderVendangesTable();
+    showToast(`⚪ Débardage marqué non nécessaire pour « ${item.parcelName} ».`, "info");
+  } else {
+    item.haulStatus = "a_debarder";
+    saveHarvestWorks();
+    renderVendangesKPIs();
+    renderVendangesTable();
+    showToast(`🚜 Parcelle « ${item.parcelName} » à débarder.`, "info");
+  }
+}
+
+// Dropdown helpers for Modal 11 (Harvest Modal)
+function openHarvestClientDropdown() {
+  const wrap = document.getElementById("wrap-harvest-client-dropdown");
+  const menu = document.getElementById("menu-harvest-client-dropdown");
+  const trigger = document.getElementById("btn-harvest-client-trigger");
+  closeHarvestParcelDropdown();
+  if (wrap && menu) {
+    wrap.classList.add("is-open");
+    menu.style.display = "flex";
+    if (trigger) trigger.setAttribute("aria-expanded", "true");
+    const searchInput = document.getElementById("search-harvest-clients");
+    if (searchInput && searchInput.offsetParent !== null) {
+      setTimeout(() => searchInput.focus(), 60);
+    }
+  }
+}
+
+function closeHarvestClientDropdown() {
+  const wrap = document.getElementById("wrap-harvest-client-dropdown");
+  const menu = document.getElementById("menu-harvest-client-dropdown");
+  const trigger = document.getElementById("btn-harvest-client-trigger");
+  if (wrap && menu) {
+    wrap.classList.remove("is-open");
+    menu.style.display = "none";
+    if (trigger) trigger.setAttribute("aria-expanded", "false");
+  }
+}
+
+function toggleHarvestClientDropdown() {
+  const wrap = document.getElementById("wrap-harvest-client-dropdown");
+  if (wrap && wrap.classList.contains("is-open")) {
+    closeHarvestClientDropdown();
+  } else {
+    openHarvestClientDropdown();
+  }
+}
+
+function openHarvestParcelDropdown() {
+  const wrap = document.getElementById("wrap-harvest-parcel-dropdown");
+  const menu = document.getElementById("menu-harvest-parcel-dropdown");
+  const trigger = document.getElementById("btn-harvest-parcel-trigger");
+  if (trigger && trigger.disabled) return;
+  closeHarvestClientDropdown();
+  if (wrap && menu) {
+    wrap.classList.add("is-open");
+    menu.style.display = "flex";
+    if (trigger) trigger.setAttribute("aria-expanded", "true");
+  }
+}
+
+function closeHarvestParcelDropdown() {
+  const wrap = document.getElementById("wrap-harvest-parcel-dropdown");
+  const menu = document.getElementById("menu-harvest-parcel-dropdown");
+  const trigger = document.getElementById("btn-harvest-parcel-trigger");
+  if (wrap && menu) {
+    wrap.classList.remove("is-open");
+    menu.style.display = "none";
+    if (trigger) trigger.setAttribute("aria-expanded", "false");
+  }
+}
+
+function toggleHarvestParcelDropdown() {
+  const wrap = document.getElementById("wrap-harvest-parcel-dropdown");
+  if (wrap && wrap.classList.contains("is-open")) {
+    closeHarvestParcelDropdown();
+  } else {
+    openHarvestParcelDropdown();
+  }
+}
+
+let _harvestModalDropdownEventsInitialized = false;
+function setupHarvestModalDropdownEvents() {
+  if (_harvestModalDropdownEventsInitialized) return;
+  _harvestModalDropdownEventsInitialized = true;
+
+  const clientTrigger = document.getElementById("btn-harvest-client-trigger");
+  if (clientTrigger) {
+    clientTrigger.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      toggleHarvestClientDropdown();
+    });
+  }
+
+  const parcelTrigger = document.getElementById("btn-harvest-parcel-trigger");
+  if (parcelTrigger) {
+    parcelTrigger.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      toggleHarvestParcelDropdown();
+    });
+  }
+
+  const clientMenu = document.getElementById("menu-harvest-client-dropdown");
+  if (clientMenu) {
+    clientMenu.addEventListener("click", (e) => e.stopPropagation());
+  }
+
+  const parcelMenu = document.getElementById("menu-harvest-parcel-dropdown");
+  if (parcelMenu) {
+    parcelMenu.addEventListener("click", (e) => e.stopPropagation());
+  }
+
+  document.addEventListener("click", (e) => {
+    if (!e.target.closest("#wrap-harvest-client-dropdown")) {
+      closeHarvestClientDropdown();
+    }
+    if (!e.target.closest("#wrap-harvest-parcel-dropdown")) {
+      closeHarvestParcelDropdown();
+    }
+  });
+
+  const searchInput = document.getElementById("search-harvest-clients");
+  if (searchInput) {
+    searchInput.addEventListener("input", (e) => {
+      const val = e.target.value.toLowerCase().trim();
+      const items = document.querySelectorAll("#harvest-client-checkbox-list .harvest-client-item");
+      items.forEach(item => {
+        const name = item.dataset.clientName || "";
+        const commune = item.dataset.commune || "";
+        const match = !val || name.includes(val) || commune.includes(val);
+        item.style.display = match ? "flex" : "none";
+      });
+    });
+  }
+
+  const btnToggleClients = document.getElementById("btn-toggle-all-harvest-clients");
+  if (btnToggleClients) {
+    btnToggleClients.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const allCbs = Array.from(document.querySelectorAll("#harvest-client-checkbox-list .harvest-client-cb"));
+      if (allCbs.length === 0) return;
+      const allChecked = allCbs.every(cb => cb.checked);
+      allCbs.forEach(cb => {
+        cb.checked = !allChecked;
+        const item = cb.closest(".harvest-client-item");
+        if (item) {
+          if (!allChecked) item.classList.add("selected");
+          else item.classList.remove("selected");
+        }
+      });
+      onHarvestClientsChanged();
+    });
+  }
+
+  const btnToggleParcels = document.getElementById("btn-toggle-all-harvest-parcels");
+  if (btnToggleParcels) {
+    btnToggleParcels.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const allCbs = Array.from(document.querySelectorAll("#harvest-parcel-checkbox-list .harvest-parcel-cb"));
+      if (allCbs.length === 0) return;
+      const allChecked = allCbs.every(cb => cb.checked);
+      allCbs.forEach(cb => {
+        cb.checked = !allChecked;
+        const item = cb.closest(".harvest-parcel-item");
+        if (item) {
+          if (!allChecked) item.classList.add("selected");
+          else item.classList.remove("selected");
+        }
+      });
+      updateHarvestParcelsSummary();
+    });
+  }
+}
+
+function renderHarvestClientsList(preselectedClientIds = []) {
+  const listEl = document.getElementById("harvest-client-checkbox-list");
+  const searchWrap = document.getElementById("harvest-clients-search-wrap");
+  const toggleBtn = document.getElementById("btn-toggle-all-harvest-clients");
+
+  if (!listEl) return;
+
+  if (!clients || clients.length === 0) {
+    listEl.innerHTML = '<div class="parcel-list-empty">Aucun domaine enregistré. Créez d\'abord un client.</div>';
+    if (searchWrap) searchWrap.style.display = "none";
+    if (toggleBtn) toggleBtn.style.display = "none";
+    return;
+  }
+
+  if (searchWrap) {
+    searchWrap.style.display = clients.length > 4 ? "block" : "none";
+  }
+  if (toggleBtn) {
+    toggleBtn.style.display = "inline-block";
+    toggleBtn.textContent = "Tout cocher";
+  }
+
+  listEl.innerHTML = clients.map(c => {
+    const pCount = (c.parcels || []).length;
+    const pCountText = pCount === 0 ? "0 parcelle" : (pCount === 1 ? "1 parcelle" : `${pCount} parcelles`);
+    const isChecked = preselectedClientIds.includes(c.id);
+    return `
+      <label class="parcel-checkbox-item harvest-client-item ${isChecked ? 'selected' : ''}" data-client-id="${c.id}" data-client-name="${escapeHTML(c.name.toLowerCase())}" data-commune="${escapeHTML(((c.location || c.commune) || '').toLowerCase())}">
+        <input type="checkbox" class="harvest-client-cb" value="${c.id}" id="cb-harv-cli-${c.id}" ${isChecked ? 'checked' : ''}>
+        <div class="parcel-item-info">
+          <div class="parcel-item-text">
+            <span class="parcel-item-name">🏰 ${escapeHTML(c.name)}</span>
+            ${(c.location || c.commune) ? `<span class="parcel-item-sub">📍 ${escapeHTML(c.location || c.commune)}</span>` : ''}
+          </div>
+          <span class="parcel-item-surface-badge">${pCountText}</span>
+        </div>
+      </label>
+    `;
+  }).join("");
+
+  const clientCbs = listEl.querySelectorAll(".harvest-client-cb");
+  clientCbs.forEach(cb => {
+    cb.addEventListener("change", () => {
+      const item = cb.closest(".harvest-client-item");
+      if (item) {
+        if (cb.checked) item.classList.add("selected");
+        else item.classList.remove("selected");
+      }
+      onHarvestClientsChanged(cb.value, cb.checked);
+    });
+  });
+}
+
+function onHarvestClientsChanged(changedClientId = null, isChecked = false) {
+  const allClientCbs = Array.from(document.querySelectorAll("#harvest-client-checkbox-list .harvest-client-cb"));
+  const checkedClientCbs = allClientCbs.filter(cb => cb.checked);
+  const checkedClientIds = checkedClientCbs.map(cb => cb.value);
+
+  const clientTriggerText = document.getElementById("harvest-client-trigger-text");
+  const clientTriggerBadge = document.getElementById("harvest-client-trigger-badge");
+  const parcelTrigger = document.getElementById("btn-harvest-parcel-trigger");
+  const parcelTriggerText = document.getElementById("harvest-parcel-trigger-text");
+
+  const count = checkedClientIds.length;
+  if (clientTriggerText) {
+    if (count === 0) {
+      clientTriggerText.textContent = "Sélectionner les domaines...";
+    } else if (count === 1) {
+      const c = (clients || []).find(item => item.id === checkedClientIds[0]);
+      clientTriggerText.textContent = c ? c.name : "1 domaine sélectionné";
+    } else if (count === 2) {
+      const c1 = (clients || []).find(item => item.id === checkedClientIds[0]);
+      const c2 = (clients || []).find(item => item.id === checkedClientIds[1]);
+      clientTriggerText.textContent = `${c1 ? c1.name : ''}, ${c2 ? c2.name : ''}`;
+    } else {
+      clientTriggerText.textContent = `${count} domaines sélectionnés`;
+    }
+  }
+
+  if (clientTriggerBadge) {
+    if (count > 0) {
+      clientTriggerBadge.textContent = count;
+      clientTriggerBadge.style.display = "inline-block";
+    } else {
+      clientTriggerBadge.style.display = "none";
+    }
+  }
+
+  const hiddenClientInput = document.getElementById("input-harvest-client");
+  if (hiddenClientInput) {
+    hiddenClientInput.value = checkedClientIds.join(",");
+  }
+
+  if (parcelTrigger) {
+    if (count === 0) {
+      parcelTrigger.disabled = true;
+      if (parcelTriggerText) parcelTriggerText.textContent = "Sélectionnez d'abord un domaine...";
+      closeHarvestParcelDropdown();
+    } else {
+      parcelTrigger.disabled = false;
+    }
+  }
+
+  const toggleBtn = document.getElementById("btn-toggle-all-harvest-clients");
+  if (toggleBtn) {
+    const allChecked = allClientCbs.length > 0 && checkedClientCbs.length === allClientCbs.length;
+    toggleBtn.textContent = allChecked ? "Tout décocher" : "Tout cocher";
+  }
+
+  updateHarvestParcelsList(changedClientId, isChecked);
+}
+
+function updateHarvestParcelsList(changedClientId = null, isClientChecked = false, preselectedParcelIds = []) {
+  const parcelListEl = document.getElementById("harvest-parcel-checkbox-list");
+  const toggleAllParcelsBtn = document.getElementById("btn-toggle-all-harvest-parcels");
+
+  if (!parcelListEl) return;
+
+  const checkedClientCbs = Array.from(document.querySelectorAll("#harvest-client-checkbox-list .harvest-client-cb:checked"));
+  const checkedClientIds = checkedClientCbs.map(cb => cb.value);
+
+  if (checkedClientIds.length === 0) {
+    parcelListEl.innerHTML = '<div class="parcel-list-empty">Sélectionnez d\'abord au moins un client pour afficher ses parcelles.</div>';
+    if (toggleAllParcelsBtn) toggleAllParcelsBtn.style.display = "none";
+    updateHarvestParcelsSummary();
+    return;
+  }
+
+  if (toggleAllParcelsBtn) toggleAllParcelsBtn.style.display = "inline-block";
+
+  const previouslyCheckedKeys = new Set(preselectedParcelIds);
+  const currentParcelCbs = parcelListEl.querySelectorAll(".harvest-parcel-cb:checked");
+  currentParcelCbs.forEach(cb => {
+    previouslyCheckedKeys.add(`${cb.dataset.clientId}:::${cb.dataset.parcelId || cb.value}`);
+  });
+
+  const isMultiClients = checkedClientIds.length > 1;
+  let html = "";
+
+  checkedClientIds.forEach(cId => {
+    const client = (clients || []).find(c => c.id === cId);
+    if (!client) return;
+
+    if (isMultiClients) {
+      html += `
+        <div class="planned-parcel-domain-header" data-domain-id="${client.id}">
+          <span>🏰 ${escapeHTML(client.name)}</span>
+          <button type="button" class="btn-group-toggle-domain-harvest-parcels" data-client-id="${client.id}">Tout cocher</button>
+        </div>
+      `;
+    }
+
+    if (client.parcels && client.parcels.length > 0) {
+      client.parcels.forEach(p => {
+        const key = `${client.id}:::${p.id || p.name}`;
+        const shouldBeChecked = preselectedParcelIds.length > 0
+          ? (preselectedParcelIds.includes(p.id) || preselectedParcelIds.includes(key))
+          : ((changedClientId === client.id && isClientChecked) ? true : (previouslyCheckedKeys.has(key) || changedClientId === null));
+
+        html += `
+          <label class="parcel-checkbox-item harvest-parcel-item ${shouldBeChecked ? 'selected' : ''}" data-client-id="${client.id}">
+            <input type="checkbox" class="harvest-parcel-cb" 
+                   data-client-id="${client.id}" 
+                   data-client-name="${escapeHTML(client.name)}"
+                   data-parcel-id="${p.id || ''}"
+                   data-parcel-name="${escapeHTML(p.name)}"
+                   data-surface="${p.surface || 0}" 
+                   data-grape="${escapeHTML(p.grape || '')}"
+                   value="${p.id || escapeHTML(p.name)}" 
+                   ${shouldBeChecked ? 'checked' : ''}>
+            <div class="parcel-item-info">
+              <div class="parcel-item-text">
+                <span class="parcel-item-name">📍 ${escapeHTML(p.name)}</span>
+                ${p.grape ? `<span class="parcel-item-sub">🍇 ${escapeHTML(p.grape)}</span>` : ''}
+              </div>
+              <span class="parcel-item-surface-badge">${formatSurface(p.surface)} ha</span>
+            </div>
+          </label>
+        `;
+      });
+    } else {
+      const key = `${client.id}:::Toutes parcelles`;
+      const shouldBeChecked = preselectedParcelIds.length > 0
+        ? preselectedParcelIds.includes(key)
+        : ((changedClientId === client.id && isClientChecked) ? true : (previouslyCheckedKeys.has(key) || changedClientId === null));
+
+      html += `
+        <label class="parcel-checkbox-item harvest-parcel-item ${shouldBeChecked ? 'selected' : ''}" data-client-id="${client.id}">
+          <input type="checkbox" class="harvest-parcel-cb fallback-domain-cb" 
+                 data-client-id="${client.id}" 
+                 data-client-name="${escapeHTML(client.name)}"
+                 data-parcel-id=""
+                 data-parcel-name="Toutes parcelles"
+                 data-surface="0" 
+                 data-grape=""
+                 value="Toutes parcelles" 
+                 ${shouldBeChecked ? 'checked' : ''}>
+          <div class="parcel-item-info">
+            <div class="parcel-item-text">
+              <span class="parcel-item-name">📍 Tout le domaine</span>
+              <span class="parcel-item-sub">Toutes parcelles / Général</span>
+            </div>
+            <span class="parcel-item-surface-badge">Ensemble</span>
+          </div>
+        </label>
+      `;
+    }
+  });
+
+  parcelListEl.innerHTML = html;
+
+  const parcelCbs = parcelListEl.querySelectorAll(".harvest-parcel-cb");
+  parcelCbs.forEach(cb => {
+    cb.addEventListener("change", () => {
+      const item = cb.closest(".harvest-parcel-item");
+      if (item) {
+        if (cb.checked) item.classList.add("selected");
+        else item.classList.remove("selected");
+      }
+      updateHarvestParcelsSummary();
+    });
+  });
+
+  const domainToggleBtns = parcelListEl.querySelectorAll(".btn-group-toggle-domain-harvest-parcels");
+  domainToggleBtns.forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const domainId = btn.dataset.clientId;
+      const domainCbs = Array.from(parcelListEl.querySelectorAll(`.harvest-parcel-cb[data-client-id="${domainId}"]`));
+      const allChecked = domainCbs.length > 0 && domainCbs.every(cb => cb.checked);
+      domainCbs.forEach(cb => {
+        cb.checked = !allChecked;
+        const item = cb.closest(".harvest-parcel-item");
+        if (item) {
+          if (!allChecked) item.classList.add("selected");
+          else item.classList.remove("selected");
+        }
+      });
+      btn.textContent = allChecked ? "Tout cocher" : "Tout décocher";
+      updateHarvestParcelsSummary();
+    });
+  });
+
+  updateHarvestParcelsSummary();
+}
+
+function updateHarvestParcelsSummary() {
+  const parcelListEl = document.getElementById("harvest-parcel-checkbox-list");
+  const toggleAllBtn = document.getElementById("btn-toggle-all-harvest-parcels");
+  const parcelTriggerText = document.getElementById("harvest-parcel-trigger-text");
+  const parcelTriggerBadge = document.getElementById("harvest-parcel-trigger-badge");
+  const recapBar = document.getElementById("harvest-selection-recap-bar");
+  const recapClients = document.getElementById("harvest-recap-clients-count");
+  const recapParcels = document.getElementById("harvest-recap-parcels-count");
+  const recapSurface = document.getElementById("harvest-recap-surface-total");
+  const banner = document.getElementById("harvest-parcel-info-banner");
+  const surfBadge = document.getElementById("harvest-parcel-surface-badge");
+  const varBadge = document.getElementById("harvest-parcel-variety-badge");
+
+  if (!parcelListEl) return;
+
+  const allParcelCbs = Array.from(parcelListEl.querySelectorAll(".harvest-parcel-cb"));
+  const checkedParcelCbs = Array.from(parcelListEl.querySelectorAll(".harvest-parcel-cb:checked"));
+
+  let totalSurface = 0;
+  checkedParcelCbs.forEach(cb => {
+    const s = parseFloat(cb.dataset.surface || 0);
+    if (!isNaN(s)) totalSurface += s;
+  });
+
+  const count = checkedParcelCbs.length;
+  const checkedClientsCount = document.querySelectorAll("#harvest-client-checkbox-list .harvest-client-cb:checked").length;
+
+  if (toggleAllBtn) {
+    toggleAllBtn.style.display = allParcelCbs.length > 0 ? "inline-block" : "none";
+    toggleAllBtn.textContent = (checkedParcelCbs.length === allParcelCbs.length && allParcelCbs.length > 0)
+      ? "Tout décocher"
+      : "Tout cocher";
+  }
+
+  if (parcelTriggerText) {
+    if (checkedClientsCount === 0) {
+      parcelTriggerText.textContent = "Sélectionnez d'abord un domaine...";
+    } else if (count === 0) {
+      parcelTriggerText.textContent = "Sélectionner les parcelles...";
+    } else if (count === 1) {
+      const pName = checkedParcelCbs[0].dataset.parcelName || checkedParcelCbs[0].value;
+      parcelTriggerText.textContent = `${pName} (${formatSurface(totalSurface)} ha)`;
+    } else {
+      parcelTriggerText.textContent = `${count} parcelles (${formatSurface(totalSurface)} ha)`;
+    }
+  }
+
+  if (parcelTriggerBadge) {
+    if (count > 0) {
+      parcelTriggerBadge.textContent = count;
+      parcelTriggerBadge.style.display = "inline-block";
+    } else {
+      parcelTriggerBadge.style.display = "none";
+    }
+  }
+
+  if (recapBar) {
+    if (checkedClientsCount > 0 && count > 0) {
+      recapBar.style.display = "flex";
+      if (recapClients) recapClients.textContent = `🏰 ${checkedClientsCount} domaine${checkedClientsCount > 1 ? 's' : ''}`;
+      if (recapParcels) recapParcels.textContent = `📍 ${count} parcelle${count > 1 ? 's' : ''}`;
+      if (recapSurface) recapSurface.textContent = `📐 ${formatSurface(totalSurface)} ha cumulés`;
+    } else {
+      recapBar.style.display = "none";
+    }
+  }
+
+  const hiddenParcelInput = document.getElementById("input-harvest-parcel");
+  if (hiddenParcelInput) {
+    hiddenParcelInput.value = checkedParcelCbs.map(cb => cb.dataset.parcelId || cb.value).join(",");
+  }
+
+  if (banner) {
+    if (count === 1) {
+      const firstCb = checkedParcelCbs[0];
+      if (surfBadge) surfBadge.textContent = `📐 ${formatSurface(firstCb.dataset.surface || 0)} ha`;
+      if (varBadge) varBadge.textContent = `🍇 ${firstCb.dataset.grape || "Cépage non précisé"}`;
+      banner.style.display = "flex";
+    } else {
+      banner.style.display = "none";
+    }
+  }
+}
+
+// Modal Vendanges (Ajout / Édition)
+function openHarvestModal(editId = null) {
+  const modal = document.getElementById("harvest-modal");
+  const title = document.getElementById("harvest-modal-title");
+  const editInput = document.getElementById("harvest-edit-id");
+  const workerSelect = document.getElementById("input-harvest-worker");
+  const banner = document.getElementById("harvest-parcel-info-banner");
+  if (!modal) return;
+
+  closeHarvestClientDropdown();
+  closeHarvestParcelDropdown();
+
+  // Remplir les salariés / équipe
+  if (workerSelect) {
+    const curWorker = workerSelect.value;
+    workerSelect.innerHTML = '<option value="">Non assigné (À définir)</option>';
+    (teamUsers || []).forEach(u => {
+      const opt = document.createElement("option");
+      opt.value = u.name;
+      opt.textContent = `${u.name} (${u.role})`;
+      workerSelect.appendChild(opt);
+    });
+    if (curWorker) workerSelect.value = curWorker;
+  }
+
+  if (editId) {
+    const item = (harvestWorks || []).find(h => h.id === editId);
+    if (!item) return;
+
+    if (title) title.textContent = "Modifier la vendange de parcelle";
+    if (editInput) editInput.value = item.id;
+
+    // Charger les listes avec le client et la parcelle de cet item
+    renderHarvestClientsList([item.clientId]);
+    onHarvestClientsChanged();
+    updateHarvestParcelsList(null, false, [item.parcelId || `${item.clientId}:::${item.parcelName}`]);
+    updateHarvestParcelsSummary();
+
+    // Menus déroulants Effeuillage, Coupe & Débardage
+    const leafSelect = document.getElementById("input-harvest-leaf");
+    if (leafSelect) leafSelect.value = item.leafStatus || "a_effeuiller";
+
+    const leafSrvSelect = document.getElementById("input-harvest-leaf-service");
+    const leafPriceInput = document.getElementById("input-harvest-leaf-price");
+    let initialLeafName = item.leafServiceName || "Effeuillage manuel face levante";
+    if (!initialLeafName.toLowerCase().includes("effeuillage")) {
+      initialLeafName = "Effeuillage manuel face levante";
+    }
+    if (leafSrvSelect) populateHarvestLeafServicesSelect(leafSrvSelect, initialLeafName);
+    if (leafPriceInput) {
+      leafPriceInput.value = (item.leafPrice && item.leafPrice !== 37) ? item.leafPrice : (leafSrvSelect?.selectedOptions[0]?.dataset.price || 550);
+      leafPriceInput.dataset.autoFilled = "false";
+    }
+    onHarvestModalLeafChange();
+
+    const cutSelect = document.getElementById("input-harvest-cut");
+    if (cutSelect) cutSelect.value = item.cutStatus || "a_couper";
+
+    const harvestSrvSelect = document.getElementById("input-harvest-service");
+    const harvestPriceInput = document.getElementById("input-harvest-price-kg");
+    const harvestBillCheck = document.getElementById("input-harvest-bill-dashboard");
+    const kgInput = document.getElementById("input-harvest-yield-kg");
+    const boxesInput = document.getElementById("input-harvest-yield-boxes");
+
+    let initialHarvestCutName = item.harvestServiceName || "Coupe vendange (au kilo)";
+    if (initialHarvestCutName.toLowerCase().includes("débardage") || initialHarvestCutName.toLowerCase().includes("debardage")) {
+      initialHarvestCutName = "Coupe vendange (au kilo)";
+    }
+    if (harvestSrvSelect) populateHarvestServicesSelect(harvestSrvSelect, initialHarvestCutName);
+    if (harvestPriceInput) {
+      harvestPriceInput.value = item.yieldPricePerKg || (harvestSrvSelect?.selectedOptions[0]?.dataset.price || 0.35);
+      harvestPriceInput.dataset.autoFilled = item.yieldPricePerKg ? "false" : "true";
+    }
+    if (kgInput) kgInput.value = item.yieldKg || "";
+    if (boxesInput) boxesInput.value = item.boxesCount || "";
+    if (harvestBillCheck) harvestBillCheck.checked = true;
+    onHarvestModalCutChange();
+
+    const haulSelect = document.getElementById("input-harvest-haul");
+    if (haulSelect) haulSelect.value = item.haulStatus || "a_debarder";
+
+    const haulSrvSelect = document.getElementById("input-harvest-haul-service");
+    const haulPriceInput = document.getElementById("input-harvest-haul-price");
+    let initialHaulName = item.haulServiceName || "Débardage vendange (tracteur / porteur)";
+    if (initialHaulName.toLowerCase().includes("coupe") || initialHaulName.toLowerCase().includes("récolte") || initialHaulName.toLowerCase().includes("recolte")) {
+      initialHaulName = "Débardage vendange (tracteur / porteur)";
+    }
+    if (haulSrvSelect) populateHarvestHaulServicesSelect(haulSrvSelect, initialHaulName);
+    if (haulPriceInput) {
+      haulPriceInput.value = (item.haulPrice && item.haulPrice !== 45) ? item.haulPrice : (haulSrvSelect?.selectedOptions[0]?.dataset.price || 0.15);
+      haulPriceInput.dataset.autoFilled = "false";
+    }
+    onHarvestModalHaulChange();
+
+    // Salarié, Date & Notes
+    if (workerSelect) workerSelect.value = item.worker || "";
+    const dateInput = document.getElementById("input-harvest-date");
+    if (dateInput) dateInput.value = item.harvestDate || "";
+    const notesInput = document.getElementById("input-harvest-notes");
+    if (notesInput) notesInput.value = item.notes || "";
+
+  } else {
+    // Mode création
+    if (title) title.textContent = "Nouvelle parcelle à vendanger";
+    if (editInput) editInput.value = "";
+    if (banner) banner.style.display = "none";
+
+    renderHarvestClientsList([]);
+    updateHarvestParcelsList(null, false, []);
+    onHarvestClientsChanged();
+
+    // Défauts menus déroulants
+    const leafSelect = document.getElementById("input-harvest-leaf");
+    if (leafSelect) leafSelect.value = "a_effeuiller";
+
+    const leafSrvSelect = document.getElementById("input-harvest-leaf-service");
+    const leafPriceInput = document.getElementById("input-harvest-leaf-price");
+    if (leafSrvSelect) populateHarvestLeafServicesSelect(leafSrvSelect, "Effeuillage manuel face levante");
+    if (leafPriceInput) {
+      leafPriceInput.value = leafSrvSelect?.selectedOptions[0]?.dataset.price || 550;
+      leafPriceInput.dataset.autoFilled = "true";
+    }
+    onHarvestModalLeafChange();
+
+    const cutSelect = document.getElementById("input-harvest-cut");
+    if (cutSelect) cutSelect.value = "a_couper";
+
+    const harvestSrvSelect = document.getElementById("input-harvest-service");
+    const harvestPriceInput = document.getElementById("input-harvest-price-kg");
+    const harvestBillCheck = document.getElementById("input-harvest-bill-dashboard");
+    const kgInput = document.getElementById("input-harvest-yield-kg");
+    const boxesInput = document.getElementById("input-harvest-yield-boxes");
+
+    if (harvestSrvSelect) populateHarvestServicesSelect(harvestSrvSelect, "Coupe vendange (au kilo)");
+    if (harvestPriceInput) {
+      harvestPriceInput.value = harvestSrvSelect?.selectedOptions[0]?.dataset.price || 0.35;
+      harvestPriceInput.dataset.autoFilled = "true";
+    }
+    if (kgInput) kgInput.value = "";
+    if (boxesInput) boxesInput.value = "";
+    if (harvestBillCheck) harvestBillCheck.checked = true;
+    onHarvestModalCutChange();
+
+    const haulSelect = document.getElementById("input-harvest-haul");
+    if (haulSelect) haulSelect.value = "a_debarder";
+
+    const haulSrvSelect = document.getElementById("input-harvest-haul-service");
+    const haulPriceInput = document.getElementById("input-harvest-haul-price");
+    if (haulSrvSelect) populateHarvestHaulServicesSelect(haulSrvSelect, "Débardage vendange (tracteur / porteur)");
+    if (haulPriceInput) {
+      haulPriceInput.value = haulSrvSelect?.selectedOptions[0]?.dataset.price || 0.15;
+      haulPriceInput.dataset.autoFilled = "true";
+    }
+    onHarvestModalHaulChange();
+
+    const dateInput = document.getElementById("input-harvest-date");
+    if (dateInput) dateInput.value = new Date().toISOString().split("T")[0];
+
+    const notesInput = document.getElementById("input-harvest-notes");
+    if (notesInput) notesInput.value = "";
+  }
+
+  modal.classList.add("open");
+  modal.setAttribute("aria-hidden", "false");
+  if (typeof lockBodyScroll === "function") lockBodyScroll();
+  const modalBody = modal.querySelector(".modal-body");
+  if (modalBody) modalBody.scrollTop = 0;
+}
+
+function closeHarvestModal() {
+  const modal = document.getElementById("harvest-modal");
+  if (modal) {
+    modal.classList.remove("open");
+    modal.setAttribute("aria-hidden", "true");
+    if (typeof unlockBodyScroll === "function") unlockBodyScroll();
+  }
+}
+
+function handleHarvestClientChange() {
+  // Rétrocompatibilité
+  onHarvestClientsChanged();
+}
+
+function handleHarvestParcelChange() {
+  // Rétrocompatibilité
+  updateHarvestParcelsSummary();
+}
+
+function handleHarvestFormSubmit(e) {
+  if (e) e.preventDefault();
+
+  const editId = document.getElementById("harvest-edit-id")?.value;
+  const checkedParcelCbs = Array.from(document.querySelectorAll("#harvest-parcel-checkbox-list .harvest-parcel-cb:checked"));
+
+  if (!editId && checkedParcelCbs.length === 0) {
+    showToast("Veuillez sélectionner au moins une parcelle à vendanger.", "warning");
+    return;
+  }
+
+  // Étape 1 : Effeuillage
+  const leafStatus = document.getElementById("input-harvest-leaf")?.value || "a_effeuiller";
+  const leafServiceName = leafStatus !== "non_necessaire"
+    ? (document.getElementById("input-harvest-leaf-service")?.value || "Effeuillage manuel face levante")
+    : "";
+  const leafPrice = leafStatus !== "non_necessaire"
+    ? (parseFloat(document.getElementById("input-harvest-leaf-price")?.value) || 550)
+    : 0;
+  const leafBillToDashboard = document.getElementById("input-harvest-leaf-bill-dashboard")?.checked ?? true;
+
+  // Étape 2 : Coupe / Récolte
+  const cutStatus = document.getElementById("input-harvest-cut")?.value || "a_couper";
+  const harvestServiceName = document.getElementById("input-harvest-service")?.value || "Coupe vendange (au kilo)";
+  const yieldPricePerKg = parseFloat(document.getElementById("input-harvest-price-kg")?.value) || 0.35;
+  const yieldKg = parseFloat(document.getElementById("input-harvest-yield-kg")?.value) || 0;
+  const boxesCount = parseInt(document.getElementById("input-harvest-yield-boxes")?.value, 10) || 0;
+  const billToDashboard = document.getElementById("input-harvest-bill-dashboard")?.checked ?? true;
+  const totalAmountHT = Math.round(yieldKg * yieldPricePerKg * 100) / 100;
+
+  // Étape 3 : Débardage
+  const haulStatus = document.getElementById("input-harvest-haul")?.value || "a_debarder";
+  const haulServiceName = haulStatus !== "non_necessaire"
+    ? (document.getElementById("input-harvest-haul-service")?.value || "Débardage vendange (tracteur / porteur)")
+    : "";
+  const haulPrice = haulStatus !== "non_necessaire"
+    ? (parseFloat(document.getElementById("input-harvest-haul-price")?.value) || 0.15)
+    : 0;
+  const haulBillToDashboard = document.getElementById("input-harvest-haul-bill-dashboard")?.checked ?? true;
+
+  const worker = document.getElementById("input-harvest-worker")?.value || "";
+  const harvestDate = document.getElementById("input-harvest-date")?.value || "";
+  const notes = document.getElementById("input-harvest-notes")?.value || "";
+
+  if (editId) {
+    const idx = (harvestWorks || []).findIndex(h => h.id === editId);
+    if (idx !== -1) {
+      const firstCb = checkedParcelCbs[0];
+      const cId = firstCb ? firstCb.dataset.clientId : harvestWorks[idx].clientId;
+      const clientName = firstCb ? firstCb.dataset.clientName : harvestWorks[idx].clientName;
+      const pId = firstCb ? firstCb.dataset.parcelId : harvestWorks[idx].parcelId;
+      const pName = firstCb ? (firstCb.dataset.parcelName || firstCb.value) : harvestWorks[idx].parcelName;
+      const surface = firstCb ? (parseFloat(firstCb.dataset.surface) || 0) : harvestWorks[idx].surface;
+      const grapeVariety = firstCb ? (firstCb.dataset.grape || "") : harvestWorks[idx].grapeVariety;
+
+      harvestWorks[idx] = {
+        ...harvestWorks[idx],
+        clientId: cId,
+        clientName,
+        parcelId: pId,
+        parcelName: pName,
+        surface,
+        grapeVariety,
+        leafStatus,
+        leafServiceName,
+        leafPrice,
+        cutStatus,
+        yieldKg: cutStatus === "coupee" ? yieldKg : 0,
+        boxesCount: cutStatus === "coupee" ? boxesCount : 0,
+        yieldPricePerKg: yieldPricePerKg || 0.35,
+        harvestServiceName: harvestServiceName || "Coupe vendange (au kilo)",
+        totalAmountHT: cutStatus === "coupee" ? totalAmountHT : 0,
+        haulStatus,
+        haulServiceName,
+        haulPrice,
+        worker,
+        harvestDate,
+        notes
+      };
+
+      const targetItem = harvestWorks[idx];
+      if (leafStatus === "effeuillee" && leafBillToDashboard) {
+        billLeafHarvestToDashboard(targetItem.id, true);
+      }
+      if (cutStatus === "coupee" && billToDashboard && yieldKg > 0) {
+        syncHarvestToIntervention(targetItem, harvestServiceName, yieldKg, boxesCount, yieldPricePerKg);
+      }
+      if (haulStatus === "debardee" && haulBillToDashboard) {
+        billHaulHarvestToDashboard(targetItem.id, true);
+      }
+
+      showToast(`Suivi vendange mis à jour pour « ${pName} » !`, "success");
+    }
+  } else {
+    // Mode création : on ajoute chaque parcelle cochée
+    let addedCount = 0;
+    checkedParcelCbs.forEach(cb => {
+      const cId = cb.dataset.clientId;
+      const clientName = cb.dataset.clientName || "Domaine inconnu";
+      const pId = cb.dataset.parcelId || "";
+      const pName = cb.dataset.parcelName || cb.value;
+      const surface = parseFloat(cb.dataset.surface || 0);
+      const grapeVariety = cb.dataset.grape || "";
+
+      const newHarvest = {
+        id: generateUniqueId("HARV"),
+        clientId: cId,
+        clientName,
+        parcelId: pId,
+        parcelName: pName,
+        surface,
+        grapeVariety,
+        leafStatus,
+        leafServiceName,
+        leafPrice,
+        cutStatus,
+        yieldKg: cutStatus === "coupee" ? yieldKg : 0,
+        boxesCount: cutStatus === "coupee" ? boxesCount : 0,
+        yieldPricePerKg: yieldPricePerKg || 0.35,
+        harvestServiceName: harvestServiceName || "Coupe vendange (au kilo)",
+        totalAmountHT: cutStatus === "coupee" ? totalAmountHT : 0,
+        haulStatus,
+        haulServiceName,
+        haulPrice,
+        worker,
+        harvestDate,
+        notes,
+        createdAt: new Date().toISOString()
+      };
+
+      harvestWorks.unshift(newHarvest);
+      addedCount++;
+
+      // Automatisations facturation
+      if (leafStatus === "effeuillee" && leafBillToDashboard) {
+        billLeafHarvestToDashboard(newHarvest.id, true);
+      }
+      if (cutStatus === "coupee" && billToDashboard && yieldKg > 0) {
+        syncHarvestToIntervention(newHarvest, harvestServiceName, yieldKg, boxesCount, yieldPricePerKg);
+      }
+      if (haulStatus === "debardee" && haulBillToDashboard) {
+        billHaulHarvestToDashboard(newHarvest.id, true);
+      }
+    });
+
+    showToast(`${addedCount} parcelle${addedCount > 1 ? "s" : ""} ajoutée${addedCount > 1 ? "s" : ""} au suivi des vendanges !`, "success");
+  }
+
+  saveHarvestWorks();
+  closeHarvestModal();
+  renderVendangesView();
+  renderVendangesTable();
+  if (typeof renderAll === "function") renderAll();
+}
+
+function deleteHarvestWork(id) {
+  const item = (harvestWorks || []).find(h => h.id === id);
+  if (!item) return;
+
+  if (!confirm(`Retirer la parcelle « ${item.parcelName} » (${item.clientName}) du suivi des vendanges ?`)) {
+    return;
+  }
+
+  harvestWorks = (harvestWorks || []).filter(h => h.id !== id);
+  saveHarvestWorks();
+  renderVendangesView();
+  showToast(`Parcelle « ${item.parcelName} » retirée du suivi des vendanges.`, "info");
+}
+
+// ==================== HELPER FONCTIONS FACTURATION & PRESTATIONS VENDANGES ====================
+
+// Remplissage dynamique des prestations d'effeuillage (Étape 1 : Uniquement Effeuillage)
+function populateHarvestLeafServicesSelect(selectElem, currentSelectedName) {
+  if (!selectElem) return;
+
+  const leafServices = (services || []).filter(s =>
+    s.name && s.name.toLowerCase().includes("effeuillage")
+  );
+
+  if (!leafServices.some(s => s.name.toLowerCase().includes("effeuillage"))) {
+    leafServices.unshift({
+      id: "srv-07",
+      name: "Effeuillage manuel face levante",
+      category: "Palissage & Écimage",
+      rateType: "surface",
+      price: 550
+    });
+  }
+
+  selectElem.innerHTML = "";
+  leafServices.forEach(s => {
+    const opt = document.createElement("option");
+    opt.value = s.name;
+    const rateLabel = s.rateType === "hourly" ? "€/h" : (s.rateType === "surface" ? "€/ha" : (s.rateType === "kilo" ? "€/kg" : "€"));
+    opt.textContent = `${s.name} (${s.price} ${rateLabel})`;
+    opt.dataset.price = s.price;
+    opt.dataset.rateType = s.rateType || "surface";
+    if (currentSelectedName && (s.name === currentSelectedName || s.name.toLowerCase().includes(currentSelectedName.toLowerCase()))) {
+      opt.selected = true;
+    }
+    selectElem.appendChild(opt);
+  });
+
+  if (!selectElem.value && leafServices.length > 0) {
+    const defaultSrv = leafServices.find(s => s.name.toLowerCase().includes("effeuillage")) || leafServices[0];
+    selectElem.value = defaultSrv.name;
+  }
+}
+
+// Gestion de l'affichage du bloc prestation d'effeuillage dans Modal 11
+function onHarvestModalLeafChange() {
+  const leafSelect = document.getElementById("input-harvest-leaf");
+  const leafBox = document.getElementById("harvest-leaf-box");
+  const leafSrvSelect = document.getElementById("input-harvest-leaf-service");
+  const leafBoxTag = document.getElementById("harvest-leaf-box-tag");
+  const leafBillWrap = document.getElementById("harvest-leaf-bill-wrap");
+  if (!leafSelect || !leafBox) return;
+
+  const isNeeded = leafSelect.value !== "non_necessaire";
+  leafBox.style.display = isNeeded ? "block" : "none";
+
+  if (leafBoxTag) {
+    leafBoxTag.textContent = leafSelect.value === "effeuillee" ? "Parcelle effeuillée" : "À effeuiller";
+    leafBoxTag.style.background = leafSelect.value === "effeuillee" ? "rgba(82, 183, 136, 0.2)" : "rgba(100, 181, 246, 0.2)";
+    leafBoxTag.style.color = leafSelect.value === "effeuillee" ? "#52b788" : "#64b5f6";
+  }
+
+  if (leafBillWrap) {
+    leafBillWrap.style.display = leafSelect.value === "effeuillee" ? "block" : "none";
+  }
+
+  if (isNeeded) {
+    const isLeafService = (name) => name && name.toLowerCase().includes("effeuillage");
+    if (leafSrvSelect && (!leafSrvSelect.value || !isLeafService(leafSrvSelect.value) || !leafSrvSelect.children || leafSrvSelect.children.length === 0)) {
+      populateHarvestLeafServicesSelect(leafSrvSelect, "Effeuillage manuel face levante");
+    }
+    onHarvestModalLeafServiceChange();
+  }
+}
+
+// Mise à jour du prix selon la prestation d'effeuillage choisie
+function onHarvestModalLeafServiceChange() {
+  const leafSrvSelect = document.getElementById("input-harvest-leaf-service");
+  const leafPriceInput = document.getElementById("input-harvest-leaf-price");
+  const leafHint = document.getElementById("harvest-leaf-price-hint");
+  if (!leafSrvSelect) return;
+
+  const selectedOpt = leafSrvSelect.selectedOptions[0];
+  const price = selectedOpt ? parseFloat(selectedOpt.dataset.price) : 550;
+  const rateType = selectedOpt ? (selectedOpt.dataset.rateType || "surface") : "surface";
+  const rateLabel = rateType === "hourly" ? "€ / h" : (rateType === "surface" ? "€ / ha" : (rateType === "kilo" ? "€ / kg" : "€"));
+
+  if (leafPriceInput && (!leafPriceInput.value || leafPriceInput.dataset.autoFilled === "true")) {
+    leafPriceInput.value = price;
+    leafPriceInput.dataset.autoFilled = "true";
+  }
+
+  if (leafPriceInput && !leafPriceInput._hasInputListener) {
+    leafPriceInput._hasInputListener = true;
+    leafPriceInput.addEventListener("input", () => {
+      leafPriceInput.dataset.autoFilled = "false";
+    });
+  }
+
+  if (leafHint) {
+    leafHint.innerHTML = `Tarif préenregistré dans <strong>Prestations Travaux</strong> : <strong style="color: #64b5f6;">${price} ${rateLabel}</strong>`;
+  }
+}
+
+// Remplissage dynamique des prestations de débardage (Étape 3 : Uniquement Débardage)
+function populateHarvestHaulServicesSelect(selectElem, currentSelectedName) {
+  if (!selectElem) return;
+
+  const haulServices = (services || []).filter(s => {
+    if (!s || !s.name) return false;
+    const nl = s.name.toLowerCase();
+    if (nl.includes("coupe") || nl.includes("récolte") || nl.includes("recolte") || nl.includes("cueillette")) {
+      return false;
+    }
+    return nl.includes("débardage") || nl.includes("debardage") || nl.includes("benne") || nl.includes("transport");
+  });
+
+  if (!haulServices.some(s => s.name.toLowerCase().includes("débardage") || s.name.toLowerCase().includes("debardage"))) {
+    haulServices.unshift({
+      id: "srv-debardage-vendange",
+      name: "Débardage vendange (tracteur / porteur)",
+      category: "Vendanges & Récolte",
+      rateType: "kilo",
+      price: 0.15,
+      description: "Évacuation des caisses et sorties de rang au tracteur interligne ou chenillard (0,15 €/kg)."
+    });
+  }
+
+  selectElem.innerHTML = "";
+  haulServices.forEach(s => {
+    const opt = document.createElement("option");
+    opt.value = s.name;
+    const rateLabel = s.rateType === "hourly" ? "€/h" : (s.rateType === "surface" ? "€/ha" : (s.rateType === "kilo" ? "€/kg" : "€"));
+    opt.textContent = `${s.name} (${s.price} ${rateLabel})`;
+    opt.dataset.price = s.price;
+    opt.dataset.rateType = s.rateType || "kilo";
+    if (currentSelectedName && (s.name === currentSelectedName || s.name.toLowerCase().includes(currentSelectedName.toLowerCase()))) {
+      opt.selected = true;
+    }
+    selectElem.appendChild(opt);
+  });
+
+  if (!selectElem.value && haulServices.length > 0) {
+    const defaultSrv = haulServices.find(s => s.name.toLowerCase().includes("débardage") || s.name.toLowerCase().includes("debardage")) || haulServices[0];
+    selectElem.value = defaultSrv.name;
+  }
+}
+
+// Gestion de l'affichage du bloc prestation de débardage dans Modal 11
+function onHarvestModalHaulChange() {
+  const haulSelect = document.getElementById("input-harvest-haul");
+  const haulBox = document.getElementById("harvest-haul-box");
+  const haulSrvSelect = document.getElementById("input-harvest-haul-service");
+  const haulBoxTag = document.getElementById("harvest-haul-box-tag");
+  const haulBillWrap = document.getElementById("harvest-haul-bill-wrap");
+  if (!haulSelect || !haulBox) return;
+
+  const isNeeded = haulSelect.value !== "non_necessaire";
+  haulBox.style.display = isNeeded ? "block" : "none";
+
+  if (haulBoxTag) {
+    haulBoxTag.textContent = haulSelect.value === "debardee" ? "Parcelle débardée" : "À débarder";
+    haulBoxTag.style.background = haulSelect.value === "debardee" ? "rgba(82, 183, 136, 0.2)" : "rgba(76, 201, 240, 0.2)";
+    haulBoxTag.style.color = haulSelect.value === "debardee" ? "#52b788" : "#4cc9f0";
+  }
+
+  if (haulBillWrap) {
+    haulBillWrap.style.display = haulSelect.value === "debardee" ? "block" : "none";
+  }
+
+  if (isNeeded) {
+    const isHaulService = (name) => name && (name.toLowerCase().includes("débard") || name.toLowerCase().includes("debard") || name.toLowerCase().includes("benne") || name.toLowerCase().includes("transport"));
+    if (haulSrvSelect && (!haulSrvSelect.value || !isHaulService(haulSrvSelect.value) || !haulSrvSelect.children || haulSrvSelect.children.length === 0)) {
+      populateHarvestHaulServicesSelect(haulSrvSelect, "Débardage vendange (tracteur / porteur)");
+    }
+    onHarvestModalHaulServiceChange();
+  }
+}
+
+// Mise à jour du prix selon la prestation de débardage choisie
+function onHarvestModalHaulServiceChange() {
+  const haulSrvSelect = document.getElementById("input-harvest-haul-service");
+  const haulPriceInput = document.getElementById("input-harvest-haul-price");
+  const haulHint = document.getElementById("harvest-haul-price-hint");
+  if (!haulSrvSelect) return;
+
+  const selectedOpt = haulSrvSelect.selectedOptions[0];
+  const price = selectedOpt ? parseFloat(selectedOpt.dataset.price) : 0.15;
+  const rateType = selectedOpt ? (selectedOpt.dataset.rateType || "kilo") : "kilo";
+  const rateLabel = rateType === "hourly" ? "€ / h" : (rateType === "surface" ? "€ / ha" : (rateType === "kilo" ? "€ / kg" : "€"));
+
+  if (haulPriceInput && (!haulPriceInput.value || haulPriceInput.dataset.autoFilled === "true")) {
+    haulPriceInput.value = price;
+    haulPriceInput.dataset.autoFilled = "true";
+  }
+
+  if (haulPriceInput && !haulPriceInput._hasInputListener) {
+    haulPriceInput._hasInputListener = true;
+    haulPriceInput.addEventListener("input", () => {
+      haulPriceInput.dataset.autoFilled = "false";
+    });
+  }
+
+  if (haulHint) {
+    haulHint.innerHTML = `Tarif préenregistré dans <strong>Prestations Travaux</strong> : <strong style="color: #4cc9f0;">${price} ${rateLabel}</strong>`;
+  }
+}
+
+// Remplissage dynamique des prestations de vendange / récolte au kilo (Étape 2 : Uniquement Coupe Vendange / Récolte)
+function populateHarvestServicesSelect(selectElem, currentSelectedName) {
+  if (!selectElem) return;
+
+  const harvestServices = (services || []).filter(s => {
+    if (!s || !s.name) return false;
+    const nl = s.name.toLowerCase();
+    if (nl.includes("débardage") || nl.includes("debardage") || nl.includes("benne") || nl.includes("transport")) {
+      return false;
+    }
+    return nl.includes("coupe") || nl.includes("récolte") || nl.includes("recolte") || nl.includes("cueillette") ||
+      (nl.includes("vendange") && !nl.includes("débard") && !nl.includes("debard"));
+  });
+
+  if (!harvestServices.some(s => s.name.toLowerCase().includes("coupe"))) {
+    harvestServices.unshift({
+      id: "srv-coupe-vendange-kg",
+      name: "Coupe vendange (au kilo)",
+      category: "Vendanges & Récolte",
+      rateType: "kilo",
+      price: 0.35
+    });
+  }
+
+  selectElem.innerHTML = "";
+  harvestServices.forEach(s => {
+    const opt = document.createElement("option");
+    opt.value = s.name;
+    const rateLabel = s.rateType === "kilo" ? "€/kg" : (s.rateType === "hourly" ? "€/h" : "€");
+    opt.textContent = `${s.name} (${s.price} ${rateLabel})`;
+    opt.dataset.price = s.price;
+    opt.dataset.rateType = s.rateType || "kilo";
+    if (currentSelectedName && (s.name === currentSelectedName || s.name.toLowerCase().includes(currentSelectedName.toLowerCase()))) {
+      opt.selected = true;
+    }
+    selectElem.appendChild(opt);
+  });
+
+  if (!selectElem.value && harvestServices.length > 0) {
+    const defaultCut = harvestServices.find(s => s.name.toLowerCase().includes("coupe")) || harvestServices[0];
+    selectElem.value = defaultCut.name;
+  }
+}
+
+// Gestion de l'affichage du bloc coupe / récolte dans Modal 11
+function onHarvestModalCutChange() {
+  const cutSelect = document.getElementById("input-harvest-cut");
+  const srvSelect = document.getElementById("input-harvest-service");
+  const cutBoxTag = document.getElementById("harvest-cut-box-tag");
+  const pendingHint = document.getElementById("harvest-cut-pending-hint");
+  const yieldBox = document.getElementById("harvest-yield-box");
+  if (!cutSelect) return;
+
+  const isCut = cutSelect.value === "coupee";
+
+  if (cutBoxTag) {
+    cutBoxTag.textContent = isCut ? "Parcelle coupée (récoltée)" : "À couper";
+    cutBoxTag.style.background = isCut ? "rgba(82, 183, 136, 0.2)" : "rgba(255, 183, 3, 0.2)";
+    cutBoxTag.style.color = isCut ? "#52b788" : "#ffb703";
+  }
+
+  if (pendingHint) {
+    pendingHint.style.display = isCut ? "none" : "block";
+  }
+  if (yieldBox) {
+    yieldBox.style.display = isCut ? "block" : "none";
+  }
+
+  const isCutService = (name) => name && !name.toLowerCase().includes("débard") && !name.toLowerCase().includes("debard") && (name.toLowerCase().includes("coupe") || name.toLowerCase().includes("récolte") || name.toLowerCase().includes("recolte") || name.toLowerCase().includes("vendange"));
+  if (srvSelect && (!srvSelect.value || !isCutService(srvSelect.value) || !srvSelect.children || srvSelect.children.length === 0)) {
+    populateHarvestServicesSelect(srvSelect, "Coupe vendange (au kilo)");
+  }
+  onHarvestModalServiceChange();
+}
+
+// Changement de prestation dans la pesée rapide
+function onYieldServiceChange() {
+  const selectElem = document.getElementById("quick-input-yield-service");
+  const priceInput = document.getElementById("quick-input-yield-price");
+  if (!selectElem || !priceInput) return;
+
+  const selectedOpt = selectElem.options[selectElem.selectedIndex];
+  if (selectedOpt && selectedOpt.dataset.price) {
+    priceInput.value = selectedOpt.dataset.price;
+  }
+  updateYieldModalLiveCalculation();
+}
+
+// Calcul en direct dans la modale de pesée rapide
+function updateYieldModalLiveCalculation() {
+  const kg = parseFloat(document.getElementById("quick-input-yield-kg")?.value) || 0;
+  const price = parseFloat(document.getElementById("quick-input-yield-price")?.value) || 0;
+  const totalHT = Math.round(kg * price * 100) / 100;
+  const totalTTC = Math.round(totalHT * 1.20 * 100) / 100;
+
+  const formulaElem = document.getElementById("quick-yield-calc-formula");
+  const htElem = document.getElementById("quick-yield-calc-total-ht");
+  const ttcElem = document.getElementById("quick-yield-calc-total-ttc");
+
+  if (formulaElem) {
+    formulaElem.textContent = `${kg.toLocaleString("fr-FR")} kg × ${price.toFixed(2)} €/kg`;
+  }
+  if (htElem) {
+    htElem.textContent = `${formatCurrency(totalHT)} HT`;
+  }
+  if (ttcElem) {
+    ttcElem.textContent = `${formatCurrency(totalTTC)} TTC`;
+  }
+}
+
+// Changement de prestation dans Modal 11
+function onHarvestModalServiceChange() {
+  const selectElem = document.getElementById("input-harvest-service");
+  const priceInput = document.getElementById("input-harvest-price-kg");
+  const cutHint = document.getElementById("harvest-cut-price-hint");
+  if (!selectElem) return;
+
+  const selectedOpt = selectElem.options[selectElem.selectedIndex];
+  const price = selectedOpt && selectedOpt.dataset.price ? parseFloat(selectedOpt.dataset.price) : 0.35;
+  const rateType = selectedOpt ? (selectedOpt.dataset.rateType || "kilo") : "kilo";
+  const rateLabel = rateType === "kilo" ? "€ / kg" : (rateType === "hourly" ? "€ / h" : "€");
+
+  if (priceInput && (!priceInput.value || priceInput.dataset.autoFilled === "true")) {
+    priceInput.value = price;
+    priceInput.dataset.autoFilled = "true";
+  }
+
+  if (priceInput && !priceInput._hasInputListener) {
+    priceInput._hasInputListener = true;
+    priceInput.addEventListener("input", () => {
+      priceInput.dataset.autoFilled = "false";
+    });
+  }
+
+  if (cutHint) {
+    cutHint.innerHTML = `Tarif préenregistré dans <strong>Prestations Travaux</strong> : <strong style="color: #ffb703;">${price} ${rateLabel}</strong>`;
+  }
+
+  updateHarvestModalLiveCalculation();
+}
+
+// Calcul en direct dans Modal 11
+function updateHarvestModalLiveCalculation() {
+  const kg = parseFloat(document.getElementById("input-harvest-yield-kg")?.value) || 0;
+  const price = parseFloat(document.getElementById("input-harvest-price-kg")?.value) || 0;
+  const totalHT = Math.round(kg * price * 100) / 100;
+  const calcElem = document.getElementById("harvest-yield-calc");
+
+  if (calcElem) {
+    if (kg > 0) {
+      calcElem.style.display = "block";
+      calcElem.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span>⚖️ ${kg.toLocaleString("fr-FR")} kg × ${price.toFixed(2)} €/kg</span>
+          <strong style="color: #52b788; font-size: 0.95rem;">${formatCurrency(totalHT)} HT</strong>
+        </div>
+      `;
+    } else {
+      calcElem.style.display = "none";
+    }
+  }
+}
+
+// Synchronisation directe d'une vendange vers le Journal des interventions (Tableau de bord)
+function syncHarvestToIntervention(item, serviceName, kg, boxes, pricePerKg) {
+  if (!item || !kg || kg <= 0) return null;
+
+  const totalHT = Math.round(kg * pricePerKg * 100) / 100;
+  const totalTTC = Math.round(totalHT * 1.20 * 100) / 100;
+  const invDate = item.harvestDate ? `${item.harvestDate}T08:00` : new Date().toISOString().slice(0, 16);
+  const worker = item.worker || "Équipe Vendanges";
+  const taskName = serviceName || item.harvestServiceName || "Coupe vendange (au kilo)";
+
+  let existingInv = null;
+  if (item.interventionId) {
+    existingInv = (interventions || []).find(inv => inv.id === item.interventionId);
+  }
+
+  if (existingInv) {
+    existingInv.datetime = invDate;
+    existingInv.task = taskName;
+    existingInv.rateType = "kilo";
+    existingInv.quantity = kg;
+    existingInv.unit = "kg";
+    existingInv.unitPrice = pricePerKg;
+    existingInv.total = totalHT;
+    existingInv.totalTTC = totalTTC;
+    existingInv.worker = worker;
+    existingInv.notes = `Pesée vendange: ${kg.toLocaleString("fr-FR")} kg (${boxes || 0} caisses) à ${pricePerKg.toFixed(2)} €/kg. Cépage: ${item.grapeVariety || "Non précisé"}`;
+    saveInterventions(existingInv);
+    syncInterventionToSupabase(existingInv);
+    return existingInv;
+  } else {
+    const year = item.harvestDate ? new Date(item.harvestDate).getFullYear() : new Date().getFullYear();
+    const newInvId = generateUniqueInterventionId(year);
+    const newInv = {
+      id: newInvId,
+      datetime: invDate,
+      worker: worker,
+      clientId: item.clientId,
+      client: item.clientName,
+      parcel: item.parcelName,
+      parcelId: item.parcelId,
+      task: taskName,
+      rateType: "kilo",
+      quantity: kg,
+      unit: "kg",
+      unitPrice: pricePerKg,
+      total: totalHT,
+      tvaRate: 20,
+      totalTTC: totalTTC,
+      status: "À facturer",
+      notes: `Pesée vendange: ${kg.toLocaleString("fr-FR")} kg (${boxes || 0} caisses) à ${pricePerKg.toFixed(2)} €/kg. Cépage: ${item.grapeVariety || "Non précisé"}`,
+      isNewlyCreated: true
+    };
+    interventions.unshift(newInv);
+    item.interventionId = newInvId;
+    saveInterventions(newInv);
+    syncInterventionToSupabase(newInv);
+    return newInv;
+  }
+}
+
+// Facturation en 1 clic depuis le tableau des vendanges
+function billHarvestToDashboard(harvestId) {
+  const item = (harvestWorks || []).find(h => h.id === harvestId);
+  if (!item) return;
+
+  const kg = parseFloat(item.yieldKg) || 0;
+  if (kg <= 0) {
+    openYieldModal(harvestId);
+    return;
+  }
+
+  let pricePerKg = parseFloat(item.yieldPricePerKg);
+  if (!pricePerKg && pricePerKg !== 0) {
+    pricePerKg = 0.35;
+  }
+  const serviceName = item.harvestServiceName || "Coupe vendange (au kilo)";
+
+  syncHarvestToIntervention(item, serviceName, kg, item.boxesCount || 0, pricePerKg);
+  item.yieldPricePerKg = pricePerKg;
+  item.harvestServiceName = serviceName;
+  item.totalAmountHT = Math.round(kg * pricePerKg * 100) / 100;
+  saveHarvestWorks();
+  renderAll();
+
+  showToast(`🍇 Chantier vendange « ${item.parcelName} » ajouté au Tableau de Bord (${formatCurrency(item.totalAmountHT)}) !`, "success");
+}
+
+// Facturation en 1 clic de l'effeuillage depuis le tableau des vendanges
+function billLeafHarvestToDashboard(harvestId, silent = false) {
+  const item = (harvestWorks || []).find(h => h.id === harvestId);
+  if (!item) return;
+
+  const matchedService = (services || []).find(s => s.name === item.leafServiceName) ||
+    (services || []).find(s => s.name && s.name.toLowerCase().includes("effeuillage")) || {
+    name: "Effeuillage manuel face levante",
+    price: 550,
+    rateType: "surface"
+  };
+
+  const serviceName = item.leafServiceName || matchedService.name;
+  const invDate = item.harvestDate ? `${item.harvestDate}T08:00` : new Date().toISOString().slice(0, 16);
+  const worker = item.worker || "Équipe Effeuillage";
+  const surface = parseFloat(item.surface) || 1;
+  const rateType = matchedService.rateType || "surface";
+
+  let quantity = 1;
+  let unit = "ha";
+  let unitPrice = (item.leafPrice && item.leafPrice !== 37) ? item.leafPrice : (matchedService.price || 550);
+  let totalHT = unitPrice;
+
+  if (rateType === "surface") {
+    quantity = surface;
+    unit = "ha";
+    totalHT = Math.round(surface * unitPrice * 100) / 100;
+  } else if (rateType === "hourly") {
+    quantity = Math.max(1, Math.round(surface * 4 * 10) / 10);
+    unit = "h";
+    totalHT = Math.round(quantity * unitPrice * 100) / 100;
+  } else if (rateType === "kilo") {
+    quantity = parseFloat(item.yieldKg) || (surface > 0 ? Math.round(surface * 6000) : 1);
+    unit = "kg";
+    totalHT = Math.round(quantity * unitPrice * 100) / 100;
+  } else {
+    quantity = 1;
+    unit = "forfait";
+    totalHT = unitPrice;
+  }
+  const totalTTC = Math.round(totalHT * 1.20 * 100) / 100;
+
+  const existingInv = item.leafInterventionId
+    ? (interventions || []).find(i => i.id === item.leafInterventionId)
+    : null;
+
+  if (existingInv) {
+    existingInv.task = serviceName;
+    existingInv.unitPrice = unitPrice;
+    existingInv.quantity = quantity;
+    existingInv.rateType = rateType;
+    existingInv.unit = unit;
+    existingInv.total = totalHT;
+    existingInv.totalTTC = totalTTC;
+    saveInterventions();
+    syncInterventionToSupabase(existingInv);
+    renderAll();
+    if (!silent) {
+      showToast(`🍃 Effeuillage « ${item.parcelName} » actualisé dans le Tableau de Bord (${formatCurrency(totalHT)}) !`, "success");
+    }
+    return existingInv;
+  }
+
+  const year = item.harvestDate ? new Date(item.harvestDate).getFullYear() : new Date().getFullYear();
+  const newInvId = generateUniqueInterventionId(year);
+  const newInv = {
+    id: newInvId,
+    datetime: invDate,
+    worker: worker,
+    clientId: item.clientId,
+    client: item.clientName,
+    parcel: item.parcelName,
+    parcelId: item.parcelId,
+    task: serviceName,
+    rateType: rateType,
+    quantity: quantity,
+    unit: unit,
+    unitPrice: unitPrice,
+    total: totalHT,
+    tvaRate: 20,
+    totalTTC: totalTTC,
+    status: "À facturer",
+    notes: `Chantier d'effeuillage avant vendange réalisé sur ${item.parcelName} (${formatSurface(item.surface)} ha, cépage: ${item.grapeVariety || "non précisé"}).`,
+    isNewlyCreated: true
+  };
+
+  interventions.unshift(newInv);
+  item.leafInterventionId = newInvId;
+  saveInterventions(newInv);
+  syncInterventionToSupabase(newInv);
+  saveHarvestWorks();
+  renderAll();
+
+  if (!silent) {
+    showToast(`🍃 Chantier effeuillage « ${item.parcelName} » ajouté au Tableau de Bord (${formatCurrency(totalHT)}) !`, "success");
+  }
+  return newInv;
+}
+
+// Facturation en 1 clic du débardage depuis le tableau des vendanges
+function billHaulHarvestToDashboard(harvestId, silent = false) {
+  const item = (harvestWorks || []).find(h => h.id === harvestId);
+  if (!item) return;
+
+  const matchedService = (services || []).find(s => s.name === item.haulServiceName) ||
+    (services || []).find(s => s.name && (s.name.toLowerCase().includes("débardage") || s.name.toLowerCase().includes("debardage"))) || {
+    name: "Débardage vendange (tracteur / porteur)",
+    price: 0.15,
+    rateType: "kilo"
+  };
+
+  const serviceName = item.haulServiceName || matchedService.name;
+  const invDate = item.harvestDate ? `${item.harvestDate}T14:00` : new Date().toISOString().slice(0, 16);
+  const worker = item.worker || "Équipe Débardage & Tractoriste";
+  const surface = parseFloat(item.surface) || 1;
+  const rateType = matchedService.rateType || "kilo";
+
+  let quantity = 1;
+  let unit = "kg";
+  let unitPrice = (item.haulPrice && item.haulPrice !== 45) ? item.haulPrice : (matchedService.price || 0.15);
+  let totalHT = unitPrice;
+
+  if (rateType === "kilo") {
+    const yieldKg = parseFloat(item.yieldKg) || 0;
+    if (yieldKg > 0) {
+      quantity = yieldKg;
+    } else if (surface > 0) {
+      quantity = Math.round(surface * 6000); // estimation vendange standard
+    } else {
+      quantity = 1;
+    }
+    unit = "kg";
+    totalHT = Math.round(quantity * unitPrice * 100) / 100;
+  } else if (rateType === "surface") {
+    quantity = surface;
+    unit = "ha";
+    totalHT = Math.round(surface * unitPrice * 100) / 100;
+  } else if (rateType === "hourly") {
+    // Débardage au tracteur/porteur : environ 2.5 heures par hectare
+    quantity = Math.max(1, Math.round(surface * 2.5 * 10) / 10);
+    unit = "h";
+    totalHT = Math.round(quantity * unitPrice * 100) / 100;
+  } else {
+    quantity = 1;
+    unit = "forfait";
+    totalHT = unitPrice;
+  }
+  const totalTTC = Math.round(totalHT * 1.20 * 100) / 100;
+
+  const existingInv = item.haulInterventionId
+    ? (interventions || []).find(i => i.id === item.haulInterventionId)
+    : null;
+
+  if (existingInv) {
+    existingInv.task = serviceName;
+    existingInv.unitPrice = unitPrice;
+    existingInv.quantity = quantity;
+    existingInv.rateType = rateType;
+    existingInv.unit = unit;
+    existingInv.total = totalHT;
+    existingInv.totalTTC = totalTTC;
+    saveInterventions();
+    syncInterventionToSupabase(existingInv);
+    renderAll();
+    if (!silent) {
+      showToast(`🚜 Débardage « ${item.parcelName} » actualisé dans le Tableau de Bord (${formatCurrency(totalHT)}) !`, "success");
+    }
+    return existingInv;
+  }
+
+  const year = item.harvestDate ? new Date(item.harvestDate).getFullYear() : new Date().getFullYear();
+  const newInvId = generateUniqueInterventionId(year);
+  const newInv = {
+    id: newInvId,
+    datetime: invDate,
+    worker: worker,
+    clientId: item.clientId,
+    client: item.clientName,
+    parcel: item.parcelName,
+    parcelId: item.parcelId,
+    task: serviceName,
+    rateType: rateType,
+    quantity: quantity,
+    unit: unit,
+    unitPrice: unitPrice,
+    total: totalHT,
+    tvaRate: 20,
+    totalTTC: totalTTC,
+    status: "À facturer",
+    notes: `Débardage et sortie de rang réalisés sur ${item.parcelName} (${formatSurface(item.surface)} ha, cépage: ${item.grapeVariety || "non précisé"}).`,
+    isNewlyCreated: true
+  };
+
+  interventions.unshift(newInv);
+  item.haulInterventionId = newInvId;
+  saveInterventions(newInv);
+  syncInterventionToSupabase(newInv);
+  saveHarvestWorks();
+  renderAll();
+
+  if (!silent) {
+    showToast(`🚜 Chantier débardage « ${item.parcelName} » ajouté au Tableau de Bord (${formatCurrency(totalHT)}) !`, "success");
+  }
+  return newInv;
+}
+
+// Navigation fluide vers une intervention dans le Tableau de Bord
+function navigateToIntervention(invId) {
+  if (typeof switchTab === "function") {
+    switchTab("overview");
+  }
+  const searchInput = document.getElementById("search-input");
+  if (searchInput) {
+    searchInput.value = invId;
+    if (typeof filterInterventions === "function") {
+      filterInterventions();
+    }
+  }
+  setTimeout(() => {
+    const row = document.querySelector(`tr[data-id="${invId}"]`);
+    if (row) {
+      row.scrollIntoView({ behavior: "smooth", block: "center" });
+      row.style.transition = "background 0.5s ease";
+      row.style.background = "rgba(82, 183, 136, 0.25)";
+      setTimeout(() => { row.style.background = ""; }, 2000);
+    } else {
+      const tableSec = document.getElementById("interventions-table-section") || document.getElementById("interventions-table");
+      if (tableSec) tableSec.scrollIntoView({ behavior: "smooth" });
+    }
+  }, 200);
+}
+
+// Modal Pesée Rapide (Kilos / Caisses & Tarification)
+function openYieldModal(id) {
+  const item = (harvestWorks || []).find(h => h.id === id);
+  if (!item) return;
+
+  const modal = document.getElementById("harvest-yield-modal");
+  const entryIdInput = document.getElementById("yield-modal-entry-id");
+  const summaryBox = document.getElementById("yield-parcel-summary");
+  const kgInput = document.getElementById("quick-input-yield-kg");
+  const boxesInput = document.getElementById("quick-input-yield-boxes");
+  const serviceSelect = document.getElementById("quick-input-yield-service");
+  const priceInput = document.getElementById("quick-input-yield-price");
+  const billCheckbox = document.getElementById("quick-yield-bill-dashboard");
+  if (!modal) return;
+
+  if (entryIdInput) entryIdInput.value = item.id;
+  if (summaryBox) {
+    summaryBox.innerHTML = `
+      <div style="font-weight: 700; color: var(--text-heading); font-size: 1.05rem;">${escapeHTML(item.clientName)}</div>
+      <div style="font-size: 0.88rem; color: var(--text-muted); display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 4px;">
+        <span>📍 ${escapeHTML(item.parcelName)}</span>
+        <span>•</span>
+        <span>📐 ${formatSurface(item.surface)} ha</span>
+        ${item.grapeVariety ? `<span>•</span><span>🍇 ${escapeHTML(item.grapeVariety)}</span>` : ""}
+      </div>
+    `;
+  }
+  if (kgInput) kgInput.value = item.yieldKg || "";
+  if (boxesInput) boxesInput.value = item.boxesCount || "";
+
+  // Remplissage de la liste des prestations de vendange
+  populateHarvestServicesSelect(serviceSelect, item.harvestServiceName || "Coupe vendange (au kilo)");
+
+  // Prix au kilo
+  let defaultPrice = item.yieldPricePerKg;
+  if (!defaultPrice && defaultPrice !== 0) {
+    const selectedOpt = serviceSelect?.options[serviceSelect.selectedIndex];
+    defaultPrice = selectedOpt && selectedOpt.dataset.price ? parseFloat(selectedOpt.dataset.price) : 0.35;
+  }
+  if (priceInput) priceInput.value = defaultPrice;
+
+  // Case à cocher pour facturation
+  if (billCheckbox) {
+    billCheckbox.checked = true;
+  }
+
+  updateYieldModalLiveCalculation();
+
+  modal.classList.add("open");
+  modal.setAttribute("aria-hidden", "false");
+  if (typeof lockBodyScroll === "function") lockBodyScroll();
+  setTimeout(() => { if (kgInput) kgInput.focus(); }, 150);
+}
+
+function closeYieldModal() {
+  const modal = document.getElementById("harvest-yield-modal");
+  if (modal) {
+    modal.classList.remove("open");
+    modal.setAttribute("aria-hidden", "true");
+    if (typeof unlockBodyScroll === "function") unlockBodyScroll();
+  }
+}
+
+function handleYieldQuickFormSubmit(e) {
+  if (e) e.preventDefault();
+
+  const id = document.getElementById("yield-modal-entry-id")?.value;
+  const item = (harvestWorks || []).find(h => h.id === id);
+  if (!item) return;
+
+  const kg = parseFloat(document.getElementById("quick-input-yield-kg")?.value) || 0;
+  const boxes = parseInt(document.getElementById("quick-input-yield-boxes")?.value, 10) || 0;
+  const serviceSelect = document.getElementById("quick-input-yield-service");
+  const serviceName = serviceSelect?.value || "Coupe vendange (au kilo)";
+  const pricePerKg = parseFloat(document.getElementById("quick-input-yield-price")?.value) || 0;
+  const surface = parseFloat(item.surface) || 1;
+  const finalKg = kg > 0 ? kg : (surface > 0 ? Math.round(surface * 6000) : 1000);
+  const finalPrice = pricePerKg > 0 ? pricePerKg : 0.35;
+
+  item.yieldKg = finalKg;
+  item.boxesCount = boxes;
+  item.yieldPricePerKg = finalPrice;
+  item.harvestServiceName = serviceName;
+  item.totalAmountHT = Math.round(finalKg * finalPrice * 100) / 100;
+  item.cutStatus = "coupee"; // Si la pesée est validée, la parcelle est nécessairement coupée
+
+  // Transfert direct et automatique vers le Tableau de bord pour la facturation ("À facturer")
+  syncHarvestToIntervention(item, serviceName, finalKg, boxes, finalPrice);
+
+  // Si le débardage a déjà été facturé (ex: au kilo), actualiser son intervention avec les kilos pesés
+  if (item.haulStatus === "debardee" && item.haulInterventionId) {
+    billHaulHarvestToDashboard(item.id, true);
+  }
+
+  saveHarvestWorks();
+  closeYieldModal();
+  renderAll();
+
+  showToast(`🍇 Coupe « ${item.parcelName} » (${finalKg.toLocaleString("fr-FR")} kg à ${finalPrice.toFixed(2)} €/kg) validée et envoyée directement à facturer (${formatCurrency(item.totalAmountHT)}) !`, "success");
+}
+
+// Export CSV Vendanges
+function exportVendangesCSV() {
+  let list = [...(harvestWorks || [])];
+
+  // 1. Filtre Domaine
+  if (Array.isArray(vendangesClientFilters) && vendangesClientFilters.length > 0) {
+    const totalCount = document.querySelectorAll("#list-vendanges-filter-client .vendanges-client-cb").length;
+    if (vendangesClientFilters.length < totalCount) {
+      list = list.filter(h =>
+        vendangesClientFilters.includes(h.clientId) ||
+        vendangesClientFilters.includes(h.clientName)
+      );
+    }
+  } else if (vendangesClientFilter && vendangesClientFilter !== "all") {
+    list = list.filter(h => h.clientId === vendangesClientFilter || h.clientName === vendangesClientFilter);
+  }
+
+  // 1b. Filtre Parcelle
+  const totalVendangesParcels = document.querySelectorAll("#list-vendanges-filter-parcel .vendanges-parcel-cb").length;
+  if (totalVendangesParcels > 0 && vendangesParcelFilters.length < totalVendangesParcels) {
+    list = list.filter(h => {
+      const pKey = (h.clientId || "") + "___" + (h.parcelId || h.parcelName);
+      return vendangesParcelFilters.includes(pKey) ||
+             vendangesParcelFilters.includes(h.parcelId) ||
+             vendangesParcelFilters.includes(h.parcelName);
+    });
+  }
+
+  // 2. Filtre Étape
+  const allStages = ["leaf_todo", "leaf_done", "cut_todo", "cut_done", "haul_todo", "haul_done"];
+  if (Array.isArray(vendangesStageFilters) && vendangesStageFilters.length < allStages.length) {
+    list = list.filter(h => {
+      if (vendangesStageFilters.includes("leaf_todo") && h.leafStatus === "a_effeuiller") return true;
+      if (vendangesStageFilters.includes("leaf_done") && h.leafStatus === "effeuillee") return true;
+      if (vendangesStageFilters.includes("cut_todo") && h.cutStatus === "a_couper") return true;
+      if (vendangesStageFilters.includes("cut_done") && h.cutStatus === "coupee") return true;
+      if (vendangesStageFilters.includes("haul_todo") && h.haulStatus === "a_debarder") return true;
+      if (vendangesStageFilters.includes("haul_done") && h.haulStatus === "debardee") return true;
+      return false;
+    });
+  }
+
+  // 3. Filtre Recherche
+  if (vendangesSearchFilter) {
+    const q = vendangesSearchFilter.toLowerCase();
+    list = list.filter(h =>
+      (h.clientName && h.clientName.toLowerCase().includes(q)) ||
+      (h.parcelName && h.parcelName.toLowerCase().includes(q)) ||
+      (h.grapeVariety && h.grapeVariety.toLowerCase().includes(q)) ||
+      (h.worker && h.worker.toLowerCase().includes(q)) ||
+      (h.notes && h.notes.toLowerCase().includes(q))
+    );
+  }
+
+  if (list.length === 0) {
+    showToast("Aucune donnée de vendange ne correspond aux filtres actuels pour l'export.", "warning");
+    return;
+  }
+
+  const headers = [
+    "Domaine Viticole",
+    "Parcelle",
+    "Surface (ha)",
+    "Cépage",
+    "Effeuillage",
+    "Coupe",
+    "Poids Récolté (kg)",
+    "Nombre de Caisses",
+    "Prix au Kilo (€ HT/kg)",
+    "Montant Total HT (€)",
+    "Statut Facturation",
+    "Débardage",
+    "Prestation Débardage",
+    "Tarif Débardage (€ HT)",
+    "Salarié Affecté",
+    "Date Récolte",
+    "Notes"
+  ];
+
+  const escapeCSV = (str) => {
+    if (str === null || str === undefined) return '""';
+    const s = String(str).replace(/"/g, '""');
+    return `"${s}"`;
+  };
+
+  const rows = list.map(h => {
+    let leafLabel = "À effeuiller";
+    if (h.leafStatus === "effeuillee") leafLabel = "Effeuillée";
+    else if (h.leafStatus === "non_necessaire") leafLabel = "Non nécessaire";
+
+    let cutLabel = h.cutStatus === "coupee" ? "Coupée" : "À couper";
+
+    let haulLabel = "À débarder";
+    if (h.haulStatus === "debardee") haulLabel = "Débardée";
+    else if (h.haulStatus === "non_necessaire") haulLabel = "Non nécessaire";
+
+    const kg = parseFloat(h.yieldKg) || 0;
+    const price = parseFloat(h.yieldPricePerKg) || 0;
+    const totalHT = Math.round(kg * price * 100) / 100;
+    const linkedInv = h.interventionId ? (interventions || []).find(i => i.id === h.interventionId) : null;
+    const billingStatus = linkedInv ? linkedInv.status : (kg > 0 ? "Non transféré" : "Non applicable");
+
+    const haulServiceName = h.haulStatus !== "non_necessaire" ? (h.haulServiceName || "Débardage vendange (tracteur / porteur)") : "";
+    const haulPrice = h.haulStatus !== "non_necessaire" ? (parseFloat(h.haulPrice) || 0.15) : "";
+
+    return [
+      escapeCSV(h.clientName),
+      escapeCSV(h.parcelName),
+      formatSurface(h.surface),
+      escapeCSV(h.grapeVariety || ""),
+      escapeCSV(leafLabel),
+      escapeCSV(cutLabel),
+      kg,
+      h.boxesCount || 0,
+      price > 0 ? price.toFixed(2) : "",
+      totalHT > 0 ? totalHT.toFixed(2) : "",
+      escapeCSV(billingStatus),
+      escapeCSV(haulLabel),
+      escapeCSV(haulServiceName),
+      haulPrice !== "" ? Number(haulPrice).toFixed(2) : "",
+      escapeCSV(h.worker || ""),
+      escapeCSV(h.harvestDate || ""),
+      escapeCSV(h.notes || "")
+    ].join(";");
+  });
+
+  const csvContent = "\uFEFF" + [headers.join(";"), ...rows].join("\r\n");
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  const today = new Date().toISOString().split("T")[0];
+  link.setAttribute("href", url);
+  link.setAttribute("download", `suivi_vendanges_vititrack_${today}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+  showToast("Feuille de vendanges exportée avec succès (CSV) !", "success");
+}
+
 // Exports globaux sur window
 window.openTeamModal = openTeamModal;
 window.closeTeamModal = closeTeamModal;
@@ -5764,5 +9665,983 @@ window.populatePlannedWorkerSelect = populatePlannedWorkerSelect;
 window.generateMemberPin = generateMemberPin;
 window.copyMemberAccess = copyMemberAccess;
 window.syncGlobalTeamDirectory = syncGlobalTeamDirectory;
+
+// Exports Vendanges
+window.renderVendangesView = renderVendangesView;
+window.renderVendangesKPIs = renderVendangesKPIs;
+window.renderVendangesTable = renderVendangesTable;
+window.openHarvestModal = openHarvestModal;
+window.closeHarvestModal = closeHarvestModal;
+window.openHarvestClientDropdown = openHarvestClientDropdown;
+window.closeHarvestClientDropdown = closeHarvestClientDropdown;
+window.toggleHarvestClientDropdown = toggleHarvestClientDropdown;
+window.openHarvestParcelDropdown = openHarvestParcelDropdown;
+window.closeHarvestParcelDropdown = closeHarvestParcelDropdown;
+window.toggleHarvestParcelDropdown = toggleHarvestParcelDropdown;
+window.setupHarvestModalDropdownEvents = setupHarvestModalDropdownEvents;
+window.renderHarvestClientsList = renderHarvestClientsList;
+window.onHarvestClientsChanged = onHarvestClientsChanged;
+window.updateHarvestParcelsList = updateHarvestParcelsList;
+window.updateHarvestParcelsSummary = updateHarvestParcelsSummary;
+window.formatDateFr = formatDateFr;
+window.formatTime = formatTime;
+window.formatCurrency = formatCurrency;
+window.formatVolumeUnit = formatVolumeUnit;
+window.handleHarvestClientChange = handleHarvestClientChange;
+window.handleHarvestParcelChange = handleHarvestParcelChange;
+window.handleHarvestFormSubmit = handleHarvestFormSubmit;
+window.deleteHarvestWork = deleteHarvestWork;
+window.quickToggleHarvestLeaf = quickToggleHarvestLeaf;
+window.quickToggleHarvestCut = quickToggleHarvestCut;
+window.quickToggleHarvestHaul = quickToggleHarvestHaul;
+window.changeHarvestLeaf = changeHarvestLeaf;
+window.changeHarvestCut = changeHarvestCut;
+window.changeHarvestHaul = changeHarvestHaul;
+window.openYieldModal = openYieldModal;
+window.closeYieldModal = closeYieldModal;
+window.handleYieldQuickFormSubmit = handleYieldQuickFormSubmit;
+window.billHarvestToDashboard = billHarvestToDashboard;
+window.billLeafHarvestToDashboard = billLeafHarvestToDashboard;
+window.onHarvestModalLeafChange = onHarvestModalLeafChange;
+window.onHarvestModalLeafServiceChange = onHarvestModalLeafServiceChange;
+window.onHarvestModalCutChange = onHarvestModalCutChange;
+window.onHarvestModalServiceChange = onHarvestModalServiceChange;
+window.populateHarvestLeafServicesSelect = populateHarvestLeafServicesSelect;
+window.populateHarvestHaulServicesSelect = populateHarvestHaulServicesSelect;
+window.onHarvestModalHaulChange = onHarvestModalHaulChange;
+window.onHarvestModalHaulServiceChange = onHarvestModalHaulServiceChange;
+window.billHaulHarvestToDashboard = billHaulHarvestToDashboard;
+window.exportVendangesCSV = exportVendangesCSV;
+window.filterVendangesByStage = filterVendangesByStage;
+window.toggleVendangesStage = toggleVendangesStage;
+window.toggleAllVendangesStages = toggleAllVendangesStages;
+window.updateVendangesStageFilterUI = updateVendangesStageFilterUI;
+window.initVendangesParcelFilterMultiSelect = initVendangesParcelFilterMultiSelect;
+window.populateVendangesParcelFilter = populateVendangesParcelFilter;
+window.updateVendangesParcelFilterUI = updateVendangesParcelFilterUI;
+window.toggleVendangesParcel = toggleVendangesParcel;
+window.toggleAllVendangesParcels = toggleAllVendangesParcels;
+window.toggleVendangesClientGroupParcels = toggleVendangesClientGroupParcels;
+window.resetVendangesFilters = resetVendangesFilters;
+
+// ==================== HISTORIQUE & SUIVI PAR CLIENT ====================
+let clientHistorySelectedClientIds = [];
+let clientHistorySelectedClientId = null; // Rétrocompatibilité
+let clientHistorySelectedParcelIds = new Set();
+let clientHistoryStatusFilter = "all";
+let clientHistoryDateFilter = "all";
+let clientHistorySearchFilter = "";
+
+let _chFilterMsInitialized = false;
+function initClientHistoryFilterMultiSelect() {
+  if (_chFilterMsInitialized) return;
+  _chFilterMsInitialized = true;
+
+  const wrap = document.getElementById("wrap-ch-filter-client");
+  const btn = document.getElementById("btn-ch-filter-client");
+  const dropdown = document.getElementById("dropdown-ch-filter-client");
+  const searchInput = document.getElementById("search-ch-filter-client");
+  const btnAll = document.getElementById("btn-ch-select-all-clients");
+  const btnClear = document.getElementById("btn-ch-clear-clients");
+
+  if (btn && dropdown) {
+    btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const isOpen = dropdown.style.display === "flex";
+      closeAllFilterMultiSelects();
+      if (!isOpen) {
+        dropdown.style.display = "flex";
+        if (wrap) wrap.classList.add("is-open");
+        btn.setAttribute("aria-expanded", "true");
+        if (searchInput) setTimeout(() => searchInput.focus(), 60);
+      }
+    });
+  }
+
+  if (dropdown) {
+    dropdown.addEventListener("click", (e) => e.stopPropagation());
+  }
+
+  if (searchInput) {
+    searchInput.addEventListener("input", (e) => {
+      const q = e.target.value.toLowerCase().trim();
+      const items = document.querySelectorAll("#list-ch-filter-client .filter-ms-item");
+      items.forEach(item => {
+        const text = item.textContent.toLowerCase();
+        item.style.display = text.includes(q) ? "flex" : "none";
+      });
+    });
+  }
+
+  if (btnAll) {
+    btnAll.addEventListener("click", (e) => {
+      e.preventDefault();
+      toggleAllClientHistoryClients(true);
+    });
+  }
+
+  if (btnClear) {
+    btnClear.addEventListener("click", (e) => {
+      e.preventDefault();
+      toggleAllClientHistoryClients(false);
+    });
+  }
+}
+
+function updateClientHistoryFilterUI() {
+  const textEl = document.getElementById("ch-client-text");
+  const badgeEl = document.getElementById("ch-client-badge");
+  const dropdownBadgeEl = document.getElementById("ch-client-dropdown-badge");
+  const allClients = clients || [];
+  const count = clientHistorySelectedClientIds.length;
+
+  if (count === 0) {
+    if (textEl) textEl.textContent = "Aucun domaine sélectionné";
+    if (badgeEl) badgeEl.textContent = "0 sélectionné";
+    if (dropdownBadgeEl) dropdownBadgeEl.textContent = "Aucun";
+  } else if (count === 1) {
+    const c = allClients.find(cl => cl.id === clientHistorySelectedClientIds[0]);
+    const name = c ? c.name : "1 domaine";
+    if (textEl) textEl.textContent = name;
+    if (badgeEl) badgeEl.textContent = "1 sélectionné";
+    if (dropdownBadgeEl) dropdownBadgeEl.textContent = "1 sélectionné";
+  } else if (count === allClients.length && allClients.length > 1) {
+    if (textEl) textEl.textContent = "Tous les domaines viticoles";
+    if (badgeEl) badgeEl.textContent = "Tous";
+    if (dropdownBadgeEl) dropdownBadgeEl.textContent = "Tous";
+  } else {
+    const firstClient = allClients.find(cl => cl.id === clientHistorySelectedClientIds[0]);
+    const firstName = firstClient ? firstClient.name : "Domaine";
+    if (textEl) textEl.textContent = `${firstName} +${count - 1}`;
+    if (badgeEl) badgeEl.textContent = `${count} sélectionnés`;
+    if (dropdownBadgeEl) dropdownBadgeEl.textContent = `${count} sélectionnés`;
+  }
+}
+
+function populateClientHistoryClientSelect() {
+  initClientHistoryFilterMultiSelect();
+  const listEl = document.getElementById("list-ch-filter-client");
+  if (!listEl) return;
+
+  listEl.innerHTML = "";
+  const allClients = clients || [];
+
+  if (allClients.length === 0) {
+    listEl.innerHTML = '<div style="padding: 0.8rem; text-align: center; color: var(--text-muted); font-size: 0.85rem;">Aucun domaine viticole enregistré.</div>';
+    updateClientHistoryFilterUI();
+    return;
+  }
+
+  allClients.forEach(c => {
+    const isChecked = clientHistorySelectedClientIds.includes(c.id);
+    const item = document.createElement("label");
+    item.className = `filter-ms-item ${isChecked ? "is-checked" : ""}`;
+    item.dataset.clientId = c.id;
+
+    const loc = c.location || c.commune || "Localisation non précisée";
+    const parcelCount = (c.parcels || []).length;
+
+    item.innerHTML = `
+      <input type="checkbox" class="ch-client-cb" value="${c.id}" ${isChecked ? "checked" : ""}>
+      <span class="filter-ms-checkbox-box"></span>
+      <div class="filter-ms-item-text">
+        <span class="filter-ms-item-title">${escapeHTML(c.name)}</span>
+        <span class="filter-ms-item-sub">📍 ${escapeHTML(loc)} • ${parcelCount} parcelle${parcelCount > 1 ? "s" : ""}</span>
+      </div>
+    `;
+
+    const cb = item.querySelector(".ch-client-cb");
+    cb.addEventListener("change", (e) => {
+      toggleClientHistoryClient(c.id, e.target.checked);
+    });
+
+    listEl.appendChild(item);
+  });
+
+  updateClientHistoryFilterUI();
+}
+
+function toggleClientHistoryClient(clientId, isChecked) {
+  if (isChecked) {
+    if (!clientHistorySelectedClientIds.includes(clientId)) {
+      clientHistorySelectedClientIds.push(clientId);
+    }
+  } else {
+    clientHistorySelectedClientIds = clientHistorySelectedClientIds.filter(id => id !== clientId);
+  }
+
+  clientHistorySelectedClientId = clientHistorySelectedClientIds[0] || null;
+
+  const item = document.querySelector(`#list-ch-filter-client .filter-ms-item[data-client-id="${clientId}"]`);
+  if (item) {
+    item.classList.toggle("is-checked", isChecked);
+    const cb = item.querySelector(".ch-client-cb");
+    if (cb) cb.checked = isChecked;
+  }
+
+  updateClientHistoryFilterUI();
+  handleClientHistoryClientsChangeInternal(isChecked ? clientId : null, !isChecked ? clientId : null);
+}
+
+function toggleAllClientHistoryClients(checkAll) {
+  const allClients = clients || [];
+  if (checkAll) {
+    clientHistorySelectedClientIds = allClients.map(c => c.id);
+  } else {
+    clientHistorySelectedClientIds = [];
+  }
+  clientHistorySelectedClientId = clientHistorySelectedClientIds[0] || null;
+
+  const checkboxes = document.querySelectorAll("#list-ch-filter-client .ch-client-cb");
+  checkboxes.forEach(cb => {
+    cb.checked = checkAll;
+    const item = cb.closest(".filter-ms-item");
+    if (item) item.classList.toggle("is-checked", checkAll);
+  });
+
+  updateClientHistoryFilterUI();
+  handleClientHistoryClientsChangeInternal();
+}
+
+function renderClientHistoryView(preselectedClientId = null) {
+  if (preselectedClientId) {
+    clientHistorySelectedClientIds = [preselectedClientId];
+    clientHistorySelectedClientId = preselectedClientId;
+  } else if (clientHistorySelectedClientIds.length === 0 && (clients || []).length > 0) {
+    clientHistorySelectedClientIds = [clients[0].id];
+    clientHistorySelectedClientId = clients[0].id;
+  }
+
+  populateClientHistoryClientSelect();
+  handleClientHistoryClientsChangeInternal();
+}
+
+function handleClientHistoryClientChange(clientId) {
+  if (clientId) {
+    clientHistorySelectedClientIds = [clientId];
+    clientHistorySelectedClientId = clientId;
+  }
+  populateClientHistoryClientSelect();
+  handleClientHistoryClientsChangeInternal();
+}
+
+let _chParcelFilterMsInitialized = false;
+function initClientHistoryParcelFilterMultiSelect() {
+  if (_chParcelFilterMsInitialized) return;
+  _chParcelFilterMsInitialized = true;
+
+  const wrap = document.getElementById("wrap-ch-filter-parcel");
+  const btn = document.getElementById("btn-ch-filter-parcel");
+  const dropdown = document.getElementById("dropdown-ch-filter-parcel");
+  const searchInput = document.getElementById("search-ch-filter-parcel");
+  const btnAll = document.getElementById("btn-ch-select-all-parcels");
+  const btnClear = document.getElementById("btn-ch-clear-parcels");
+
+  if (btn && dropdown) {
+    btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const isOpen = dropdown.style.display === "flex";
+      closeAllFilterMultiSelects();
+      if (!isOpen) {
+        dropdown.style.display = "flex";
+        if (wrap) wrap.classList.add("is-open");
+        btn.setAttribute("aria-expanded", "true");
+        if (searchInput) setTimeout(() => searchInput.focus(), 60);
+      }
+    });
+  }
+
+  if (dropdown) {
+    dropdown.addEventListener("click", (e) => e.stopPropagation());
+  }
+
+  if (searchInput) {
+    searchInput.addEventListener("input", (e) => {
+      const q = e.target.value.toLowerCase().trim();
+      const items = document.querySelectorAll("#list-ch-filter-parcel .filter-ms-item");
+      items.forEach(item => {
+        const text = item.textContent.toLowerCase();
+        item.style.display = text.includes(q) ? "flex" : "none";
+      });
+    });
+  }
+
+  if (btnAll) {
+    btnAll.addEventListener("click", (e) => {
+      e.preventDefault();
+      toggleAllClientHistoryParcels(true);
+    });
+  }
+
+  if (btnClear) {
+    btnClear.addEventListener("click", (e) => {
+      e.preventDefault();
+      toggleAllClientHistoryParcels(false);
+    });
+  }
+}
+
+function updateClientHistoryParcelFilterUI() {
+  const textEl = document.getElementById("ch-parcel-text");
+  const badgeEl = document.getElementById("ch-parcel-badge");
+  const dropdownBadgeEl = document.getElementById("ch-parcel-dropdown-badge");
+
+  const selectedClients = (clients || []).filter(c => clientHistorySelectedClientIds.includes(c.id));
+  let totalAvailableParcels = 0;
+  selectedClients.forEach(c => {
+    totalAvailableParcels += (c.parcels || []).length;
+  });
+
+  const countSelected = clientHistorySelectedParcelIds.size;
+
+  if (totalAvailableParcels === 0) {
+    if (textEl) textEl.textContent = "Aucune parcelle";
+    if (badgeEl) badgeEl.textContent = "0";
+    if (dropdownBadgeEl) dropdownBadgeEl.textContent = "0";
+  } else if (countSelected === 0) {
+    if (textEl) textEl.textContent = "Aucune parcelle cochée";
+    if (badgeEl) badgeEl.textContent = `0 / ${totalAvailableParcels}`;
+    if (dropdownBadgeEl) dropdownBadgeEl.textContent = "0";
+  } else if (countSelected === totalAvailableParcels) {
+    if (textEl) textEl.textContent = `Toutes les parcelles (${totalAvailableParcels})`;
+    if (badgeEl) badgeEl.textContent = "Toutes";
+    if (dropdownBadgeEl) dropdownBadgeEl.textContent = "Toutes";
+  } else if (countSelected === 1) {
+    let singleParcelName = "1 parcelle";
+    for (const c of selectedClients) {
+      const found = (c.parcels || []).find(p => clientHistorySelectedParcelIds.has(p.id));
+      if (found) { singleParcelName = found.name; break; }
+    }
+    if (textEl) textEl.textContent = `📍 ${singleParcelName}`;
+    if (badgeEl) badgeEl.textContent = `1 / ${totalAvailableParcels}`;
+    if (dropdownBadgeEl) dropdownBadgeEl.textContent = `1 / ${totalAvailableParcels}`;
+  } else {
+    if (textEl) textEl.textContent = `${countSelected} / ${totalAvailableParcels} parcelles`;
+    if (badgeEl) badgeEl.textContent = `${countSelected} / ${totalAvailableParcels}`;
+    if (dropdownBadgeEl) dropdownBadgeEl.textContent = `${countSelected} / ${totalAvailableParcels}`;
+  }
+}
+
+function populateClientHistoryParcelSelect() {
+  initClientHistoryParcelFilterMultiSelect();
+  const listEl = document.getElementById("list-ch-filter-parcel");
+  if (!listEl) return;
+
+  listEl.innerHTML = "";
+  const selectedClients = (clients || []).filter(c => clientHistorySelectedClientIds.includes(c.id));
+
+  if (selectedClients.length === 0) {
+    listEl.innerHTML = '<div style="padding: 1rem; text-align: center; color: var(--text-muted); font-size: 0.85rem;">👆 Cochez au moins un domaine à l\'étape 1.</div>';
+    updateClientHistoryParcelFilterUI();
+    return;
+  }
+
+  let totalParcelsCount = 0;
+  selectedClients.forEach(c => {
+    totalParcelsCount += (c.parcels || []).length;
+  });
+
+  if (totalParcelsCount === 0) {
+    listEl.innerHTML = '<div style="padding: 1rem; text-align: center; color: var(--text-muted); font-size: 0.85rem;">Aucune parcelle répertoriée pour ce(s) domaine(s).</div>';
+    updateClientHistoryParcelFilterUI();
+    return;
+  }
+
+  if (selectedClients.length === 1) {
+    const singleClient = selectedClients[0];
+    (singleClient.parcels || []).forEach(p => {
+      const isChecked = clientHistorySelectedParcelIds.has(p.id);
+      const item = document.createElement("label");
+      item.className = `filter-ms-item ${isChecked ? "is-checked" : ""}`;
+      item.dataset.parcelId = p.id;
+      const grape = p.grapeVariety ? ` • ${escapeHTML(p.grapeVariety)}` : "";
+
+      item.innerHTML = `
+        <input type="checkbox" class="ch-parcel-cb" value="${p.id}" ${isChecked ? "checked" : ""}>
+        <span class="filter-ms-checkbox-box"></span>
+        <div class="filter-ms-item-text">
+          <span class="filter-ms-item-title">📍 ${escapeHTML(p.name)}</span>
+          <span class="filter-ms-item-sub">${formatSurface(p.surface)} ha${grape}</span>
+        </div>
+      `;
+
+      const cb = item.querySelector(".ch-parcel-cb");
+      cb.addEventListener("change", (e) => {
+        toggleClientHistoryParcel(p.id, e.target.checked);
+      });
+
+      listEl.appendChild(item);
+    });
+  } else {
+    // Regroupement élégant par domaine viticole
+    selectedClients.forEach(c => {
+      const parcels = c.parcels || [];
+      if (parcels.length === 0) return;
+
+      const grpHdr = document.createElement("div");
+      grpHdr.className = "filter-ms-group-header";
+      grpHdr.innerHTML = `
+        <span>🍇 ${escapeHTML(c.name)} (${parcels.length})</span>
+        <div class="filter-ms-group-actions">
+          <button type="button" class="btn-link" onclick="toggleClientGroupParcels('${c.id}', true)">Tout</button>
+          <span>•</span>
+          <button type="button" class="btn-link" onclick="toggleClientGroupParcels('${c.id}', false)">Aucun</button>
+        </div>
+      `;
+      listEl.appendChild(grpHdr);
+
+      parcels.forEach(p => {
+        const isChecked = clientHistorySelectedParcelIds.has(p.id);
+        const item = document.createElement("label");
+        item.className = `filter-ms-item ${isChecked ? "is-checked" : ""}`;
+        item.dataset.parcelId = p.id;
+        const grape = p.grapeVariety ? ` • ${escapeHTML(p.grapeVariety)}` : "";
+
+        item.innerHTML = `
+          <input type="checkbox" class="ch-parcel-cb" value="${p.id}" ${isChecked ? "checked" : ""}>
+          <span class="filter-ms-checkbox-box"></span>
+          <div class="filter-ms-item-text">
+            <span class="filter-ms-item-title">📍 ${escapeHTML(p.name)}</span>
+            <span class="filter-ms-item-sub">${formatSurface(p.surface)} ha${grape}</span>
+          </div>
+        `;
+
+        const cb = item.querySelector(".ch-parcel-cb");
+        cb.addEventListener("change", (e) => {
+          toggleClientHistoryParcel(p.id, e.target.checked);
+        });
+
+        listEl.appendChild(item);
+      });
+    });
+  }
+
+  updateClientHistoryParcelFilterUI();
+}
+
+function handleClientHistoryClientsChangeInternal(addedClientId = null, removedClientId = null) {
+  const selectedClients = (clients || []).filter(c => clientHistorySelectedClientIds.includes(c.id));
+
+  const infoPill = document.getElementById("ch-client-info-pill");
+  const communeElem = document.getElementById("ch-client-commune");
+  const contactElem = document.getElementById("ch-client-contact");
+
+  if (selectedClients.length === 0) {
+    if (infoPill) infoPill.style.display = "none";
+    clientHistorySelectedParcelIds.clear();
+    populateClientHistoryParcelSelect();
+    updateClientHistoryData();
+    return;
+  }
+
+  // Info pill
+  if (infoPill) infoPill.style.display = "inline-flex";
+  if (selectedClients.length === 1) {
+    const singleClient = selectedClients[0];
+    if (communeElem) communeElem.textContent = `📍 ${singleClient.location || singleClient.commune || 'Localisation non précisée'}`;
+    if (contactElem) contactElem.textContent = `👤 ${singleClient.contact || 'Exploitant'}`;
+  } else {
+    if (communeElem) communeElem.textContent = `📍 ${selectedClients.length} domaines sélectionnés`;
+    if (contactElem) contactElem.textContent = `👤 Multi-domaines viticoles`;
+  }
+
+  // Synchronisation des parcelles cochées
+  if (addedClientId) {
+    const addedClient = selectedClients.find(c => c.id === addedClientId);
+    if (addedClient && addedClient.parcels) {
+      addedClient.parcels.forEach(p => clientHistorySelectedParcelIds.add(p.id));
+    }
+  } else if (removedClientId) {
+    const removedClient = (clients || []).find(c => c.id === removedClientId);
+    if (removedClient && removedClient.parcels) {
+      removedClient.parcels.forEach(p => clientHistorySelectedParcelIds.delete(p.id));
+    }
+  } else {
+    clientHistorySelectedParcelIds = new Set();
+    selectedClients.forEach(c => {
+      (c.parcels || []).forEach(p => clientHistorySelectedParcelIds.add(p.id));
+    });
+  }
+
+  populateClientHistoryParcelSelect();
+  updateClientHistoryData();
+}
+
+function toggleClientGroupParcels(clientId, checkAll) {
+  const client = (clients || []).find(c => c.id === clientId);
+  if (!client || !client.parcels) return;
+
+  client.parcels.forEach(p => {
+    if (checkAll) {
+      clientHistorySelectedParcelIds.add(p.id);
+    } else {
+      clientHistorySelectedParcelIds.delete(p.id);
+    }
+    const item = document.querySelector(`#list-ch-filter-parcel .filter-ms-item[data-parcel-id="${p.id}"]`);
+    if (item) {
+      item.classList.toggle("is-checked", checkAll);
+      const cb = item.querySelector(".ch-parcel-cb");
+      if (cb) cb.checked = checkAll;
+    }
+  });
+
+  updateClientHistoryParcelFilterUI();
+  updateClientHistoryData();
+}
+
+function toggleClientHistoryParcel(parcelId, isChecked) {
+  if (isChecked) {
+    clientHistorySelectedParcelIds.add(parcelId);
+  } else {
+    clientHistorySelectedParcelIds.delete(parcelId);
+  }
+
+  const item = document.querySelector(`#list-ch-filter-parcel .filter-ms-item[data-parcel-id="${parcelId}"]`);
+  if (item) {
+    item.classList.toggle("is-checked", isChecked);
+    const cb = item.querySelector(".ch-parcel-cb");
+    if (cb) cb.checked = isChecked;
+  }
+
+  updateClientHistoryParcelFilterUI();
+  updateClientHistoryData();
+}
+
+function toggleAllClientHistoryParcels(checkAll) {
+  const selectedClients = (clients || []).filter(c => clientHistorySelectedClientIds.includes(c.id));
+
+  if (checkAll) {
+    clientHistorySelectedParcelIds.clear();
+    selectedClients.forEach(c => {
+      (c.parcels || []).forEach(p => clientHistorySelectedParcelIds.add(p.id));
+    });
+  } else {
+    clientHistorySelectedParcelIds.clear();
+  }
+
+  const checkboxes = document.querySelectorAll("#list-ch-filter-parcel .ch-parcel-cb");
+  checkboxes.forEach(cb => {
+    cb.checked = checkAll;
+    const item = cb.closest(".filter-ms-item");
+    if (item) item.classList.toggle("is-checked", checkAll);
+  });
+
+  updateClientHistoryParcelFilterUI();
+  updateClientHistoryData();
+}
+
+function updateClientHistoryData() {
+  const emptyNoClient = document.getElementById("ch-empty-no-client");
+  const emptyNoInterventions = document.getElementById("ch-empty-no-interventions");
+  const table = document.getElementById("ch-interventions-table");
+  const tbody = document.getElementById("ch-interventions-tbody");
+  const recapBar = document.getElementById("ch-recap-bar");
+  const resetBtn = document.getElementById("btn-reset-ch-filters");
+
+  const selectedClients = (clients || []).filter(c => clientHistorySelectedClientIds.includes(c.id));
+  if (selectedClients.length === 0) {
+    if (emptyNoClient) emptyNoClient.style.display = "block";
+    if (emptyNoInterventions) emptyNoInterventions.style.display = "none";
+    if (table) table.style.display = "none";
+    if (recapBar) recapBar.style.display = "none";
+    resetClientHistoryKPIs();
+    return;
+  }
+
+  if (emptyNoClient) emptyNoClient.style.display = "none";
+
+  // Collecte des parcelles sélectionnées et surface cumulée
+  const selectedParcelNames = [];
+  let totalSelectedHa = 0;
+  let totalParcelsCount = 0;
+  selectedClients.forEach(c => {
+    (c.parcels || []).forEach(p => {
+      totalParcelsCount++;
+      if (clientHistorySelectedParcelIds.has(p.id)) {
+        selectedParcelNames.push(p.name.toLowerCase().trim());
+        totalSelectedHa += (parseFloat(p.surface) || 0);
+      }
+    });
+  });
+
+  // Filtrage des interventions appartenant aux clients sélectionnés
+  const selectedClientIdsSet = new Set(clientHistorySelectedClientIds);
+  const selectedClientNamesLower = selectedClients.map(c => c.name.toLowerCase().trim());
+
+  const allSelectedClientsInterventions = (interventions || []).filter(i => {
+    if (i.clientId && selectedClientIdsSet.has(i.clientId)) return true;
+    if (i.client && selectedClientNamesLower.includes(i.client.toLowerCase().trim())) return true;
+    return false;
+  });
+
+  let filtered = allSelectedClientsInterventions.filter(i => {
+    // Filtrage parcellaire
+    if (totalParcelsCount > 0) {
+      if (clientHistorySelectedParcelIds.size === 0) return false;
+      const allSelected = clientHistorySelectedParcelIds.size === totalParcelsCount;
+      if (!allSelected) {
+        let match = false;
+        if (i.parcelId && clientHistorySelectedParcelIds.has(i.parcelId)) match = true;
+        if (Array.isArray(i.parcelIds) && i.parcelIds.some(pid => clientHistorySelectedParcelIds.has(pid))) match = true;
+        if (!match && i.parcel) {
+          const pLower = i.parcel.toLowerCase();
+          if (selectedParcelNames.some(name => pLower.includes(name))) match = true;
+        }
+        if (!match) return false;
+      }
+    }
+
+    // Filtre statut
+    if (clientHistoryStatusFilter && clientHistoryStatusFilter !== "all") {
+      if (i.status !== clientHistoryStatusFilter) return false;
+    }
+
+    // Filtre date
+    if (clientHistoryDateFilter && clientHistoryDateFilter !== "all") {
+      if (!i.datetime) return false;
+      const itemDate = new Date(i.datetime.split("T")[0]);
+      const now = new Date();
+      if (clientHistoryDateFilter === "this_year") {
+        if (itemDate.getFullYear() !== now.getFullYear()) return false;
+      } else if (clientHistoryDateFilter === "this_month") {
+        if (itemDate.getFullYear() !== now.getFullYear() || itemDate.getMonth() !== now.getMonth()) return false;
+      } else if (clientHistoryDateFilter === "last_30_days") {
+        const past30 = new Date();
+        past30.setDate(now.getDate() - 30);
+        if (itemDate < past30) return false;
+      }
+    }
+
+    // Recherche plein texte
+    if (clientHistorySearchFilter) {
+      const q = clientHistorySearchFilter;
+      const inClient = i.client && i.client.toLowerCase().includes(q);
+      const inTask = i.task && i.task.toLowerCase().includes(q);
+      const inParcel = i.parcel && i.parcel.toLowerCase().includes(q);
+      const inWorker = i.worker && i.worker.toLowerCase().includes(q);
+      const inNotes = i.notes && i.notes.toLowerCase().includes(q);
+      if (!inClient && !inTask && !inParcel && !inWorker && !inNotes) return false;
+    }
+
+    return true;
+  });
+
+  // Tri par date décroissante
+  filtered.sort((a, b) => new Date(b.datetime || 0) - new Date(a.datetime || 0));
+
+  // Calcul des KPIs
+  const totalInterventionsCount = filtered.length;
+  let totalSurfaceWorked = 0;
+  let totalHours = 0;
+  let totalHT = 0;
+  let totalTTC = 0;
+  let unbilledHT = 0;
+  let unbilledCount = 0;
+  let billedHT = 0;
+  let billedCount = 0;
+
+  filtered.forEach(i => {
+    const rateType = i.unit || i.rateType || "ha";
+    const vol = parseFloat(i.quantity != null ? i.quantity : (i.volume != null ? i.volume : 0)) || 0;
+    if (rateType === "ha") totalSurfaceWorked += vol;
+    else if (rateType === "h") totalHours += vol;
+
+    const ht = (i.total != null ? parseFloat(i.total) : (parseFloat(i.amount) || 0));
+    const ttc = (i.totalTtc != null ? parseFloat(i.totalTtc) : (i.amountTtc != null ? parseFloat(i.amountTtc) : ht * (1 + (typeof getTvaRate === "function" ? getTvaRate(i) : 0.20))));
+    totalHT += ht;
+    totalTTC += ttc;
+
+    if (i.status === "À facturer") {
+      unbilledHT += ht;
+      unbilledCount++;
+    } else {
+      billedHT += ht;
+      billedCount++;
+    }
+  });
+
+  setElemText("ch-kpi-total-interventions", totalInterventionsCount);
+  setElemText("ch-kpi-surface-worked", `${formatSurface(totalSurfaceWorked)} ha`);
+  setElemText("ch-kpi-hours-worked", `${totalHours.toFixed(1)} h`);
+  setElemText("ch-kpi-amount-total", `${formatCurrency(totalHT)} HT`);
+  setElemText("ch-kpi-amount-ttc", `${formatCurrency(totalTTC)} TTC`);
+  setElemText("ch-kpi-amount-unbilled", `${formatCurrency(unbilledHT)} HT`);
+  setElemText("ch-kpi-unbilled-count", `${unbilledCount} chantier(s)`);
+  setElemText("ch-kpi-amount-billed", `${formatCurrency(billedHT)} HT`);
+  setElemText("ch-kpi-billed-count", `${billedCount} chantier(s)`);
+
+  // Barre récapitulative
+  if (recapBar) {
+    recapBar.style.display = "flex";
+    setElemText("ch-recap-parcels-count", `${clientHistorySelectedParcelIds.size} parcelle(s) sélectionnée(s)`);
+    setElemText("ch-recap-surface", `${formatSurface(totalSelectedHa)} ha au cadastre`);
+    setElemText("ch-recap-interventions-count", `${totalInterventionsCount} chantier(s) trouvé(s)`);
+  }
+
+  // Badges de décompte des statuts
+  const allMatchingParcelsInterventions = allSelectedClientsInterventions.filter(i => {
+    if (totalParcelsCount > 0) {
+      if (clientHistorySelectedParcelIds.size === 0) return false;
+      if (clientHistorySelectedParcelIds.size === totalParcelsCount) return true;
+      if (i.parcelId && clientHistorySelectedParcelIds.has(i.parcelId)) return true;
+      if (Array.isArray(i.parcelIds) && i.parcelIds.some(pid => clientHistorySelectedParcelIds.has(pid))) return true;
+      if (i.parcel && selectedParcelNames.some(name => i.parcel.toLowerCase().includes(name))) return true;
+      return false;
+    }
+    return true;
+  });
+  const countUnbilled = allMatchingParcelsInterventions.filter(i => i.status === "À facturer").length;
+  const countBilled = allMatchingParcelsInterventions.filter(i => i.status === "Facturée").length;
+
+  setElemText("ch-count-status-all", allMatchingParcelsInterventions.length);
+  setElemText("ch-count-status-unbilled", countUnbilled);
+  setElemText("ch-count-status-billed", countBilled);
+
+  setElemText("ch-table-count", `${totalInterventionsCount} chantier${totalInterventionsCount > 1 ? "s" : ""}`);
+  setElemText("ch-footer-count", `${totalInterventionsCount} intervention(s) affichée(s)`);
+
+  // Visibilité bouton réinitialiser
+  const hasFilter = (clientHistoryStatusFilter && clientHistoryStatusFilter !== "all") ||
+                    (clientHistoryDateFilter && clientHistoryDateFilter !== "all") ||
+                    (clientHistorySearchFilter && clientHistorySearchFilter !== "");
+  if (resetBtn) resetBtn.style.display = hasFilter ? "inline-flex" : "none";
+
+  if (filtered.length === 0) {
+    if (tbody) tbody.innerHTML = "";
+    if (table) table.style.display = "none";
+    if (emptyNoInterventions) {
+      emptyNoInterventions.style.display = "block";
+      const msgElem = document.getElementById("ch-empty-message");
+      if (msgElem) {
+        msgElem.textContent = clientHistorySelectedParcelIds.size === 0
+          ? "Aucune parcelle n'est cochée. Cochez au moins une parcelle à l'étape 2 pour voir son historique."
+          : "Aucun chantier n'a été enregistré pour les parcelles sélectionnées avec ces filtres.";
+      }
+    }
+    return;
+  }
+
+  if (emptyNoInterventions) emptyNoInterventions.style.display = "none";
+  if (table) table.style.display = "table";
+
+  const isMultiClients = selectedClients.length > 1;
+
+  if (tbody) {
+    tbody.innerHTML = filtered.map(i => {
+      const formattedDate = formatDateDisplay(i.datetime);
+      const dateDisplay = formattedDate.date;
+      const timeDisplay = formattedDate.time;
+      const statusClass = i.status === "Facturée" ? "status-billed" : "status-unbilled";
+      const statusIcon = i.status === "Facturée" ? "✅" : "⏳";
+      const vol = (i.quantity != null ? i.quantity : (i.volume != null ? i.volume : 0));
+      const rateType = i.unit || i.rateType || "ha";
+      const volumeFormatted = formatVolumeUnit(vol, rateType);
+      const totalHT = (i.total != null ? parseFloat(i.total) : (parseFloat(i.amount) || 0));
+      const totalTTC = (i.totalTtc != null ? parseFloat(i.totalTtc) : (i.amountTtc != null ? parseFloat(i.amountTtc) : totalHT * (1 + (typeof getTvaRate === "function" ? getTvaRate(i) : 0.20))));
+      const amountHT = formatCurrency(totalHT);
+      const amountTTC = formatCurrency(totalTTC);
+
+      return `
+        <tr data-intervention-id="${escapeHTML(i.id)}">
+          <td>
+            <div style="font-weight: 600; color: var(--text-heading);">${dateDisplay}</div>
+            <div style="font-size: 0.78rem; color: var(--text-muted);">${timeDisplay}</div>
+          </td>
+          <td>
+            ${isMultiClients ? `<div style="font-size: 0.76rem; color: #2d6a4f; font-weight: 700; margin-bottom: 2px;">🍇 ${escapeHTML(i.client || "Client")}</div>` : ''}
+            <div style="font-weight: 600; color: #52b788; display: flex; align-items: center; gap: 0.35rem;">
+              <span>📍</span> <span>${escapeHTML(i.parcel || "Parcelle non spécifiée")}</span>
+            </div>
+          </td>
+          <td>
+            <div style="font-weight: 600; color: var(--text-heading);">${escapeHTML(i.task || i.service || "Prestation")}</div>
+            ${i.notes ? `<div style="font-size: 0.78rem; color: var(--text-muted); max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${escapeHTML(i.notes)}">📝 ${escapeHTML(i.notes)}</div>` : ''}
+          </td>
+          <td>
+            <div style="font-family: monospace; font-weight: 700;">${volumeFormatted}</div>
+          </td>
+          <td>
+            <div style="font-weight: 700; color: var(--text-heading);">${amountHT} HT</div>
+          </td>
+          <td>
+            <div style="font-size: 0.85rem; color: var(--text-muted);">${amountTTC} TTC</div>
+          </td>
+          <td>
+            <button type="button" class="status-badge ${statusClass}" onclick="toggleInterventionStatus('${i.id}')" title="Cliquer pour basculer le statut">
+              <span>${statusIcon}</span> <span>${escapeHTML(i.status)}</span>
+            </button>
+          </td>
+          <td>
+            <div style="font-size: 0.84rem; color: var(--text-heading);">👤 ${escapeHTML(i.worker || "Non assigné")}</div>
+          </td>
+          <td class="text-right">
+            <div class="table-actions" style="justify-content: flex-end;">
+              <button type="button" class="action-btn" onclick="openCreateModal('${i.id}')" title="Modifier l'intervention">✏️</button>
+              <button type="button" class="action-btn action-btn-danger" onclick="deleteIntervention('${i.id}')" title="Supprimer l'intervention">🗑️</button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join("");
+  }
+}
+
+function resetClientHistoryKPIs() {
+  setElemText("ch-kpi-total-interventions", "0");
+  setElemText("ch-kpi-surface-worked", "0.0000 ha");
+  setElemText("ch-kpi-hours-worked", "0 h");
+  setElemText("ch-kpi-amount-total", "0.00 € HT");
+  setElemText("ch-kpi-amount-ttc", "0.00 € TTC");
+  setElemText("ch-kpi-amount-unbilled", "0.00 € HT");
+  setElemText("ch-kpi-unbilled-count", "0 chantier(s)");
+  setElemText("ch-kpi-amount-billed", "0.00 € HT");
+  setElemText("ch-kpi-billed-count", "0 chantier(s)");
+}
+
+function filterClientHistoryStatus(status) {
+  clientHistoryStatusFilter = status;
+  document.querySelectorAll(".ch-status-tab").forEach(tab => {
+    tab.classList.toggle("active", tab.dataset.status === status);
+  });
+  updateClientHistoryData();
+}
+
+function handleClientHistoryDateChange(preset) {
+  clientHistoryDateFilter = preset;
+  updateClientHistoryData();
+}
+
+function resetClientHistoryFilters() {
+  clientHistoryStatusFilter = "all";
+  clientHistoryDateFilter = "all";
+  clientHistorySearchFilter = "";
+
+  const searchInput = document.getElementById("ch-search-input");
+  if (searchInput) searchInput.value = "";
+  const clearBtn = document.getElementById("ch-search-clear");
+  if (clearBtn) clearBtn.style.display = "none";
+  const dateSelect = document.getElementById("ch-filter-date");
+  if (dateSelect) dateSelect.value = "all";
+
+  document.querySelectorAll(".ch-status-tab").forEach(tab => {
+    tab.classList.toggle("active", tab.dataset.status === "all");
+  });
+
+  updateClientHistoryData();
+}
+
+function openCreateModalForCurrentHistoryClient() {
+  if (clientHistorySelectedClientIds.length === 1) {
+    quickCreateForClient(clientHistorySelectedClientIds[0]);
+  } else {
+    openCreateModal();
+  }
+}
+
+function exportClientHistoryCSV() {
+  const selectedClients = (clients || []).filter(c => clientHistorySelectedClientIds.includes(c.id));
+  if (selectedClients.length === 0) {
+    showToast("Veuillez sélectionner au moins un domaine viticole pour exporter l'historique.", "warning");
+    return;
+  }
+
+  const selectedParcelNames = [];
+  let totalParcelsCount = 0;
+  selectedClients.forEach(c => {
+    (c.parcels || []).forEach(p => {
+      totalParcelsCount++;
+      if (clientHistorySelectedParcelIds.has(p.id)) {
+        selectedParcelNames.push(p.name.toLowerCase().trim());
+      }
+    });
+  });
+
+  const selectedClientIdsSet = new Set(clientHistorySelectedClientIds);
+  const selectedClientNamesLower = selectedClients.map(c => c.name.toLowerCase().trim());
+
+  const allSelectedClientsInterventions = (interventions || []).filter(i => {
+    if (i.clientId && selectedClientIdsSet.has(i.clientId)) return true;
+    if (i.client && selectedClientNamesLower.includes(i.client.toLowerCase().trim())) return true;
+    return false;
+  });
+
+  const filtered = allSelectedClientsInterventions.filter(i => {
+    if (clientHistorySelectedParcelIds.size === 0) return false;
+    if (clientHistorySelectedParcelIds.size !== totalParcelsCount) {
+      let match = false;
+      if (i.parcelId && clientHistorySelectedParcelIds.has(i.parcelId)) match = true;
+      if (Array.isArray(i.parcelIds) && i.parcelIds.some(pid => clientHistorySelectedParcelIds.has(pid))) match = true;
+      if (!match && i.parcel) {
+        const pLower = i.parcel.toLowerCase();
+        if (selectedParcelNames.some(name => pLower.includes(name))) match = true;
+      }
+      if (!match) return false;
+    }
+    if (clientHistoryStatusFilter && clientHistoryStatusFilter !== "all" && i.status !== clientHistoryStatusFilter) return false;
+    return true;
+  });
+
+  if (filtered.length === 0) {
+    showToast("Aucun chantier à exporter pour cette sélection.", "warning");
+    return;
+  }
+
+  const headers = ["Date & Heure", "Client", "Parcelle(s)", "Prestation", "Volume", "Unité", "Montant HT", "Montant TTC", "Statut", "Salarié", "Notes"];
+  const escapeCSV = (s) => `"${String(s || '').replace(/"/g, '""')}"`;
+
+  const rows = filtered.map(i => [
+    escapeCSV(i.datetime),
+    escapeCSV(i.client),
+    escapeCSV(i.parcel),
+    escapeCSV(i.task || i.service),
+    i.volume || 0,
+    escapeCSV(i.rateType || "ha"),
+    i.amount || 0,
+    i.amountTtc || (parseFloat(i.amount || 0) * 1.2),
+    escapeCSV(i.status),
+    escapeCSV(i.worker),
+    escapeCSV(i.notes)
+  ].join(";"));
+
+  const csvContent = "\uFEFF" + [headers.join(";"), ...rows].join("\r\n");
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  const today = new Date().toISOString().split("T")[0];
+  const filename = selectedClients.length === 1
+    ? `historique_${selectedClients[0].name.toLowerCase().replace(/[^a-z0-9]/g, "_")}_${today}.csv`
+    : `historique_${selectedClients.length}_domaines_${today}.csv`;
+  link.setAttribute("href", url);
+  link.setAttribute("download", filename);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+  showToast("Historique exporté avec succès (CSV) !", "success");
+}
+
+// Window Exports for Client History
+window.renderClientHistoryView = renderClientHistoryView;
+window.populateClientHistoryClientSelect = populateClientHistoryClientSelect;
+window.populateClientHistoryParcelSelect = populateClientHistoryParcelSelect;
+window.handleClientHistoryClientChange = handleClientHistoryClientChange;
+window.initClientHistoryFilterMultiSelect = initClientHistoryFilterMultiSelect;
+window.initClientHistoryParcelFilterMultiSelect = initClientHistoryParcelFilterMultiSelect;
+window.updateClientHistoryFilterUI = updateClientHistoryFilterUI;
+window.updateClientHistoryParcelFilterUI = updateClientHistoryParcelFilterUI;
+window.toggleClientHistoryClient = toggleClientHistoryClient;
+window.toggleAllClientHistoryClients = toggleAllClientHistoryClients;
+window.toggleClientGroupParcels = toggleClientGroupParcels;
+window.toggleClientHistoryParcel = toggleClientHistoryParcel;
+window.toggleAllClientHistoryParcels = toggleAllClientHistoryParcels;
+window.updateClientHistoryData = updateClientHistoryData;
+window.filterClientHistoryStatus = filterClientHistoryStatus;
+window.handleClientHistoryDateChange = handleClientHistoryDateChange;
+window.resetClientHistoryFilters = resetClientHistoryFilters;
+window.openCreateModalForCurrentHistoryClient = openCreateModalForCurrentHistoryClient;
+window.exportClientHistoryCSV = exportClientHistoryCSV;
+
 
 

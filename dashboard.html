@@ -111,6 +111,10 @@
           <span class="nav-icon">📊</span>
           <span class="nav-label">Tableau de bord</span>
         </a>
+        <a href="javascript:void(0)" class="nav-item" id="nav-btn-client-history" data-view="client-history" title="Historique des travaux par client et parcelles">
+          <span class="nav-icon">📋</span>
+          <span class="nav-label">Historique Client</span>
+        </a>
         <a href="javascript:void(0)" class="nav-item" id="nav-btn-clients" data-view="clients">
           <span class="nav-icon">🍇</span>
           <span class="nav-label">Clients & Parcelles</span>
@@ -136,6 +140,11 @@
           <span class="nav-label">Équipe & Utilisateurs</span>
           <span class="nav-badge badge-info" id="sidebar-team-count">0</span>
         </a>
+        <a href="javascript:void(0)" class="nav-item" id="nav-btn-vendanges" data-view="vendanges" title="Suivi des vendanges et récoltes">
+          <span class="nav-icon">🧺</span>
+          <span class="nav-label">Vendanges</span>
+          <span class="nav-badge" id="sidebar-vendanges-count">0</span>
+        </a>
 
         <div class="nav-section-title">ABONNEMENT STRIPE</div>
         <a href="javascript:void(0)" class="nav-item" id="sidebar-sub-btn" title="Gérer mon abonnement et mes factures">
@@ -156,6 +165,10 @@
         <a href="javascript:void(0)" class="nav-item" id="sidebar-add-planned-btn">
           <span class="nav-icon">📌</span>
           <span class="nav-label">Planifier un travail</span>
+        </a>
+        <a href="javascript:void(0)" class="nav-item" id="sidebar-add-harvest-btn" onclick="openHarvestModal()" title="Ajouter une parcelle au suivi des vendanges">
+          <span class="nav-icon">🍇</span>
+          <span class="nav-label">Nouvelle Vendange</span>
         </a>
         <a href="javascript:void(0)" class="nav-item" id="sidebar-add-client-btn">
           <span class="nav-icon">＋</span>
@@ -239,7 +252,6 @@
           <button type="button" class="btn btn-outline btn-sm btn-topbar-item" id="topbar-team-btn" onclick="openTeamModal()" title="Gestion de l'équipe et des utilisateurs">
             <span class="btn-icon">👥</span>
             <span class="btn-text-desktop" id="topbar-team-text">Équipe (0)</span>
-            <span class="btn-text-mobile">👥</span>
           </button>
           <div class="user-topbar-profile" id="user-topbar-profile">
             <span class="user-topbar-avatar" title="Profil connecté">👤</span>
@@ -724,6 +736,7 @@
                         <option value="hourly">Taux horaire (€/h)</option>
                         <option value="surface">À l'hectare (€/ha)</option>
                         <option value="fixed">Forfait fixe (€)</option>
+                        <option value="kilo">Au kilo (€/kg)</option>
                       </select>
                     </div>
                     <span class="filter-dropdown-arrow">
@@ -792,6 +805,677 @@
 
         </div>
 
+        <!-- ==================== VUE 4 : VENDANGES & RÉCOLTES ==================== -->
+        <div class="app-view" id="view-vendanges" style="display: none;">
+          <div class="view-header">
+            <div>
+              <div class="view-badge">🍇 CAMPAGNE VITICOLE & RÉCOLTE</div>
+              <h1 class="view-heading">Pilotage des Vendanges</h1>
+              <p class="view-subheading">Suivi parcelle par parcelle des étapes clés : effeuillage, coupe, pesée (kg / caisses) et débardage.</p>
+            </div>
+            <div class="services-view-actions">
+              <button class="btn btn-outline btn-sm" id="btn-export-vendanges-csv" onclick="exportVendangesCSV()" title="Exporter le suivi des vendanges en CSV">
+                <span>📥 Exporter la feuille (CSV)</span>
+              </button>
+              <button class="btn btn-primary btn-glow btn-sm" id="btn-open-harvest-modal" onclick="openHarvestModal()" title="Ajouter des parcelles au suivi des vendanges">
+                <span class="btn-icon">＋</span>
+                <span>Nouvelle parcelle à vendanger</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- KPI VENDANGES (SYNTHÈSE EN DIRECT) -->
+          <div class="kpi-grid vendanges-kpi-grid">
+            <div class="kpi-card" id="kpi-harvest-card-parcels">
+              <div class="kpi-header">
+                <span class="kpi-title">Parcelles au suivi</span>
+                <span class="kpi-icon icon-purple">🍇</span>
+              </div>
+              <div class="kpi-value" id="kpi-harvest-parcels-count">0</div>
+              <div class="kpi-footer">
+                <span class="badge-tag" id="kpi-harvest-surface-total">0.0000 ha</span>
+                <span class="kpi-sub">répertoriés</span>
+              </div>
+              <div class="kpi-card-action-bar">
+                <button type="button" class="kpi-quick-btn" onclick="openHarvestModal()" title="Ajouter des parcelles au suivi">＋ Ajouter parcelle</button>
+              </div>
+            </div>
+
+            <div class="kpi-card" id="kpi-harvest-card-leaf">
+              <div class="kpi-header">
+                <span class="kpi-title">Effeuillage</span>
+                <span class="kpi-icon icon-green">🍃</span>
+              </div>
+              <div class="kpi-value" id="kpi-harvest-leaf-progress">0%</div>
+              <div class="kpi-mini-progress-track">
+                <div class="kpi-mini-progress-bar bar-green" id="kpi-harvest-leaf-bar" style="width: 0%;"></div>
+              </div>
+              <div class="kpi-footer">
+                <span class="badge-tag" id="kpi-harvest-leaf-details">0 effeuillée(s) • 0 à faire</span>
+                <span class="kpi-sub" id="kpi-harvest-leaf-srv-tag" style="display: block; font-size: 0.74rem; color: #52b788; margin-top: 3px;">Prestation liée : Effeuillage manuel</span>
+              </div>
+              <div class="kpi-card-action-bar">
+                <button type="button" class="kpi-quick-btn" onclick="filterVendangesByStage('leaf_todo')" title="Filtrer les parcelles à effeuiller">À effeuiller ➔</button>
+              </div>
+            </div>
+
+            <div class="kpi-card" id="kpi-harvest-card-cut">
+              <div class="kpi-header">
+                <span class="kpi-title">Coupe / Récolte</span>
+                <span class="kpi-icon icon-warning">✂️</span>
+              </div>
+              <div class="kpi-value value-warning" id="kpi-harvest-cut-progress">0%</div>
+              <div class="kpi-mini-progress-track">
+                <div class="kpi-mini-progress-bar bar-warning" id="kpi-harvest-cut-bar" style="width: 0%;"></div>
+              </div>
+              <div class="kpi-footer">
+                <span class="badge-tag" id="kpi-harvest-cut-details">0 coupée(s) • 0 à couper</span>
+              </div>
+              <div class="kpi-card-action-bar">
+                <button type="button" class="kpi-quick-btn" onclick="filterVendangesByStage('cut_todo')" title="Filtrer les parcelles à couper">À couper ➔</button>
+              </div>
+            </div>
+
+            <div class="kpi-card kpi-highlight-warning" id="kpi-harvest-card-yield">
+              <div class="kpi-header">
+                <span class="kpi-title">Volume Récolté & Rendement</span>
+                <span class="kpi-icon icon-emerald">🧺</span>
+              </div>
+              <div class="kpi-value value-success" id="kpi-harvest-volume-total">0 kg</div>
+              <div class="kpi-footer">
+                <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                  <span class="badge-pill pill-success" id="kpi-harvest-boxes-total">0 caisse(s)</span>
+                  <span class="kpi-sub" id="kpi-harvest-revenue-total" style="font-weight: 700; color: #52b788;">0,00 € HT valorisé</span>
+                </div>
+                <span class="kpi-sub" id="kpi-harvest-cut-srv-tag" style="display: block; font-size: 0.74rem; color: #ffb703; margin-top: 3px;">Prestation liée : Coupe vendange (0,35 €/kg)</span>
+              </div>
+              <div class="kpi-card-action-bar">
+                <button type="button" class="kpi-quick-btn" onclick="filterVendangesByStage('cut_done')" title="Voir les parcelles récoltées">Voir récoltées ➔</button>
+              </div>
+            </div>
+
+            <div class="kpi-card" id="kpi-harvest-card-haul">
+              <div class="kpi-header">
+                <span class="kpi-title">Débardage</span>
+                <span class="kpi-icon icon-blue">🚜</span>
+              </div>
+              <div class="kpi-value" id="kpi-harvest-haul-progress">0%</div>
+              <div class="kpi-mini-progress-track">
+                <div class="kpi-mini-progress-bar bar-blue" id="kpi-harvest-haul-bar" style="width: 0%;"></div>
+              </div>
+              <div class="kpi-footer">
+                <span class="badge-tag" id="kpi-harvest-haul-details">0 débardée(s) • 0 à sortir</span>
+                <span class="kpi-sub" id="kpi-harvest-haul-srv-tag" style="display: block; font-size: 0.74rem; color: #4cc9f0; margin-top: 3px;">Prestation liée : Débardage vendange (0.15 €/kg)</span>
+              </div>
+              <div class="kpi-card-action-bar">
+                <button type="button" class="kpi-quick-btn" onclick="filterVendangesByStage('haul_todo')" title="Filtrer les parcelles à débarder">À débarder ➔</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- TABLE SECTION WITH FILTERS (FEUILLE DE ROUTE VENDANGES) -->
+          <section class="dashboard-table-card vendanges-table-card" id="vendanges-table-section">
+            <div class="table-header-bar">
+              <div class="table-header-top">
+                <div class="table-title-group">
+                  <span class="table-title-icon">🍇</span>
+                  <h2 class="table-title">Feuille de route des vendanges</h2>
+                  <span class="table-count-badge" id="vendanges-table-count">0 parcelle</span>
+                </div>
+                <div class="table-header-actions">
+                  <button class="btn btn-outline btn-xs" id="btn-export-vendanges-table" onclick="exportVendangesCSV()" title="Exporter la feuille de vendanges au format CSV">
+                    <span>📥 Exporter CSV</span>
+                  </button>
+                  <button class="btn btn-primary btn-xs btn-glow" id="btn-add-harvest-table-top" onclick="openHarvestModal()" title="Ajouter une parcelle au suivi">
+                    <span class="btn-icon">＋</span>
+                    <span>Nouvelle parcelle</span>
+                  </button>
+                </div>
+              </div>
+
+              <div class="table-controls-bar">
+                <div class="search-box">
+                  <span class="search-icon">🔍</span>
+                  <input type="text" id="vendanges-search-input" placeholder="Rechercher par domaine, parcelle, cépage..." aria-label="Rechercher une parcelle de vendange">
+                  <button type="button" class="search-clear-btn" id="vendanges-search-clear" style="display: none;">✕</button>
+                </div>
+
+                <div class="filter-dropdown-btn-wrap select-client-wrap" id="wrap-vendanges-filter-client">
+                  <button type="button" class="filter-dropdown-pill filter-ms-trigger" id="btn-vendanges-filter-client" aria-haspopup="true" aria-expanded="false" aria-label="Filtrer par domaine viticole">
+                    <span class="filter-dropdown-icon">🍇</span>
+                    <div class="filter-dropdown-body">
+                      <span class="filter-dropdown-label">Domaine Viticole</span>
+                      <span class="filter-dropdown-value" id="vendanges-filter-client-text">Tous les domaines</span>
+                    </div>
+                    <span class="filter-dropdown-arrow">
+                      <svg width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M1 1L5 5L9 1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                      </svg>
+                    </span>
+                  </button>
+
+                  <div class="filter-multiselect-dropdown" id="dropdown-vendanges-filter-client" style="display: none;">
+                    <div class="filter-multiselect-header">
+                      <div class="filter-ms-header-info">
+                        <span class="filter-ms-header-title">Domaines Viticoles</span>
+                        <span class="filter-ms-count-badge" id="vendanges-filter-client-badge">Tous</span>
+                      </div>
+                      <div class="filter-ms-actions">
+                        <button type="button" class="filter-ms-action-btn" id="btn-vendanges-select-all-clients">Tout cocher</button>
+                        <span class="filter-ms-sep">•</span>
+                        <button type="button" class="filter-ms-action-btn" id="btn-vendanges-clear-clients">Tout décocher</button>
+                      </div>
+                    </div>
+                    <div class="filter-ms-search-box">
+                      <span class="filter-ms-search-icon">🔍</span>
+                      <input type="text" id="search-vendanges-filter-client" class="filter-ms-search-input" placeholder="Chercher un domaine..." autocomplete="off">
+                    </div>
+                    <div class="filter-ms-list" id="list-vendanges-filter-client">
+                      <!-- Généré dynamiquement avec encoches (cases à cocher) -->
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Menu déroulant multi-sélection pour les parcelles des vendanges -->
+                <div class="filter-dropdown-btn-wrap select-parcel-wrap" id="wrap-vendanges-filter-parcel" style="position: relative;">
+                  <button type="button" class="filter-dropdown-pill filter-ms-trigger" id="btn-vendanges-filter-parcel" aria-haspopup="true" aria-expanded="false" aria-label="Filtrer par parcelle">
+                    <span class="filter-dropdown-icon">📍</span>
+                    <div class="filter-dropdown-body">
+                      <span class="filter-dropdown-label">Parcelle(s)</span>
+                      <span class="filter-dropdown-value" id="vendanges-filter-parcel-text">Toutes les parcelles</span>
+                    </div>
+                    <span class="filter-dropdown-arrow">
+                      <svg width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M1 1L5 5L9 1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                      </svg>
+                    </span>
+                  </button>
+
+                  <div class="filter-multiselect-dropdown" id="dropdown-vendanges-filter-parcel" style="display: none; min-width: 280px;">
+                    <div class="filter-multiselect-header">
+                      <div class="filter-ms-header-info">
+                        <span class="filter-ms-header-title">Parcelles Cadastrales</span>
+                        <span class="filter-ms-count-badge" id="vendanges-filter-parcel-badge">Toutes</span>
+                      </div>
+                      <div class="filter-ms-actions">
+                        <button type="button" class="filter-ms-action-btn" id="btn-vendanges-select-all-parcels">Tout cocher</button>
+                        <span class="filter-ms-sep">•</span>
+                        <button type="button" class="filter-ms-action-btn" id="btn-vendanges-clear-parcels">Tout décocher</button>
+                      </div>
+                    </div>
+                    <div class="filter-ms-search-box">
+                      <span class="filter-ms-search-icon">🔍</span>
+                      <input type="text" id="search-vendanges-filter-parcel" class="filter-ms-search-input" placeholder="Chercher une parcelle, cépage..." autocomplete="off">
+                    </div>
+                    <div class="filter-ms-list" id="list-vendanges-filter-parcel" style="max-height: 250px;">
+                      <!-- Généré dynamiquement avec encoches (cases à cocher) -->
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Menu déroulant multi-sélection pour les étapes des vendanges -->
+                <div class="filter-dropdown-btn-wrap select-stage-wrap" id="wrap-vendanges-filter-stage" style="position: relative;">
+                  <button type="button" class="filter-dropdown-pill filter-ms-trigger" id="btn-vendanges-filter-stage" aria-haspopup="true" aria-expanded="false" aria-label="Filtrer par étape de vendange">
+                    <span class="filter-dropdown-icon" id="vendanges-stage-icon">📋</span>
+                    <div class="filter-dropdown-body">
+                      <span class="filter-dropdown-label">Étape(s) Vendange</span>
+                      <span class="filter-dropdown-value" id="vendanges-filter-stage-text">Toutes les étapes</span>
+                    </div>
+                    <span class="filter-dropdown-arrow">
+                      <svg width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M1 1L5 5L9 1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                      </svg>
+                    </span>
+                  </button>
+
+                  <div class="filter-multiselect-dropdown filter-stage-dropdown" id="dropdown-vendanges-filter-stage" style="display: none; min-width: 270px;">
+                    <div class="filter-multiselect-header">
+                      <div class="filter-ms-header-info">
+                        <span class="filter-ms-header-title">Étapes de vendange</span>
+                        <span class="filter-ms-count-badge" id="vendanges-stage-dropdown-badge">Toutes</span>
+                      </div>
+                      <div class="filter-ms-actions">
+                        <button type="button" class="filter-ms-action-btn" id="btn-vendanges-select-all-stages">Tout cocher</button>
+                        <span class="filter-ms-sep">•</span>
+                        <button type="button" class="filter-ms-action-btn" id="btn-vendanges-clear-stages">Tout décocher</button>
+                      </div>
+                    </div>
+                    <div class="filter-ms-list" id="list-vendanges-filter-stage" style="max-height: 240px;">
+                      <label class="filter-ms-item is-checked" data-stage="leaf_todo">
+                        <input type="checkbox" class="vendanges-stage-cb" value="leaf_todo" checked>
+                        <span class="filter-ms-checkbox-box"></span>
+                        <span class="filter-ms-item-icon" style="font-size: 1.1rem; margin-right: 0.15rem;">🍃</span>
+                        <div class="filter-ms-item-text" style="flex: 1;">
+                          <span class="filter-ms-item-title">À effeuiller</span>
+                        </div>
+                        <span class="filter-stage-item-badge badge-warn" id="count-vendanges-leaf">0</span>
+                      </label>
+
+                      <label class="filter-ms-item is-checked" data-stage="leaf_done">
+                        <input type="checkbox" class="vendanges-stage-cb" value="leaf_done" checked>
+                        <span class="filter-ms-checkbox-box"></span>
+                        <span class="filter-ms-item-icon" style="font-size: 1.1rem; margin-right: 0.15rem;">✅</span>
+                        <div class="filter-ms-item-text" style="flex: 1;">
+                          <span class="filter-ms-item-title">Effeuillées</span>
+                        </div>
+                        <span class="filter-stage-item-badge badge-succ" id="count-vendanges-leaf-done">0</span>
+                      </label>
+
+                      <label class="filter-ms-item is-checked" data-stage="cut_todo">
+                        <input type="checkbox" class="vendanges-stage-cb" value="cut_todo" checked>
+                        <span class="filter-ms-checkbox-box"></span>
+                        <span class="filter-ms-item-icon" style="font-size: 1.1rem; margin-right: 0.15rem;">⏳</span>
+                        <div class="filter-ms-item-text" style="flex: 1;">
+                          <span class="filter-ms-item-title">À couper</span>
+                        </div>
+                        <span class="filter-stage-item-badge badge-warn" id="count-vendanges-cut-todo">0</span>
+                      </label>
+
+                      <label class="filter-ms-item is-checked" data-stage="cut_done">
+                        <input type="checkbox" class="vendanges-stage-cb" value="cut_done" checked>
+                        <span class="filter-ms-checkbox-box"></span>
+                        <span class="filter-ms-item-icon" style="font-size: 1.1rem; margin-right: 0.15rem;">🍇</span>
+                        <div class="filter-ms-item-text" style="flex: 1;">
+                          <span class="filter-ms-item-title">Coupées</span>
+                        </div>
+                        <span class="filter-stage-item-badge badge-succ" id="count-vendanges-cut-done">0</span>
+                      </label>
+
+                      <label class="filter-ms-item is-checked" data-stage="haul_todo">
+                        <input type="checkbox" class="vendanges-stage-cb" value="haul_todo" checked>
+                        <span class="filter-ms-checkbox-box"></span>
+                        <span class="filter-ms-item-icon" style="font-size: 1.1rem; margin-right: 0.15rem;">🚜</span>
+                        <div class="filter-ms-item-text" style="flex: 1;">
+                          <span class="filter-ms-item-title">À débarder</span>
+                        </div>
+                        <span class="filter-stage-item-badge badge-warn" id="count-vendanges-haul-todo">0</span>
+                      </label>
+
+                      <label class="filter-ms-item is-checked" data-stage="haul_done">
+                        <input type="checkbox" class="vendanges-stage-cb" value="haul_done" checked>
+                        <span class="filter-ms-checkbox-box"></span>
+                        <span class="filter-ms-item-icon" style="font-size: 1.1rem; margin-right: 0.15rem;">✅</span>
+                        <div class="filter-ms-item-text" style="flex: 1;">
+                          <span class="filter-ms-item-title">Débardées</span>
+                        </div>
+                        <span class="filter-stage-item-badge badge-succ" id="count-vendanges-haul-done">0</span>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+                <button type="button" class="btn btn-ghost btn-xs btn-reset-filters" id="btn-reset-vendanges-filters" style="display: none;" title="Réinitialiser tous les filtres">
+                  <span>✕ Réinitialiser</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- TABLE RESPONSIVE -->
+            <div class="table-responsive">
+              <table class="interventions-table vendanges-table" id="vendanges-table">
+                <thead>
+                  <tr>
+                    <th>Domaine Viticole</th>
+                    <th>Parcelle Cadastrale</th>
+                    <th>Surface & Cépage</th>
+                    <th>Effeuillage</th>
+                    <th>Coupe / Récolte</th>
+                    <th>Rendement (Kilos / Caisses)</th>
+                    <th>Débardage</th>
+                    <th>Équipe & Suivi</th>
+                    <th class="text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="vendanges-table-tbody">
+                  <!-- Populated dynamically -->
+                </tbody>
+              </table>
+            </div>
+
+            <!-- TABLE EMPTY STATE -->
+            <div class="table-empty-state" id="vendanges-empty-state" style="display: none;">
+              <div class="empty-icon">🍇</div>
+              <h3 id="vendanges-empty-title">Aucune parcelle au suivi des vendanges</h3>
+              <p id="vendanges-empty-desc">Ajoutez les parcelles de vos clients pour suivre l'effeuillage, la coupe, la pesée et le débardage en temps réel.</p>
+              <div style="display: flex; gap: 0.75rem; margin-top: 0.5rem; flex-wrap: wrap; justify-content: center;">
+                <button type="button" class="btn btn-outline btn-sm" id="btn-vendanges-empty-reset" onclick="resetVendangesFilters()" style="display: none;">✕ Réinitialiser les filtres</button>
+                <button type="button" class="btn btn-primary btn-sm" onclick="openHarvestModal()">🍇 ＋ Ajouter une parcelle à vendanger</button>
+              </div>
+            </div>
+
+            <!-- TABLE FOOTER -->
+            <div class="table-footer">
+              <div class="table-legend">
+                <span>💡 <em>Sélectionnez directement l'état d'effeuillage, de coupe et de débardage via les menus déroulants pour une mise à jour instantanée du chantier.</em></span>
+              </div>
+              <div class="table-actions-bulk">
+                <span class="table-footer-count" id="vendanges-footer-count">0 parcelle(s)</span>
+                <button type="button" class="btn btn-outline btn-xs" onclick="exportVendangesCSV()">📥 Exporter la feuille (CSV)</button>
+                <button type="button" class="btn btn-primary btn-xs" onclick="openHarvestModal()">＋ Ajouter une parcelle</button>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <!-- ==================== VUE 5 : HISTORIQUE & SUIVI CLIENT ==================== -->
+        <div class="app-view" id="view-client-history" style="display: none;">
+          <div class="view-header">
+            <div>
+              <div class="view-badge">📋 PILOTAGE & SUIVI PARCELLAIRE</div>
+              <h1 class="view-heading">Historique & Suivi par Client</h1>
+              <p class="view-subheading">Sélectionnez un client et ses parcelles pour explorer l'historique complet des chantiers réalisés, des surfaces et des montants.</p>
+            </div>
+            <div class="services-view-actions">
+              <button type="button" class="btn btn-outline btn-sm" id="btn-export-ch-csv" onclick="exportClientHistoryCSV()" title="Exporter l'historique du client en CSV">
+                <span>📥 Exporter l'historique (CSV)</span>
+              </button>
+              <button type="button" class="btn btn-primary btn-glow btn-sm" id="btn-ch-new-intervention" onclick="openCreateModalForCurrentHistoryClient()" title="Saisir une nouvelle intervention pour ce client">
+                <span class="btn-icon">＋</span>
+                <span>Nouvelle intervention</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- CARTE DE SÉLECTION DU CLIENT ET DES PARCELLES -->
+          <div class="client-history-selector-card">
+            <div class="ch-selector-grid">
+              <!-- 1. SÉLECTION DU CLIENT (MULTI-SÉLECTION À ENCOCHES) -->
+              <div class="ch-selector-block ch-client-block" style="position: relative;" id="wrap-ch-filter-client">
+                <div class="ch-block-header-row" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+                  <label class="ch-block-label" style="margin: 0;">
+                    <span class="ch-step-num">1</span>
+                    <span>Domaine(s) / Client(s)</span>
+                  </label>
+                  <span class="filter-ms-count-badge" id="ch-client-badge">1 sélectionné</span>
+                </div>
+
+                <button type="button" class="filter-dropdown-pill filter-ms-trigger" id="btn-ch-filter-client" aria-haspopup="true" aria-expanded="false" style="width: 100%; justify-content: space-between; height: 46px; border-radius: var(--radius-md); padding: 0 0.85rem;">
+                  <div style="display: flex; align-items: center; gap: 0.6rem; min-width: 0;">
+                    <span class="filter-dropdown-icon" style="font-size: 1.15rem;">🍇</span>
+                    <div class="filter-dropdown-body" style="text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                      <span class="filter-dropdown-label" style="font-size: 0.72rem;">Domaine(s) Viticole(s)</span>
+                      <span class="filter-dropdown-value" id="ch-client-text" style="font-size: 0.88rem; font-weight: 700; color: var(--text-heading); display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Sélectionner des clients...</span>
+                    </div>
+                  </div>
+                  <span class="filter-dropdown-arrow">
+                    <svg width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M1 1L5 5L9 1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </span>
+                </button>
+
+                <!-- Menu déroulant multi-sélection des clients de l'historique -->
+                <div class="filter-multiselect-dropdown" id="dropdown-ch-filter-client" style="display: none; width: 100%; max-width: 100%;">
+                  <div class="filter-multiselect-header">
+                    <div class="filter-ms-header-info">
+                      <span class="filter-ms-header-title">Clients</span>
+                      <span class="filter-ms-count-badge" id="ch-client-dropdown-badge">Tous</span>
+                    </div>
+                    <div class="filter-ms-actions">
+                      <button type="button" class="filter-ms-action-btn" id="btn-ch-select-all-clients">Tout cocher</button>
+                      <span class="filter-ms-sep">•</span>
+                      <button type="button" class="filter-ms-action-btn" id="btn-ch-clear-clients">Tout décocher</button>
+                    </div>
+                  </div>
+                  <div class="filter-ms-search-box">
+                    <span class="filter-ms-search-icon">🔍</span>
+                    <input type="text" id="search-ch-filter-client" class="filter-ms-search-input" placeholder="Chercher un domaine..." autocomplete="off">
+                  </div>
+                  <div class="filter-ms-list" id="list-ch-filter-client" style="max-height: 220px;">
+                    <!-- Rempli dynamiquement avec encoches (cases à cocher) -->
+                  </div>
+                </div>
+
+                <div class="ch-client-info-pill" id="ch-client-info-pill" style="display: none; margin-top: 0.5rem;">
+                  <span id="ch-client-commune">📍 Commune</span>
+                  <span class="pill-sep">•</span>
+                  <span id="ch-client-contact">👤 Contact</span>
+                </div>
+              </div>
+
+              <!-- 2. SÉLECTION DES PARCELLES (MULTI-SÉLECTION À ENCOCHES EN MENU DÉROULANT) -->
+              <div class="ch-selector-block ch-parcels-block" style="position: relative;" id="wrap-ch-filter-parcel">
+                <div class="ch-block-header-row" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+                  <label class="ch-block-label" style="margin: 0;">
+                    <span class="ch-step-num">2</span>
+                    <span>Parcelles à inclure</span>
+                  </label>
+                  <span class="filter-ms-count-badge" id="ch-parcel-badge">Toutes</span>
+                </div>
+
+                <button type="button" class="filter-dropdown-pill filter-ms-trigger" id="btn-ch-filter-parcel" aria-haspopup="true" aria-expanded="false" style="width: 100%; justify-content: space-between; height: 46px; border-radius: var(--radius-md); padding: 0 0.85rem;">
+                  <div style="display: flex; align-items: center; gap: 0.6rem; min-width: 0;">
+                    <span class="filter-dropdown-icon" style="font-size: 1.15rem;">📍</span>
+                    <div class="filter-dropdown-body" style="text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                      <span class="filter-dropdown-label" style="font-size: 0.72rem;">Parcelles cadastrales</span>
+                      <span class="filter-dropdown-value" id="ch-parcel-text" style="font-size: 0.88rem; font-weight: 700; color: var(--text-heading); display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Toutes les parcelles</span>
+                    </div>
+                  </div>
+                  <span class="filter-dropdown-arrow">
+                    <svg width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M1 1L5 5L9 1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </span>
+                </button>
+
+                <!-- Menu déroulant multi-sélection des parcelles de l'historique -->
+                <div class="filter-multiselect-dropdown" id="dropdown-ch-filter-parcel" style="display: none; width: 100%; max-width: 100%;">
+                  <div class="filter-multiselect-header">
+                    <div class="filter-ms-header-info">
+                      <span class="filter-ms-header-title">Parcelles</span>
+                      <span class="filter-ms-count-badge" id="ch-parcel-dropdown-badge">Toutes</span>
+                    </div>
+                    <div class="filter-ms-actions">
+                      <button type="button" class="filter-ms-action-btn" id="btn-ch-select-all-parcels">Tout cocher</button>
+                      <span class="filter-ms-sep">•</span>
+                      <button type="button" class="filter-ms-action-btn" id="btn-ch-clear-parcels">Tout décocher</button>
+                    </div>
+                  </div>
+                  <div class="filter-ms-search-box">
+                    <span class="filter-ms-search-icon">🔍</span>
+                    <input type="text" id="search-ch-filter-parcel" class="filter-ms-search-input" placeholder="Chercher une parcelle, cépage..." autocomplete="off">
+                  </div>
+                  <div class="filter-ms-list" id="list-ch-filter-parcel" style="max-height: 230px;">
+                    <!-- Rempli dynamiquement avec encoches (cases à cocher) -->
+                  </div>
+                </div>
+
+                <div class="ch-parcel-info-pill" id="ch-parcel-info-pill" style="display: none; margin-top: 0.5rem;">
+                  <span id="ch-parcel-summary-text">📍 0 parcelle incluse</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Bandeau récapitulatif en direct -->
+            <div class="ch-recap-bar" id="ch-recap-bar" style="display: none;">
+              <div class="ch-recap-item">
+                <span class="ch-recap-icon">📍</span>
+                <span class="ch-recap-val" id="ch-recap-parcels-count">0 parcelle sélectionnée</span>
+              </div>
+              <span class="ch-recap-dot">•</span>
+              <div class="ch-recap-item">
+                <span class="ch-recap-icon">📐</span>
+                <span class="ch-recap-val" id="ch-recap-surface">0.0000 ha au cadastre</span>
+              </div>
+              <span class="ch-recap-dot">•</span>
+              <div class="ch-recap-item">
+                <span class="ch-recap-icon">🚜</span>
+                <span class="ch-recap-val" id="ch-recap-interventions-count">0 chantier trouvé</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- KPI SUMMARY DU CLIENT SÉLECTIONNÉ -->
+          <div class="kpi-grid ch-kpi-grid" id="ch-kpi-grid">
+            <div class="kpi-card" id="ch-kpi-card-interventions">
+              <div class="kpi-header">
+                <span class="kpi-title">Interventions réalisées</span>
+                <span class="kpi-icon icon-green">🚜</span>
+              </div>
+              <div class="kpi-value" id="ch-kpi-total-interventions">0</div>
+              <div class="kpi-footer">
+                <span class="badge-tag" id="ch-kpi-surface-worked">0.0000 ha</span>
+                <span class="kpi-sub" id="ch-kpi-hours-worked">0 h machines</span>
+              </div>
+            </div>
+
+            <div class="kpi-card" id="ch-kpi-card-revenue">
+              <div class="kpi-header">
+                <span class="kpi-title">Montant total HT</span>
+                <span class="kpi-icon icon-purple">💶</span>
+              </div>
+              <div class="kpi-value" id="ch-kpi-amount-total">0.00 € HT</div>
+              <div class="kpi-footer">
+                <span class="badge-tag" id="ch-kpi-amount-ttc" style="color: #74c69d; font-weight: 700;">0.00 € TTC</span>
+                <span class="kpi-sub">chiffre d'affaires</span>
+              </div>
+            </div>
+
+            <div class="kpi-card kpi-highlight-warning" id="ch-kpi-card-unbilled">
+              <div class="kpi-header">
+                <span class="kpi-title">À Facturer (En attente)</span>
+                <span class="kpi-icon icon-warning">⏳</span>
+              </div>
+              <div class="kpi-value value-warning" id="ch-kpi-amount-unbilled">0.00 € HT</div>
+              <div class="kpi-footer">
+                <span class="badge-pill pill-warning" id="ch-kpi-unbilled-count">0 chantier(s)</span>
+                <span class="kpi-sub">en attente</span>
+              </div>
+            </div>
+
+            <div class="kpi-card" id="ch-kpi-card-billed">
+              <div class="kpi-header">
+                <span class="kpi-title">Déjà Facturé</span>
+                <span class="kpi-icon icon-emerald">✅</span>
+              </div>
+              <div class="kpi-value value-success" id="ch-kpi-amount-billed">0.00 € HT</div>
+              <div class="kpi-footer">
+                <span class="badge-pill pill-success" id="ch-kpi-billed-count">0 chantier(s)</span>
+                <span class="kpi-sub">clôturés</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- TABLE CARD : JOURNAL DES TRAVAUX DU CLIENT -->
+          <section class="dashboard-table-card ch-table-card" id="ch-table-section">
+            <div class="table-header-bar">
+              <div class="table-header-top">
+                <div class="table-title-group">
+                  <span class="table-title-icon">🚜</span>
+                  <h2 class="table-title">Journal des travaux du client</h2>
+                  <span class="table-count-badge" id="ch-table-count">0 chantier</span>
+                </div>
+                <div class="table-header-actions">
+                  <button type="button" class="btn btn-outline btn-xs" onclick="exportClientHistoryCSV()" title="Exporter au format CSV">
+                    <span>📥 Exporter CSV</span>
+                  </button>
+                  <button type="button" class="btn btn-primary btn-xs btn-glow" onclick="openCreateModalForCurrentHistoryClient()" title="Saisir une intervention">
+                    <span class="btn-icon">＋</span>
+                    <span>Nouvelle intervention</span>
+                  </button>
+                </div>
+              </div>
+
+              <div class="table-controls-bar">
+                <div class="search-box">
+                  <span class="search-icon">🔍</span>
+                  <input type="text" id="ch-search-input" placeholder="Filtrer par prestation, parcelle, salarié, note..." aria-label="Rechercher dans l'historique">
+                  <button type="button" class="search-clear-btn" id="ch-search-clear" style="display: none;">✕</button>
+                </div>
+
+                <!-- Filtre Période / Date -->
+                <div class="filter-dropdown-btn-wrap select-date-wrap">
+                  <div class="filter-dropdown-pill">
+                    <span class="filter-dropdown-icon">📅</span>
+                    <div class="filter-dropdown-body">
+                      <span class="filter-dropdown-label">Période</span>
+                      <select id="ch-filter-date" onchange="handleClientHistoryDateChange(this.value)">
+                        <option value="all">Tout l'historique</option>
+                        <option value="this_year">Année en cours</option>
+                        <option value="this_month">Ce mois-ci</option>
+                        <option value="last_30_days">30 derniers jours</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Segmented Status Tabs -->
+                <div class="status-segmented-control" aria-label="Filtrer par statut facturation">
+                  <button type="button" class="status-tab ch-status-tab active" data-status="all" onclick="filterClientHistoryStatus('all')">
+                    <span class="status-tab-icon">📋</span>
+                    <span>Tous</span>
+                    <span class="status-tab-badge" id="ch-count-status-all">0</span>
+                  </button>
+                  <button type="button" class="status-tab ch-status-tab" data-status="À facturer" onclick="filterClientHistoryStatus('À facturer')">
+                    <span class="status-tab-icon">⏳</span>
+                    <span>À facturer</span>
+                    <span class="status-tab-badge badge-warn" id="ch-count-status-unbilled">0</span>
+                  </button>
+                  <button type="button" class="status-tab ch-status-tab" data-status="Facturée" onclick="filterClientHistoryStatus('Facturée')">
+                    <span class="status-tab-icon">✅</span>
+                    <span>Facturées</span>
+                    <span class="status-tab-badge badge-succ" id="ch-count-status-billed">0</span>
+                  </button>
+                </div>
+
+                <button type="button" class="btn btn-ghost btn-xs btn-reset-filters" id="btn-reset-ch-filters" style="display: none;" onclick="resetClientHistoryFilters()" title="Réinitialiser les filtres">
+                  <span>✕ Réinitialiser</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- TABLE RESPONSIVE -->
+            <div class="table-responsive">
+              <table class="interventions-table ch-table" id="ch-interventions-table">
+                <thead>
+                  <tr>
+                    <th>Date & Heure</th>
+                    <th>Parcelle(s)</th>
+                    <th>Prestation Viticole</th>
+                    <th>Volume / Surface</th>
+                    <th>Montant HT</th>
+                    <th>Montant TTC</th>
+                    <th>Statut Facturation</th>
+                    <th>Salarié</th>
+                    <th class="text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="ch-interventions-tbody">
+                  <!-- Populated dynamically -->
+                </tbody>
+              </table>
+            </div>
+
+            <!-- EMPTY STATE (WHEN NO CLIENT SELECTED) -->
+            <div class="table-empty-state" id="ch-empty-no-client">
+              <div class="empty-icon">🍇</div>
+              <h3>Aucun client sélectionné</h3>
+              <p>Sélectionnez un domaine viticole ci-dessus pour afficher ses parcelles et consulter l'historique complet de ses interventions.</p>
+            </div>
+
+            <!-- EMPTY STATE (WHEN CLIENT HAS NO MATCHING INTERVENTIONS) -->
+            <div class="table-empty-state" id="ch-empty-no-interventions" style="display: none;">
+              <div class="empty-icon">🚜</div>
+              <h3>Aucune intervention trouvée</h3>
+              <p id="ch-empty-message">Aucun chantier n'a été enregistré pour les parcelles et filtres sélectionnés.</p>
+              <div style="display: flex; gap: 0.75rem; margin-top: 0.5rem; flex-wrap: wrap; justify-content: center;">
+                <button type="button" class="btn btn-primary btn-sm" onclick="openCreateModalForCurrentHistoryClient()">🚜 ＋ Saisir une intervention</button>
+              </div>
+            </div>
+
+            <!-- TABLE FOOTER -->
+            <div class="table-footer">
+              <div class="table-legend">
+                <span>💡 <em>Cliquez sur le badge de statut pour basculer directement entre « À facturer » et « Facturée ».</em></span>
+              </div>
+              <div class="table-actions-bulk">
+                <span class="table-footer-count" id="ch-footer-count">0 intervention(s)</span>
+                <button type="button" class="btn btn-outline btn-xs" onclick="exportClientHistoryCSV()">📥 Exporter (CSV)</button>
+                <button type="button" class="btn btn-primary btn-xs" onclick="openCreateModalForCurrentHistoryClient()">＋ Nouvelle intervention</button>
+              </div>
+            </div>
+          </section>
+        </div>
       </div>
     </main>
   </div>
@@ -905,6 +1589,7 @@
                   <option value="hourly">Au temps passé (Taux horaire €/h)</option>
                   <option value="surface">À la surface (Forfait hectare €/ha)</option>
                   <option value="fixed">Forfait fixe global (€)</option>
+                  <option value="kilo">Au kilo (Tarif au kilo €/kg)</option>
                 </select>
               </div>
             </div>
@@ -916,7 +1601,7 @@
                   <span>Durée travaillée</span> <span class="required">*</span>
                 </label>
                 <div class="input-with-suffix">
-                  <input type="number" id="input-quantity" min="0.25" step="0.25" value="4.0" placeholder="Ex: 4.5" required>
+                  <input type="number" id="input-quantity" min="0.0001" step="0.25" value="4.0" placeholder="Ex: 4.5" required>
                   <span class="input-suffix" id="badge-quantity-unit">heures</span>
                 </div>
               </div>
@@ -926,7 +1611,7 @@
                   <span>Tarif unitaire HT</span>
                 </label>
                 <div class="input-with-suffix">
-                  <input type="number" id="input-unit-price" min="0" step="1" value="38" placeholder="Ex: 38">
+                  <input type="number" id="input-unit-price" min="0" step="0.01" value="38" placeholder="Ex: 38">
                   <span class="input-suffix">€ HT</span>
                 </div>
               </div>
@@ -1243,6 +1928,7 @@
                   <option value="hourly">Taux horaire (€/h)</option>
                   <option value="surface">À l'hectare (€/ha)</option>
                   <option value="fixed">Forfait fixe (€)</option>
+                  <option value="kilo">Au kilo (€/kg)</option>
                 </select>
               </div>
             </div>
@@ -1253,7 +1939,7 @@
                   <span id="label-service-price">Tarif horaire HT (€ / heure)</span> <span class="required">*</span>
                 </label>
                 <div class="input-with-suffix">
-                  <input type="number" id="input-service-price" min="0" step="1" value="38" placeholder="38" required>
+                  <input type="number" id="input-service-price" min="0" step="0.01" value="38" placeholder="38" required>
                   <span class="input-suffix">€ HT</span>
                 </div>
               </div>
@@ -1279,13 +1965,13 @@
 
   <!-- ==================== MODAL 6 : PLANIFIER UN TRAVAIL À FAIRE ==================== -->
   <div class="modal-overlay" id="planned-modal" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-sm">
+    <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
           <div class="modal-header-icon">📌</div>
           <div>
             <h3 class="modal-title">Planifier un travail à faire</h3>
-            <p class="modal-subtitle">Programmation d'un chantier futur pour un client viticole</p>
+            <p class="modal-subtitle">Programmation d'un chantier futur pour un ou plusieurs domaines viticoles</p>
           </div>
           <button class="modal-close-btn" id="planned-modal-close-btn" aria-label="Fermer">✕</button>
         </div>
@@ -1293,30 +1979,71 @@
         <form id="create-planned-form" novalidate>
           <div class="modal-body">
 
+            <!-- LIGNE MULTI-SÉLECTION : CLIENTS & PARCELLES EN MENUS DÉROULANTS -->
             <div class="form-row">
+              <!-- MENU DÉROULANT CLIENT(S) -->
               <div class="form-group flex-1">
-                <label for="input-planned-client" class="form-label">
-                  <span>Client / Domaine</span> <span class="required">*</span>
+                <label class="form-label" for="btn-planned-client-trigger">
+                  <span>Domaine(s) / Client(s)</span> <span class="required">*</span>
                 </label>
-                <div class="select-with-icon">
-                  <span class="input-icon">🏰</span>
-                  <select id="input-planned-client" required>
-                    <option value="">Sélectionner un client...</option>
-                  </select>
+
+                <div class="modal-dropdown-wrap" id="wrap-planned-client-dropdown">
+                  <button type="button" class="modal-dropdown-trigger" id="btn-planned-client-trigger" aria-haspopup="true" aria-expanded="false">
+                    <span class="modal-dropdown-icon">🏰</span>
+                    <span class="modal-dropdown-text" id="planned-client-trigger-text">Sélectionner les domaines...</span>
+                    <span class="modal-dropdown-badge" id="planned-client-trigger-badge" style="display: none;">0</span>
+                    <span class="modal-dropdown-arrow">▼</span>
+                  </button>
+
+                  <div class="modal-dropdown-menu" id="menu-planned-client-dropdown" style="display: none;">
+                    <div class="modal-dropdown-header">
+                      <span class="modal-dropdown-header-title">Domaines viticoles</span>
+                      <button type="button" class="btn-link-action" id="btn-toggle-all-planned-clients">Tout cocher</button>
+                    </div>
+                    <div class="modal-dropdown-search-wrap" id="planned-clients-search-wrap" style="display: none;">
+                      <input type="text" id="search-planned-clients" class="planned-quick-search-input" placeholder="🔍 Rechercher un domaine..." autocomplete="off">
+                    </div>
+                    <div id="planned-client-checkbox-list" class="modal-dropdown-list">
+                      <!-- Rempli dynamiquement -->
+                    </div>
+                  </div>
                 </div>
               </div>
 
+              <!-- MENU DÉROULANT PARCELLE(S) -->
               <div class="form-group flex-1">
-                <label for="input-planned-parcel" class="form-label">
-                  <span>Parcelle</span> <span class="required">*</span>
+                <label class="form-label" for="btn-planned-parcel-trigger">
+                  <span>Parcelle(s) concernée(s)</span> <span class="required">*</span>
                 </label>
-                <div class="select-with-icon">
-                  <span class="input-icon">📍</span>
-                  <select id="input-planned-parcel" required disabled>
-                    <option value="">Sélectionnez d'abord un client...</option>
-                  </select>
+
+                <div class="modal-dropdown-wrap" id="wrap-planned-parcel-dropdown">
+                  <button type="button" class="modal-dropdown-trigger" id="btn-planned-parcel-trigger" aria-haspopup="true" aria-expanded="false" disabled>
+                    <span class="modal-dropdown-icon">📍</span>
+                    <span class="modal-dropdown-text" id="planned-parcel-trigger-text">Sélectionnez d'abord un domaine...</span>
+                    <span class="modal-dropdown-badge" id="planned-parcel-trigger-badge" style="display: none;">0</span>
+                    <span class="modal-dropdown-arrow">▼</span>
+                  </button>
+
+                  <div class="modal-dropdown-menu" id="menu-planned-parcel-dropdown" style="display: none;">
+                    <div class="modal-dropdown-header">
+                      <span class="modal-dropdown-header-title">Parcelles viticoles</span>
+                      <button type="button" class="btn-link-action" id="btn-toggle-all-planned-parcels" style="display: none;">Tout cocher</button>
+                    </div>
+                    <div id="planned-parcel-checkbox-list" class="modal-dropdown-list">
+                      <div class="parcel-list-empty">Sélectionnez d'abord au moins un client pour afficher ses parcelles.</div>
+                    </div>
+                  </div>
                 </div>
               </div>
+            </div>
+
+            <!-- BARRE DE SYNTHÈSE DE LA SÉLECTION -->
+            <div class="planned-selection-recap-bar" id="planned-selection-recap-bar" style="display: none;">
+              <span class="recap-pill" id="recap-clients-count">🏰 0 domaine</span>
+              <span class="recap-sep">•</span>
+              <span class="recap-pill" id="recap-parcels-count">📍 0 parcelle</span>
+              <span class="recap-sep">•</span>
+              <span class="recap-surface" id="recap-surface-total">📐 0.0000 ha cumulés</span>
             </div>
 
             <div class="form-group">
@@ -1350,11 +2077,6 @@
                   <span class="input-icon">👤</span>
                   <select id="input-planned-worker">
                     <option value="">Non assigné (À définir)</option>
-                    <option value="Thomas Roux">Thomas Roux (Chef d'équipe)</option>
-                    <option value="Lucas Petit">Lucas Petit (Opérateur vigne)</option>
-                    <option value="Julie Martin">Julie Martin (Tractoriste)</option>
-                    <option value="Nicolas Blanc">Nicolas Blanc (Saisonnier)</option>
-                    <option value="Marc Leroy">Marc Leroy (Opérateur)</option>
                   </select>
                 </div>
               </div>
@@ -1363,11 +2085,11 @@
             <div class="form-row">
               <div class="form-group flex-1">
                 <label for="input-planned-quantity" class="form-label">
-                  <span>Quantité / Durée estimée</span>
+                  <span>Quantité / Surface / Durée estimée</span>
                 </label>
                 <div class="input-with-icon">
                   <span class="input-icon">⏱️</span>
-                  <input type="number" id="input-planned-quantity" min="0.1" step="0.5" placeholder="Ex: 4.0">
+                  <input type="number" id="input-planned-quantity" min="0" step="0.0001" placeholder="Ex: 4.0 (ou surface ha)">
                 </div>
               </div>
             </div>
@@ -1382,7 +2104,7 @@
           <div class="modal-footer">
             <button type="button" class="btn btn-ghost" id="planned-modal-cancel-btn">Annuler</button>
             <button type="submit" class="btn btn-primary btn-glow" id="planned-modal-submit-btn">
-              <span>📌 Enregistrer le travail à faire</span>
+              <span>📌 Enregistrer la planification</span>
             </button>
           </div>
         </form>
@@ -1400,6 +2122,9 @@
             <div style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;">
               <h3 class="modal-title" id="dossier-client-name">Domaine Viticole</h3>
               <span class="badge-tag" id="dossier-commune-badge">📍 Commune</span>
+              <button type="button" class="btn btn-outline btn-xs" id="dossier-btn-open-history" title="Consulter l'historique complet dans l'onglet dédié">
+                <span>📋 Suivi & Historique ➔</span>
+              </button>
             </div>
             <p class="modal-subtitle" id="dossier-client-subtitle">Fiche complète : parcelles associées et historique des interventions</p>
           </div>
@@ -1896,6 +2621,463 @@
             <button type="button" class="btn btn-ghost" onclick="closeTeamMemberModal()">Annuler</button>
             <button type="submit" class="btn btn-primary btn-glow" id="btn-save-member">
               <span id="team-member-modal-submit-text">💾 Enregistrer l'utilisateur</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL 11 : SUIVI DES VENDANGES (PARCELLE) ==================== -->
+  <div class="modal-overlay" id="harvest-modal" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div class="modal-header-icon" style="background: rgba(183, 228, 199, 0.15); color: #52b788; border-color: rgba(82, 183, 136, 0.3);">🍇</div>
+          <div>
+            <h3 class="modal-title" id="harvest-modal-title">Suivi Vendange par Parcelle</h3>
+            <p class="modal-subtitle">Enregistrement et mise à jour des étapes de vendange pour une parcelle</p>
+          </div>
+          <button class="modal-close-btn" id="harvest-modal-close-btn" onclick="closeHarvestModal()" aria-label="Fermer">✕</button>
+        </div>
+
+        <form id="harvest-form" novalidate>
+          <input type="hidden" id="harvest-edit-id" value="">
+          <div class="modal-body">
+
+            <!-- LIGNE MULTI-SÉLECTION : DOMAINES / CLIENTS & PARCELLES EN MENUS DÉROULANTS -->
+            <input type="hidden" id="input-harvest-client" value="">
+            <input type="hidden" id="input-harvest-parcel" value="">
+
+            <div class="form-row">
+              <!-- MENU DÉROULANT CLIENT(S) -->
+              <div class="form-group flex-1">
+                <label class="form-label" for="btn-harvest-client-trigger">
+                  <span>Domaine(s) / Client(s)</span> <span class="required">*</span>
+                </label>
+
+                <div class="modal-dropdown-wrap" id="wrap-harvest-client-dropdown">
+                  <button type="button" class="modal-dropdown-trigger" id="btn-harvest-client-trigger" aria-haspopup="true" aria-expanded="false">
+                    <span class="modal-dropdown-icon">🏰</span>
+                    <span class="modal-dropdown-text" id="harvest-client-trigger-text">Sélectionner les domaines...</span>
+                    <span class="modal-dropdown-badge" id="harvest-client-trigger-badge" style="display: none;">0</span>
+                    <span class="modal-dropdown-arrow">▼</span>
+                  </button>
+
+                  <div class="modal-dropdown-menu" id="menu-harvest-client-dropdown" style="display: none;">
+                    <div class="modal-dropdown-header">
+                      <span class="modal-dropdown-header-title">Domaines viticoles</span>
+                      <button type="button" class="btn-link-action" id="btn-toggle-all-harvest-clients">Tout cocher</button>
+                    </div>
+                    <div class="modal-dropdown-search-wrap" id="harvest-clients-search-wrap" style="display: none;">
+                      <input type="text" id="search-harvest-clients" class="planned-quick-search-input" placeholder="🔍 Rechercher un domaine..." autocomplete="off">
+                    </div>
+                    <div id="harvest-client-checkbox-list" class="modal-dropdown-list">
+                      <!-- Rempli dynamiquement -->
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- MENU DÉROULANT PARCELLE(S) -->
+              <div class="form-group flex-1">
+                <label class="form-label" for="btn-harvest-parcel-trigger">
+                  <span>Parcelle(s) à vendanger</span> <span class="required">*</span>
+                </label>
+
+                <div class="modal-dropdown-wrap" id="wrap-harvest-parcel-dropdown">
+                  <button type="button" class="modal-dropdown-trigger" id="btn-harvest-parcel-trigger" aria-haspopup="true" aria-expanded="false" disabled>
+                    <span class="modal-dropdown-icon">📍</span>
+                    <span class="modal-dropdown-text" id="harvest-parcel-trigger-text">Sélectionnez d'abord un domaine...</span>
+                    <span class="modal-dropdown-badge" id="harvest-parcel-trigger-badge" style="display: none;">0</span>
+                    <span class="modal-dropdown-arrow">▼</span>
+                  </button>
+
+                  <div class="modal-dropdown-menu" id="menu-harvest-parcel-dropdown" style="display: none;">
+                    <div class="modal-dropdown-header">
+                      <span class="modal-dropdown-header-title">Parcelles viticoles</span>
+                      <button type="button" class="btn-link-action" id="btn-toggle-all-harvest-parcels" style="display: none;">Tout cocher</button>
+                    </div>
+                    <div id="harvest-parcel-checkbox-list" class="modal-dropdown-list">
+                      <div class="parcel-list-empty">Sélectionnez d'abord au moins un client pour afficher ses parcelles.</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- BARRE DE SYNTHÈSE DE LA SÉLECTION VENDANGE -->
+            <div class="planned-selection-recap-bar" id="harvest-selection-recap-bar" style="display: none;">
+              <span class="recap-pill" id="harvest-recap-clients-count">🏰 0 domaine</span>
+              <span class="recap-sep">•</span>
+              <span class="recap-pill" id="harvest-recap-parcels-count">📍 0 parcelle</span>
+              <span class="recap-sep">•</span>
+              <span class="recap-surface" id="harvest-recap-surface-total">📐 0.0000 ha cumulés</span>
+            </div>
+
+            <!-- BANDEAU INFOS PARCELLE (SURFACE & CÉPAGE - MODE ÉDITION SIMPLE) -->
+            <div class="harvest-parcel-info-banner" id="harvest-parcel-info-banner" style="display: none;">
+              <span class="info-pill" id="harvest-parcel-surface-badge">📐 0.0000 ha</span>
+              <span class="info-sep">•</span>
+              <span class="info-pill" id="harvest-parcel-variety-badge">🍇 Cépage inconnu</span>
+            </div>
+
+            <!-- ÉTAPES DU SUIVI : EFFEUILLAGE & COUPE / RÉCOLTE -->
+            <div class="form-row">
+              <div class="form-group flex-1">
+                <label for="input-harvest-leaf" class="form-label">
+                  <span>🍃 Étape 1 : Effeuillage</span> <span class="required">*</span>
+                </label>
+                <div class="select-with-icon">
+                  <span class="input-icon">🍃</span>
+                  <select id="input-harvest-leaf" class="form-select-simple" required onchange="onHarvestModalLeafChange()">
+                    <option value="a_effeuiller">🍃 À effeuiller (Effeuillage nécessaire)</option>
+                    <option value="non_necessaire">🚫 Ne pas effeuiller (Non nécessaire)</option>
+                    <option value="effeuillee">✅ Effeuillée (Parcelle effeuillée)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-group flex-1">
+                <label for="input-harvest-cut" class="form-label">
+                  <span>✂️ Étape 2 : Coupe / Récolte</span> <span class="required">*</span>
+                </label>
+                <div class="select-with-icon">
+                  <span class="input-icon">✂️</span>
+                  <select id="input-harvest-cut" class="form-select-simple" required onchange="onHarvestModalCutChange()">
+                    <option value="a_couper">⏳ À couper (En attente de vendange)</option>
+                    <option value="coupee">🍇 Coupée (Grappes récoltées)</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <!-- PRESTATION D'EFFEUILLAGE & PRIX (À EFFEUILLER OU EFFEUILLÉE) -->
+            <div class="harvest-leaf-box" id="harvest-leaf-box" style="margin-bottom: 1rem; padding: 0.75rem 0.9rem; background: rgba(82, 183, 136, 0.08); border: 1px solid rgba(82, 183, 136, 0.25); border-radius: var(--radius-md);">
+              <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.4rem;">
+                <div style="display: flex; align-items: center; gap: 0.4rem;">
+                  <span style="font-size: 1.1rem;">🍃</span>
+                  <strong style="color: var(--text-heading); font-size: 0.88rem;">Prestation d'Effeuillage & Tarif</strong>
+                </div>
+                <span class="badge-tag" id="harvest-leaf-box-tag" style="background: rgba(82, 183, 136, 0.2); color: #52b788; font-size: 0.72rem;">À effeuiller</span>
+              </div>
+              <div class="form-row">
+                <div class="form-group flex-1" style="margin-bottom: 0;">
+                  <label for="input-harvest-leaf-service" class="form-label" style="font-size: 0.8rem; margin-bottom: 3px;">
+                    <span>Prestation catalogue</span>
+                  </label>
+                  <div class="select-with-icon">
+                    <span class="input-icon">✂️</span>
+                    <select id="input-harvest-leaf-service" class="form-select-simple" onchange="onHarvestModalLeafServiceChange()">
+                      <!-- Rempli dynamiquement avec les prestations d'effeuillage -->
+                    </select>
+                  </div>
+                </div>
+                <div class="form-group" style="width: 140px; margin-bottom: 0;">
+                  <label for="input-harvest-leaf-price" class="form-label" style="font-size: 0.8rem; margin-bottom: 3px;">
+                    <span>Prix unitaire HT</span>
+                  </label>
+                  <div class="input-with-icon">
+                    <span class="input-icon">💶</span>
+                    <input type="number" id="input-harvest-leaf-price" step="1" min="0" placeholder="Ex: 550" style="font-weight: 700;">
+                  </div>
+                </div>
+              </div>
+              <div id="harvest-leaf-price-hint" style="font-size: 0.75rem; color: #52b788; margin-top: 5px; font-weight: 500;">
+                <!-- Rempli dynamiquement avec le prix préenregistré -->
+              </div>
+              <div id="harvest-leaf-bill-wrap" style="display: none; margin-top: 0.6rem; padding-top: 0.5rem; border-top: 1px dashed rgba(82, 183, 136, 0.25);">
+                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; margin: 0; font-size: 0.84rem; font-weight: 600; color: var(--text-heading);">
+                  <input type="checkbox" id="input-harvest-leaf-bill-dashboard" checked style="accent-color: #52b788; width: 16px; height: 16px;">
+                  <span>Ajouter automatiquement l'effeuillage au Tableau de Bord (À facturer)</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- PRESTATION DE COUPE / RÉCOLTE & TARIF (À COUPER OU COUPÉE) -->
+            <div class="harvest-cut-box" id="harvest-cut-box" style="margin-bottom: 1rem; padding: 0.75rem 0.9rem; background: rgba(255, 183, 3, 0.08); border: 1px solid rgba(255, 183, 3, 0.25); border-radius: var(--radius-md);">
+              <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.4rem;">
+                <div style="display: flex; align-items: center; gap: 0.4rem;">
+                  <span style="font-size: 1.1rem;">✂️</span>
+                  <strong style="color: var(--text-heading); font-size: 0.88rem;">Prestation Coupe / Récolte & Tarif</strong>
+                </div>
+                <span class="badge-tag" id="harvest-cut-box-tag" style="background: rgba(255, 183, 3, 0.2); color: #ffb703; font-size: 0.72rem;">À couper</span>
+              </div>
+              <div class="form-row">
+                <div class="form-group flex-1" style="margin-bottom: 0;">
+                  <label for="input-harvest-service" class="form-label" style="font-size: 0.8rem; margin-bottom: 3px;">
+                    <span>Prestation vendange</span>
+                  </label>
+                  <div class="select-with-icon">
+                    <span class="input-icon">✂️</span>
+                    <select id="input-harvest-service" class="form-select-simple" onchange="onHarvestModalServiceChange()">
+                      <!-- Options remplies dynamiquement -->
+                    </select>
+                  </div>
+                </div>
+                <div class="form-group" style="width: 140px; margin-bottom: 0;">
+                  <label for="input-harvest-price-kg" class="form-label" style="font-size: 0.8rem; margin-bottom: 3px;">
+                    <span>Prix du kilo (€ HT / kg)</span>
+                  </label>
+                  <div class="input-with-icon">
+                    <span class="input-icon">💶</span>
+                    <input type="number" id="input-harvest-price-kg" min="0" step="0.01" placeholder="Ex: 0.35" style="font-weight: 700;">
+                  </div>
+                </div>
+              </div>
+              <div id="harvest-cut-price-hint" style="font-size: 0.75rem; color: #ffb703; margin-top: 5px; font-weight: 500;">
+                <!-- Rempli dynamiquement avec le prix préenregistré -->
+              </div>
+
+              <!-- Message informatif quand c'est à couper -->
+              <div id="harvest-cut-pending-hint" style="margin-top: 0.6rem; font-size: 0.78rem; color: var(--text-muted); background: rgba(255, 183, 3, 0.08); border: 1px dashed rgba(255, 183, 3, 0.3); padding: 6px 10px; border-radius: var(--radius-sm);">
+                ⏳ Coupe programmée au tarif fixé ci-dessus. La saisie des pesées (kg / caisses) et la facturation s'activeront dès que la parcelle sera marquée comme coupée.
+              </div>
+
+              <!-- SECTION SPÉCIFIQUE PARCELLE COUPÉE : KILOS OU CAISSES & VALORISATION -->
+              <div class="harvest-yield-box" id="harvest-yield-box" style="display: none; margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px dashed rgba(255, 183, 3, 0.25);">
+                <div class="harvest-yield-header" style="margin-bottom: 0.5rem;">
+                  <span class="yield-icon">⚖️</span>
+                  <div>
+                    <strong style="color: var(--text-heading); font-size: 0.88rem;">Pesée & Rendement Récolté</strong>
+                    <p style="font-size: 0.78rem; color: var(--text-muted); margin: 0;">Renseignez les kilos récoltés pour valoriser automatiquement le chantier.</p>
+                  </div>
+                </div>
+                <div class="form-row">
+                  <div class="form-group flex-1">
+                    <label for="input-harvest-yield-kg" class="form-label">
+                      <span>Nombre de Kilos (kg)</span>
+                    </label>
+                    <div class="input-with-icon">
+                      <span class="input-icon">⚖️</span>
+                      <input type="number" id="input-harvest-yield-kg" min="0" step="1" placeholder="Ex: 3500">
+                    </div>
+                  </div>
+
+                  <div class="form-group flex-1">
+                    <label for="input-harvest-yield-boxes" class="form-label">
+                      <span>Nombre de Caisses</span>
+                    </label>
+                    <div class="input-with-icon">
+                      <span class="input-icon">📦</span>
+                      <input type="number" id="input-harvest-yield-boxes" min="0" step="1" placeholder="Ex: 175">
+                    </div>
+                  </div>
+                </div>
+
+                <!-- BANDEAU CALCUL TOTAL ET OPTION FACTURATION -->
+                <div class="harvest-yield-calc" id="harvest-yield-calc" style="display: none;">
+                  <!-- Calcul automatique -->
+                </div>
+
+                <div style="margin-top: 0.6rem; padding-top: 0.5rem; border-top: 1px dashed rgba(82, 183, 136, 0.25);">
+                  <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; margin: 0; font-size: 0.84rem; font-weight: 600; color: var(--text-heading);">
+                    <input type="checkbox" id="input-harvest-bill-dashboard" checked style="accent-color: #52b788; width: 16px; height: 16px;">
+                    <span>Ajouter automatiquement la coupe au Tableau de Bord (À facturer)</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <!-- ÉTAPE 3 : DÉBARDAGE -->
+            <div class="form-group">
+              <label for="input-harvest-haul" class="form-label">
+                <span>🚜 Étape 3 : Débardage</span> <span class="required">*</span>
+              </label>
+              <div class="select-with-icon">
+                <span class="input-icon">🚜</span>
+                <select id="input-harvest-haul" class="form-select-simple" required onchange="onHarvestModalHaulChange()">
+                  <option value="a_debarder">🚜 À débarder (Raisin à sortir des rangs)</option>
+                  <option value="non_necessaire">⚪ Non nécessaire (Sortie directe au rang)</option>
+                  <option value="debardee">✅ Débardée (Raisin acheminé)</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- PRESTATION DE DÉBARDAGE & PRIX SI NÉCESSAIRE (À DÉBARDER OU DÉBARDÉE) -->
+            <div class="harvest-haul-box" id="harvest-haul-box" style="margin-bottom: 1rem; padding: 0.75rem 0.9rem; background: rgba(76, 201, 240, 0.08); border: 1px solid rgba(76, 201, 240, 0.25); border-radius: var(--radius-md);">
+              <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.4rem;">
+                <div style="display: flex; align-items: center; gap: 0.4rem;">
+                  <span style="font-size: 1.1rem;">🚜</span>
+                  <strong style="color: var(--text-heading); font-size: 0.88rem;">Prestation de Débardage liée & Tarif</strong>
+                </div>
+                <span class="badge-tag" id="harvest-haul-box-tag" style="background: rgba(76, 201, 240, 0.2); color: #4cc9f0; font-size: 0.72rem;">À débarder</span>
+              </div>
+              <div class="form-row">
+                <div class="form-group flex-1" style="margin-bottom: 0;">
+                  <label for="input-harvest-haul-service" class="form-label" style="font-size: 0.8rem; margin-bottom: 3px;">
+                    <span>Prestation catalogue</span>
+                  </label>
+                  <div class="select-with-icon">
+                    <span class="input-icon">🚜</span>
+                    <select id="input-harvest-haul-service" class="form-select-simple" onchange="onHarvestModalHaulServiceChange()">
+                      <!-- Rempli dynamiquement avec les prestations de débardage / transport du catalogue -->
+                    </select>
+                  </div>
+                </div>
+                <div class="form-group" style="width: 140px; margin-bottom: 0;">
+                  <label for="input-harvest-haul-price" class="form-label" style="font-size: 0.8rem; margin-bottom: 3px;">
+                    <span>Prix unitaire HT</span>
+                  </label>
+                  <div class="input-with-icon">
+                    <span class="input-icon">💶</span>
+                    <input type="number" id="input-harvest-haul-price" step="0.01" min="0" placeholder="Ex: 0.15" style="font-weight: 700;">
+                  </div>
+                </div>
+              </div>
+              <div id="harvest-haul-price-hint" style="font-size: 0.75rem; color: #4cc9f0; margin-top: 5px; font-weight: 500;">
+                <!-- Rempli dynamiquement avec le prix préenregistré -->
+              </div>
+              <div id="harvest-haul-bill-wrap" style="display: none; margin-top: 0.6rem; padding-top: 0.5rem; border-top: 1px dashed rgba(76, 201, 240, 0.25);">
+                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; margin: 0; font-size: 0.84rem; font-weight: 600; color: var(--text-heading);">
+                  <input type="checkbox" id="input-harvest-haul-bill-dashboard" checked style="accent-color: #4cc9f0; width: 16px; height: 16px;">
+                  <span>Ajouter automatiquement le débardage au Tableau de Bord (À facturer)</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- INFORMATIONS COMPLÉMENTAIRES -->
+            <div class="form-row">
+              <div class="form-group flex-1">
+                <label for="input-harvest-worker" class="form-label">Salarié / Équipe affectée</label>
+                <div class="select-with-icon">
+                  <span class="input-icon">👤</span>
+                  <select id="input-harvest-worker">
+                    <option value="">Non assigné (À définir)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-group flex-1">
+                <label for="input-harvest-date" class="form-label">Date</label>
+                <input type="date" id="input-harvest-date" class="form-input">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="input-harvest-notes" class="form-label">Notes de vendange</label>
+              <textarea id="input-harvest-notes" rows="2" placeholder="Observations sur l'état sanitaire, tri, degré estimé..."></textarea>
+            </div>
+
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-ghost" onclick="closeHarvestModal()">Annuler</button>
+            <button type="submit" class="btn btn-primary btn-glow" id="btn-save-harvest">
+              <span id="harvest-modal-submit-text">🍇 Enregistrer la vendange</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL 12 : PESÉE RAPIDE & TARIFICATION (KILOS / PRESTATION) ==================== -->
+  <div class="modal-overlay" id="harvest-yield-modal" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-sm">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div class="modal-header-icon" style="background: rgba(183, 228, 199, 0.15); color: #52b788; border-color: rgba(82, 183, 136, 0.3);">⚖️</div>
+          <div>
+            <h3 class="modal-title">Pesée & Tarification Vendange</h3>
+            <p class="modal-subtitle" id="yield-modal-subtitle">Enregistrement des kilos récoltés & valorisation facturation</p>
+          </div>
+          <button class="modal-close-btn" onclick="closeYieldModal()" aria-label="Fermer">✕</button>
+        </div>
+
+        <form id="yield-quick-form" novalidate>
+          <input type="hidden" id="yield-modal-entry-id" value="">
+          <div class="modal-body">
+            <div class="yield-parcel-summary" id="yield-parcel-summary">
+              <!-- Nom client & parcelle -->
+            </div>
+
+            <div class="form-row">
+              <div class="form-group flex-1">
+                <label for="quick-input-yield-kg" class="form-label">
+                  <span>Poids Récolté (kg)</span> <span class="required">*</span>
+                </label>
+                <div class="input-with-icon">
+                  <span class="input-icon">⚖️</span>
+                  <input type="number" id="quick-input-yield-kg" min="0" step="1" placeholder="Ex: 4200" required>
+                </div>
+              </div>
+
+              <div class="form-group flex-1">
+                <label for="quick-input-yield-boxes" class="form-label">
+                  <span>Nombre de Caisses</span>
+                </label>
+                <div class="input-with-icon">
+                  <span class="input-icon">📦</span>
+                  <input type="number" id="quick-input-yield-boxes" min="0" step="1" placeholder="Ex: 210">
+                </div>
+              </div>
+            </div>
+
+            <!-- SECTION PRESTATION & PRIX DU KILO -->
+            <div class="yield-pricing-card">
+              <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.65rem;">
+                <span style="font-size: 1.15rem;">🍇</span>
+                <div>
+                  <strong style="color: var(--text-heading); font-size: 0.9rem;">Prestation « Coupe vendange » & Rendement au Kilo</strong>
+                  <div style="font-size: 0.77rem; color: var(--text-muted);">Calcul du montant : Kilos récoltés × Prix de la prestation Coupe vendange</div>
+                </div>
+              </div>
+
+              <div class="form-group" style="margin-bottom: 0.65rem;">
+                <label for="quick-input-yield-service" class="form-label" style="font-size: 0.82rem;">
+                  <span>Prestation vendange</span>
+                </label>
+                <div class="select-with-icon">
+                  <span class="input-icon">✂️</span>
+                  <select id="quick-input-yield-service" class="form-select-simple" onchange="onYieldServiceChange()">
+                    <!-- Options alimentées dynamiquement -->
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-group" style="margin-bottom: 0;">
+                <label for="quick-input-yield-price" class="form-label" style="font-size: 0.82rem;">
+                  <span>Prix unitaire du kilo (€ HT / kg)</span> <span class="required">*</span>
+                </label>
+                <div class="input-with-icon">
+                  <span class="input-icon">💶</span>
+                  <input type="number" id="quick-input-yield-price" min="0" step="0.01" placeholder="Ex: 0.35" style="font-weight: 700; font-family: monospace;">
+                </div>
+              </div>
+            </div>
+
+            <!-- CARTE RECAPITULATIF CALCUL DIRECT & VALORISATION -->
+            <div class="yield-summary-card" id="quick-yield-calc-card">
+              <div>
+                <div class="yield-summary-label">Montant Chantier Vendange</div>
+                <div class="yield-summary-formula" id="quick-yield-calc-formula">0 kg × 0.00 €/kg</div>
+              </div>
+              <div style="text-align: right;">
+                <div class="yield-summary-total-ht" id="quick-yield-calc-total-ht">0,00 € HT</div>
+                <div class="yield-summary-total-ttc" id="quick-yield-calc-total-ttc">0,00 € TTC</div>
+              </div>
+            </div>
+
+            <!-- OPTION TABLEAU DE BORD / FACTURATION -->
+            <div class="yield-billing-option">
+              <label style="display: flex; align-items: flex-start; gap: 0.6rem; cursor: pointer; margin: 0;">
+                <input type="checkbox" id="quick-yield-bill-dashboard" checked style="margin-top: 3px; accent-color: #52b788; width: 17px; height: 17px;">
+                <div>
+                  <span style="font-weight: 700; color: var(--text-heading); font-size: 0.86rem;">Ajouter au Tableau de Bord pour la Facturation</span>
+                  <p style="font-size: 0.78rem; color: var(--text-muted); margin: 2px 0 0 0;">
+                    Génère immédiatement l'intervention dans le journal avec le statut <strong style="color: #ffb703;">« À facturer »</strong> et actualise le CA restant à facturer.
+                  </p>
+                </div>
+              </label>
+            </div>
+
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-ghost" onclick="closeYieldModal()">Annuler</button>
+            <button type="submit" class="btn btn-primary btn-glow">
+              <span>💾 Enregistrer & Facturer</span>
             </button>
           </div>
         </form>
