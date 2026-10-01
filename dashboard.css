@@ -1781,39 +1781,50 @@ button.filter-dropdown-pill {
 }
 
 /* Status Badge - Interactive Toggle */
-.status-pill-toggle {
+.status-pill-toggle,
+.status-badge {
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
   padding: 4px 10px;
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-full, 9999px);
   font-size: 0.76rem;
   font-weight: 600;
   cursor: pointer;
   border: 1px solid transparent;
-  transition: all var(--transition-fast);
+  transition: all var(--transition-fast, 0.2s ease);
   user-select: none;
   white-space: nowrap;
+  font-family: inherit;
 }
 
-.status-pill-toggle.status-unbilled {
-  background: rgba(233, 196, 106, 0.15);
-  color: #e9c46a;
-  border-color: rgba(233, 196, 106, 0.35);
+.status-pill-toggle.status-unbilled,
+.status-badge.status-unbilled,
+.ch-table .status-unbilled {
+  background: rgba(233, 196, 106, 0.20);
+  color: #ffffff !important;
+  border-color: rgba(233, 196, 106, 0.45);
 }
 
-.status-pill-toggle.status-unbilled:hover {
-  background: rgba(233, 196, 106, 0.25);
+.status-pill-toggle.status-unbilled:hover,
+.status-badge.status-unbilled:hover,
+.ch-table .status-unbilled:hover {
+  background: rgba(233, 196, 106, 0.32);
+  color: #ffffff !important;
   transform: scale(1.03);
 }
 
-.status-pill-toggle.status-billed {
+.status-pill-toggle.status-billed,
+.status-badge.status-billed,
+.ch-table .status-billed {
   background: rgba(82, 183, 136, 0.15);
   color: #52b788;
   border-color: rgba(82, 183, 136, 0.35);
 }
 
-.status-pill-toggle.status-billed:hover {
+.status-pill-toggle.status-billed:hover,
+.status-badge.status-billed:hover,
+.ch-table .status-billed:hover {
   background: rgba(82, 183, 136, 0.25);
   transform: scale(1.03);
 }
@@ -5591,7 +5602,9 @@ body[data-theme="light"],
 
 /* Badges de Statut Facturation */
 [data-theme="light"] .status-pill-toggle.status-unbilled,
-[data-theme="light"] .status-pill-toggle.status-pending {
+[data-theme="light"] .status-pill-toggle.status-pending,
+[data-theme="light"] .status-badge.status-unbilled,
+[data-theme="light"] .ch-table .status-unbilled {
   background: #fff8e6 !important;
   background-color: #fff8e6 !important;
   color: #9c6c06 !important;
@@ -5600,12 +5613,17 @@ body[data-theme="light"],
 }
 
 [data-theme="light"] .status-pill-toggle.status-unbilled:hover,
-[data-theme="light"] .status-pill-toggle.status-pending:hover {
+[data-theme="light"] .status-pill-toggle.status-pending:hover,
+[data-theme="light"] .status-badge.status-unbilled:hover,
+[data-theme="light"] .ch-table .status-unbilled:hover {
   background: #ffefc4 !important;
   background-color: #ffefc4 !important;
+  color: #9c6c06 !important;
 }
 
-[data-theme="light"] .status-pill-toggle.status-billed {
+[data-theme="light"] .status-pill-toggle.status-billed,
+[data-theme="light"] .status-badge.status-billed,
+[data-theme="light"] .ch-table .status-billed {
   background: #eaf6ee !important;
   background-color: #eaf6ee !important;
   color: #1b4332 !important;
@@ -5613,7 +5631,9 @@ body[data-theme="light"],
   font-weight: 700 !important;
 }
 
-[data-theme="light"] .status-pill-toggle.status-billed:hover {
+[data-theme="light"] .status-pill-toggle.status-billed:hover,
+[data-theme="light"] .status-badge.status-billed:hover,
+[data-theme="light"] .ch-table .status-billed:hover {
   background: #dcf0e2 !important;
   background-color: #dcf0e2 !important;
 }

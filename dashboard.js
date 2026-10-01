@@ -10469,7 +10469,7 @@ function updateClientHistoryData() {
             <div style="font-size: 0.85rem; color: var(--text-muted);">${amountTTC} TTC</div>
           </td>
           <td>
-            <button type="button" class="status-badge ${statusClass}" onclick="toggleInterventionStatus('${i.id}')" title="Cliquer pour basculer le statut">
+            <button type="button" class="status-pill-toggle status-badge ${statusClass}" onclick="toggleInterventionStatus('${i.id}')" title="Cliquer pour basculer le statut">
               <span>${statusIcon}</span> <span>${escapeHTML(i.status)}</span>
             </button>
           </td>
