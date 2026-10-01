@@ -83,7 +83,7 @@ Vititrack pro/
 
 ### 4.2 Authentification & Profil (`login.html`, `dashboard.html`, `dashboard.js`, `supabase-config.js`)
 - **Page d'Authentification Bivalente (`login.html`)** :
-  - **Onglet Connexion** : Authentification par e-mail et mot de passe via Supabase Auth (`signInWithPassword`), mémorisation de session, accès direct démo en 1 clic.
+  - **Onglet Connexion** : Authentification par e-mail et mot de passe via Supabase Auth (`signInWithPassword`), mémorisation de session.
   - **Onglet Inscription** : Création de compte exploitant avec nom du domaine, nom complet de l'exploitant, e-mail et mot de passe (`signUp`), initialisation des métadonnées de profil et redirection automatique vers le tableau de bord.
   - Alertes visuelles dynamiques d'erreur (format invalide, mot de passe trop court, compte existant) et de succès.
 - **Gestion de Session Fullstack & Déconnexion** :
