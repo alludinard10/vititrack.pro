@@ -1809,10 +1809,12 @@ button.filter-dropdown-pill {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.95rem;
+  font-size: 0.92rem;
   line-height: 1;
   margin-right: 2px;
   vertical-align: middle;
+  background: transparent !important;
+  border: none !important;
 }
 
 .status-circle-dot.unbilled-dot {
@@ -1825,24 +1827,37 @@ button.filter-dropdown-pill {
   text-shadow: 0 0 8px rgba(82, 183, 136, 0.7);
 }
 
-/* Statut "À facturer" : retrait du rectangle orange, texte blanc pur et seul le rond affiché */
+/* Aucun fond ni encadré intérieur pour les éléments dans le bouton */
+.status-pill-toggle *,
+.status-badge *,
+.ch-table .status-unbilled *,
+.ch-table .status-billed *,
+.cal-status-tag-unbilled *,
+.cal-status-tag-billed * {
+  background: transparent !important;
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* Statut "À facturer" : contour ovale préservé comme avant, texte en blanc pur, et le rond seul */
 .status-pill-toggle.status-unbilled,
 .status-badge.status-unbilled,
 .status-badge.status-a-facturer,
 .ch-table .status-unbilled,
 .cal-status-tag-unbilled {
-  background: transparent !important;
-  background-color: transparent !important;
-  border: none !important;
+  background: rgba(233, 196, 106, 0.14) !important;
+  background-color: rgba(233, 196, 106, 0.14) !important;
+  border: 1px solid rgba(233, 196, 106, 0.50) !important;
+  border-radius: var(--radius-full, 9999px) !important;
   box-shadow: none !important;
   color: #ffffff !important;
   font-weight: 700;
-  padding: 3px 6px;
+  padding: 4px 11px;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  border-radius: 9999px;
-  transition: transform 0.15s ease, opacity 0.15s ease;
+  gap: 0.45rem;
+  transition: all var(--transition-fast, 0.2s ease);
 }
 
 .status-pill-toggle.status-unbilled:hover,
@@ -1850,11 +1865,11 @@ button.filter-dropdown-pill {
 .status-badge.status-a-facturer:hover,
 .ch-table .status-unbilled:hover,
 .cal-status-tag-unbilled:hover {
-  background: rgba(255, 255, 255, 0.08) !important;
-  background-color: rgba(255, 255, 255, 0.08) !important;
-  border: none !important;
+  background: rgba(233, 196, 106, 0.26) !important;
+  background-color: rgba(233, 196, 106, 0.26) !important;
+  border-color: rgba(233, 196, 106, 0.80) !important;
   color: #ffffff !important;
-  transform: scale(1.04);
+  transform: scale(1.03);
 }
 
 .status-pill-toggle.status-unbilled span,
@@ -1862,32 +1877,37 @@ button.filter-dropdown-pill {
 .status-badge.status-a-facturer span,
 .ch-table .status-unbilled span,
 .cal-status-tag-unbilled span {
-  background: transparent !important;
   color: #ffffff !important;
 }
 
+/* Statut "Facturée" : contour ovale vert émeraude */
 .status-pill-toggle.status-billed,
-.status-pill-toggle.status-billed *,
 .status-badge.status-billed,
-.status-badge.status-billed *,
 .status-badge.status-facturee,
-.status-badge.status-facturee *,
 .ch-table .status-billed,
-.ch-table .status-billed * {
-  background: rgba(82, 183, 136, 0.15);
-  color: #52b788;
-  border-color: rgba(82, 183, 136, 0.35);
+.cal-status-tag-billed {
+  background: rgba(82, 183, 136, 0.14) !important;
+  background-color: rgba(82, 183, 136, 0.14) !important;
+  border: 1px solid rgba(82, 183, 136, 0.40) !important;
+  border-radius: var(--radius-full, 9999px) !important;
+  box-shadow: none !important;
+  color: #52b788 !important;
+  font-weight: 600;
+  padding: 4px 11px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  transition: all var(--transition-fast, 0.2s ease);
 }
 
 .status-pill-toggle.status-billed:hover,
-.status-pill-toggle.status-billed:hover *,
 .status-badge.status-billed:hover,
-.status-badge.status-billed:hover *,
 .status-badge.status-facturee:hover,
-.status-badge.status-facturee:hover *,
 .ch-table .status-billed:hover,
-.ch-table .status-billed:hover * {
-  background: rgba(82, 183, 136, 0.25);
+.cal-status-tag-billed:hover {
+  background: rgba(82, 183, 136, 0.25) !important;
+  background-color: rgba(82, 183, 136, 0.25) !important;
+  border-color: rgba(82, 183, 136, 0.65) !important;
   transform: scale(1.03);
 }
 
@@ -8162,12 +8182,12 @@ body[data-theme="light"],
   display: inline-flex;
   align-items: center;
   gap: 3px;
-  background: rgba(233, 196, 106, 0.25);
-  border: 1px solid rgba(233, 196, 106, 0.55);
+  background: rgba(233, 196, 106, 0.16);
+  border: 1px solid rgba(233, 196, 106, 0.50);
   color: #ffffff !important;
   font-weight: 700;
-  padding: 2px 6px;
-  border-radius: 4px;
+  padding: 2px 7px;
+  border-radius: 9999px;
   font-size: 0.72rem;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
 }
@@ -8176,12 +8196,12 @@ body[data-theme="light"],
   display: inline-flex;
   align-items: center;
   gap: 3px;
-  background: rgba(82, 183, 136, 0.15);
+  background: rgba(82, 183, 136, 0.14);
   border: 1px solid rgba(82, 183, 136, 0.35);
   color: #52b788;
   font-weight: 700;
-  padding: 2px 6px;
-  border-radius: 4px;
+  padding: 2px 7px;
+  border-radius: 9999px;
   font-size: 0.72rem;
 }
 
