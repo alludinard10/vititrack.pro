@@ -906,6 +906,12 @@ function loadDatabase() {
     saveTeamLocally();
   }
   syncGlobalTeamDirectory();
+  // Synchronisation automatique de tous les membres d'équipe vers Supabase Auth
+  if (!isDemo && Array.isArray(teamUsers) && teamUsers.length > 0) {
+    teamUsers.forEach(member => {
+      if (member && member.email) syncTeamUserToSupabaseAuth(member);
+    });
+  }
 
   // Détection et réparation immédiate des collisions d'IDs dans le stockage local
   repairLocalCollisions();
@@ -944,6 +950,14 @@ function saveTeamUsers() {
   saveTeamLocally();
   syncGlobalTeamDirectory();
   if (typeof populateVendangesTeamFilter === "function") populateVendangesTeamFilter();
+  // Synchronisation immédiate vers Supabase Auth pour chaque membre ayant un email
+  const authUser = getAuthUser();
+  const isDemo = authUser && (authUser.isDemo === true || authUser.email === "exploitant@domaineludinard.fr");
+  if (!isDemo && Array.isArray(teamUsers)) {
+    teamUsers.forEach(member => {
+      if (member && member.email) syncTeamUserToSupabaseAuth(member);
+    });
+  }
 }
 
 // Unified save functions: Local cache + Background Supabase Sync
@@ -1116,6 +1130,38 @@ async function loadFromSupabase() {
       saveInterventionsLocally();
       saveServicesLocally();
       savePlannedWorksLocally();
+
+      // Récupération et synchronisation des collaborateurs du domaine depuis Cloud Supabase Auth
+      if (typeof window.fetchTeamMembersFromCloud === "function") {
+        try {
+          const authUser = getAuthUser();
+          const cloudMembers = await window.fetchTeamMembersFromCloud(userId, authUser?.email || "");
+          if (cloudMembers && cloudMembers.length > 0) {
+            let teamChanged = false;
+            cloudMembers.forEach(cm => {
+              const existingIdx = (teamUsers || []).findIndex(u => 
+                (u.email && u.email.toLowerCase() === (cm.email || "").toLowerCase()) || u.id === cm.id
+              );
+              if (existingIdx !== -1) {
+                teamUsers[existingIdx] = { ...teamUsers[existingIdx], ...cm };
+                teamChanged = true;
+              } else {
+                teamUsers.push(cm);
+                teamChanged = true;
+              }
+            });
+            if (teamChanged) {
+              saveTeamLocally();
+              syncGlobalTeamDirectory();
+              renderTeamList();
+              renderKPIs();
+              populatePlannedWorkerSelect();
+            }
+          }
+        } catch (e) {
+          console.warn("Notice fetchTeamMembersFromCloud in loadFromSupabase:", e);
+        }
+      }
 
       renderAll();
       if (window.updateSupabaseBadge) {
@@ -6594,6 +6640,48 @@ function syncGlobalTeamDirectory() {
   }
 }
 
+// Synchronisation d'un collaborateur vers Supabase Auth (Création de compte Cloud immédiate)
+async function syncTeamUserToSupabaseAuth(member) {
+  if (!member || !member.email) return;
+  const authUser = getAuthUser();
+  const ownerUserId = (authUser && authUser.isTeamMember && authUser.ownerUserId)
+    ? authUser.ownerUserId
+    : ((authUser && authUser.id) ? authUser.id : "c2d45d88-3214-4c93-9361-565d6ac24d1a");
+
+  const ownerDomain = (authUser && authUser.isTeamMember && authUser.ownerDomain)
+    ? authUser.ownerDomain
+    : ((authUser && (authUser.domainName || authUser.name)) || "SARL Ludinard Clair");
+
+  const ownerEmail = (authUser && authUser.isTeamMember && authUser.ownerEmail)
+    ? authUser.ownerEmail
+    : ((authUser && authUser.email) || "al.ludinard@gmail.com");
+
+  const memberPassword = (member.password && member.password.trim()) || "viti2026";
+
+  try {
+    if (typeof window.upsertConfirmedUser === "function") {
+      await window.upsertConfirmedUser(member.email, memberPassword, {
+        full_name: member.name,
+        role: member.role || "Tractoriste / Chauffeur d'engins",
+        role_category: member.roleCategory || getRoleCategory(member.role),
+        is_team_member: true,
+        owner_user_id: ownerUserId,
+        owner_domain: ownerDomain,
+        owner_email: ownerEmail,
+        status: member.status || "Actif",
+        phone: member.phone || "",
+        certifications: member.certifications || "",
+        notes: member.notes || "",
+        member_id: member.id,
+        plain_password: memberPassword
+      });
+      console.log(`🍇 [VitiTrack Pro] Compte Supabase synchronisé pour : ${member.name} (${member.email})`);
+    }
+  } catch (err) {
+    console.warn("⚠️ [VitiTrack Pro] Erreur syncTeamUserToSupabaseAuth :", err);
+  }
+}
+
 function openAddTeamMemberModal() {
   const form = document.getElementById("team-member-form");
   if (form) form.reset();
@@ -11027,6 +11115,7 @@ window.handleClientHistoryDateChange = handleClientHistoryDateChange;
 window.resetClientHistoryFilters = resetClientHistoryFilters;
 window.openCreateModalForCurrentHistoryClient = openCreateModalForCurrentHistoryClient;
 window.exportClientHistoryCSV = exportClientHistoryCSV;
+window.syncTeamUserToSupabaseAuth = syncTeamUserToSupabaseAuth;
 
 
 

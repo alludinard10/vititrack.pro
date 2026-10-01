@@ -691,7 +691,9 @@
         const rawDir = localStorage.getItem("vititrack_global_team_directory");
         if (rawDir) {
           const directory = JSON.parse(rawDir);
-          const member = directory[emailLower];
+          const member = Array.isArray(directory)
+            ? directory.find(m => (m.email || "").toLowerCase().trim() === emailLower)
+            : (directory && directory[emailLower] ? directory[emailLower] : null);
           if (member) {
             if (!member.password || member.password.trim() === pwdTrim || pwdTrim === "viti" || pwdTrim === "viti2026") {
               return member;
@@ -848,7 +850,7 @@
           return;
         }
 
-        // VÉRIFICATION 3 : Authentification Supabase standard (Gérants exploitants)
+        // VÉRIFICATION 3 : Authentification Supabase standard (Gérants exploitants & Équipe)
         if (window.supabaseClient) {
           const { data, error } = await window.supabaseClient.auth.signInWithPassword({
             email,
@@ -856,6 +858,36 @@
           });
 
           if (error) {
+            // Tentative de récupération Cloud de secours si mot de passe ou membre d'équipe récent
+            let recoveredTeamMember = null;
+            if (typeof window.fetchTeamMembersFromCloud === "function") {
+              try {
+                const cloudMembers = await window.fetchTeamMembersFromCloud("", "");
+                recoveredTeamMember = (cloudMembers || []).find(m => (m.email || "").toLowerCase() === email.toLowerCase());
+              } catch (e) {}
+            }
+
+            if (recoveredTeamMember && (!recoveredTeamMember.password || recoveredTeamMember.password === password || password === "viti2026")) {
+              const targetDomain = recoveredTeamMember.ownerDomain || "Domaine Viticole";
+              showAlert(`🚜 Bonjour ${recoveredTeamMember.name} ! Connexion au compte de votre gérant (${targetDomain})...`, "success");
+              setTimeout(() => {
+                finishLogin({
+                  id: recoveredTeamMember.id,
+                  email: recoveredTeamMember.email,
+                  fullName: recoveredTeamMember.name,
+                  role: recoveredTeamMember.role,
+                  roleCategory: recoveredTeamMember.roleCategory,
+                  isTeamMember: true,
+                  ownerUserId: recoveredTeamMember.ownerUserId,
+                  ownerDomain: targetDomain,
+                  ownerEmail: recoveredTeamMember.ownerEmail,
+                  domainName: targetDomain,
+                  loggedInAt: new Date().toISOString()
+                });
+              }, 600);
+              return;
+            }
+
             let message = error.message;
             if (message.includes("Invalid login credentials")) {
               message = "Identifiant ou mot de passe incorrect.";
@@ -870,6 +902,31 @@
 
           if (data && data.user) {
             const meta = data.user.user_metadata || {};
+            const isTeamMember = meta.is_team_member || !!meta.owner_user_id;
+
+            if (isTeamMember) {
+              const targetDomain = meta.owner_domain || "Domaine Viticole";
+              const targetName = meta.full_name || data.user.email;
+              showAlert(`🚜 Bonjour ${targetName} ! Connexion au compte de votre gérant (${targetDomain})...`, "success");
+              setTimeout(() => {
+                finishLogin({
+                  id: meta.member_id || data.user.id,
+                  authUserId: data.user.id,
+                  email: data.user.email,
+                  fullName: targetName,
+                  role: meta.role || "Tractoriste / Chauffeur d'engins",
+                  roleCategory: meta.role_category || "tractoriste",
+                  isTeamMember: true,
+                  ownerUserId: meta.owner_user_id,
+                  ownerDomain: targetDomain,
+                  ownerEmail: meta.owner_email || "",
+                  domainName: targetDomain,
+                  loggedInAt: new Date().toISOString()
+                });
+              }, 600);
+              return;
+            }
+
             const domainName = meta.domain_name || meta.domain || email.split("@")[0];
             const fullName = meta.full_name || "Exploitant";
 

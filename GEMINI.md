@@ -176,6 +176,8 @@ Vititrack pro/
   - Recherche instantanée et filtrage par rôle (Gérants, Tractoristes, Ouvriers viticoles, Saisonniers).
   - Cartes profil complètes : avatar avec initiales colorées, rôle avec pastille de couleur, statut (Actif, En mission, En congé), coordonnées (email et téléphone cliquables), habilitations (Certiphyto, CACES) et notes internes.
 - **Formulaire Utilisateur (Modal 10)** : Ajout et édition rapide d'un membre avec assignation du rôle viticole et compétences terrain.
+- **Provisionnement & Synchronisation Cloud Supabase Auth automatique** : Dès qu'un collaborateur est créé ou modifié avec un email et un mot de passe dans l'équipe, son compte Supabase Auth est instantanément provisionné et confirmé en arrière-plan (`upsertConfirmedUser`). Il peut ainsi se connecter depuis n'importe quel smartphone, tablette ou ordinateur.
+- **Connexion multi-appareils & Accès direct au compte gérant** : À la connexion (`login.html`), le profil d'équipe est reconnu (via Supabase Auth ou répertoire partagé) et rattaché au compte de l'administrateur gérant (`ownerUserId`), donnant accès direct en temps réel à l'ensemble des parcelles, chantiers et outils du domaine.
 - **Alimentation dynamique du planning des travaux** : Les travaux prévisionnels proposent automatiquement la liste des membres réels de l'équipe dans le champ « Salarié pressenti ».
 
 #### F. Pilotage des Vendanges & Récoltes (Vue 4, Modales 11 & 12)
