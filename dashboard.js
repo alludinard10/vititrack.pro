@@ -11127,15 +11127,28 @@ window.exportClientHistoryCSV = exportClientHistoryCSV;
 window.syncTeamUserToSupabaseAuth = syncTeamUserToSupabaseAuth;
 
 // ==========================================================================
+// ==========================================================================
 // VUE CALENDRIER & PLANNING AU JOUR LE JOUR
 // ==========================================================================
+
+function formatCalendarLocalDate(d) {
+  if (!d) return "";
+  if (typeof d === "string") {
+    if (/^\d{4}-\d{2}-\d{2}/.test(d)) return d.slice(0, 10);
+    d = new Date(d);
+  }
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
 
 let calendarCurrentDate = new Date();
 let calendarViewMode = "month"; // "month" | "week" | "day"
 let calendarTypeFilter = "all"; // "all" | "interventions" | "planned" | "harvest"
 let calendarClientFilter = "all";
 let calendarWorkerFilter = "all";
-let calendarSelectedDate = new Date().toISOString().split("T")[0];
+let calendarSelectedDate = formatCalendarLocalDate(new Date());
 
 const CAL_MONTHS_FR = [
   "Janvier", "Février", "Mars", "Avril", "Mai", "Juin",
@@ -11168,7 +11181,7 @@ function initCalendarControls() {
   if (btnNext) btnNext.addEventListener("click", () => navigateCalendar(1));
   if (btnToday) btnToday.addEventListener("click", () => {
     calendarCurrentDate = new Date();
-    calendarSelectedDate = new Date().toISOString().split("T")[0];
+    calendarSelectedDate = formatCalendarLocalDate(new Date());
     renderCalendarView();
   });
 
@@ -11229,7 +11242,7 @@ function navigateCalendar(delta) {
     cur.setDate(cur.getDate() + (delta * 7));
   } else if (calendarViewMode === "day") {
     cur.setDate(cur.getDate() + delta);
-    calendarSelectedDate = cur.toISOString().split("T")[0];
+    calendarSelectedDate = formatCalendarLocalDate(cur);
   }
   calendarCurrentDate = cur;
   renderCalendarView();
@@ -11358,8 +11371,8 @@ function getCalendarPeriodBounds(mode, refDate) {
     const lastDay = new Date(y, m + 1, 0);
     const title = `${CAL_MONTHS_FR[m]} ${y}`;
     return {
-      start: firstDay.toISOString().split("T")[0],
-      end: lastDay.toISOString().split("T")[0],
+      start: formatCalendarLocalDate(firstDay),
+      end: formatCalendarLocalDate(lastDay),
       title
     };
   } else if (mode === "week") {
@@ -11374,8 +11387,8 @@ function getCalendarPeriodBounds(mode, refDate) {
     const sunStr = `${sunday.getDate()} ${CAL_MONTHS_FR[sunday.getMonth()].slice(0, 4)}. ${sunday.getFullYear()}`;
     const title = `Semaine • ${monStr} au ${sunStr}`;
     return {
-      start: monday.toISOString().split("T")[0],
-      end: sunday.toISOString().split("T")[0],
+      start: formatCalendarLocalDate(monday),
+      end: formatCalendarLocalDate(sunday),
       title
     };
   } else {
@@ -11383,7 +11396,7 @@ function getCalendarPeriodBounds(mode, refDate) {
     const dayNum = d.getDate();
     const monthName = CAL_MONTHS_FR[m];
     const title = `${dayName} ${dayNum === 1 ? "1er" : dayNum} ${monthName} ${y}`;
-    const dateStr = d.toISOString().split("T")[0];
+    const dateStr = formatCalendarLocalDate(d);
     return {
       start: dateStr,
       end: dateStr,
@@ -11461,7 +11474,7 @@ function calculateAndRenderCalendarKPIs(events, startStr, endStr) {
 
   const totalRevenueTTC = totalRevenue * 1.20;
 
-  const todayStr = new Date().toISOString().split("T")[0];
+  const todayStr = formatCalendarLocalDate(new Date());
   const todayEvents = events.filter(e => e.date === todayStr);
 
   setElemText("cal-kpi-total-events", periodEvents.length);
@@ -11476,6 +11489,22 @@ function calculateAndRenderCalendarKPIs(events, startStr, endStr) {
 
   setElemText("cal-kpi-active-days", `${activeDates.size} j`);
   setElemText("cal-kpi-today-status", `Aujourd'hui : ${todayEvents.length} chantier${todayEvents.length > 1 ? 's' : ''}`);
+}
+
+function selectCalendarDay(dateStr, cellElement, events, scrollToAgenda = false) {
+  calendarSelectedDate = dateStr;
+  const allCells = document.querySelectorAll(".cal-day-cell");
+  allCells.forEach(c => c.classList.remove("is-selected"));
+  if (cellElement) cellElement.classList.add("is-selected");
+
+  renderCalendarSelectedDayAgenda(dateStr, events);
+
+  if (scrollToAgenda) {
+    const agendaEl = document.getElementById("cal-selected-day-agenda");
+    if (agendaEl) {
+      agendaEl.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }
 }
 
 function renderCalendarMonthGrid(events) {
@@ -11494,13 +11523,13 @@ function renderCalendarMonthGrid(events) {
   const totalDays = lastDayOfMonth.getDate();
   const prevMonthLastDay = new Date(y, m, 0).getDate();
 
-  const todayStr = new Date().toISOString().split("T")[0];
+  const todayStr = formatCalendarLocalDate(new Date());
 
   // Jours du mois précédent
   for (let i = startDayOfWeek - 1; i >= 0; i--) {
     const dayNum = prevMonthLastDay - i;
     const prevDate = new Date(y, m - 1, dayNum);
-    const dateStr = prevDate.toISOString().split("T")[0];
+    const dateStr = formatCalendarLocalDate(prevDate);
     const cell = createCalendarMonthDayCell(dayNum, dateStr, events, true, dateStr === todayStr, dateStr === calendarSelectedDate);
     gridEl.appendChild(cell);
   }
@@ -11508,7 +11537,7 @@ function renderCalendarMonthGrid(events) {
   // Jours du mois en cours
   for (let dayNum = 1; dayNum <= totalDays; dayNum++) {
     const curDate = new Date(y, m, dayNum);
-    const dateStr = curDate.toISOString().split("T")[0];
+    const dateStr = formatCalendarLocalDate(curDate);
     const cell = createCalendarMonthDayCell(dayNum, dateStr, events, false, dateStr === todayStr, dateStr === calendarSelectedDate);
     gridEl.appendChild(cell);
   }
@@ -11520,7 +11549,7 @@ function renderCalendarMonthGrid(events) {
 
   for (let dayNum = 1; dayNum <= remaining; dayNum++) {
     const nextDate = new Date(y, m + 1, dayNum);
-    const dateStr = nextDate.toISOString().split("T")[0];
+    const dateStr = formatCalendarLocalDate(nextDate);
     const cell = createCalendarMonthDayCell(dayNum, dateStr, events, true, dateStr === todayStr, dateStr === calendarSelectedDate);
     gridEl.appendChild(cell);
   }
@@ -11569,7 +11598,7 @@ function createCalendarMonthDayCell(dayNum, dateStr, events, isOtherMonth, isTod
   listDiv.className = "cal-day-events-list";
 
   const maxVisible = 3;
-  dayEvents.slice(0, maxVisible).forEach(evt => {
+  dayEvents.forEach((evt, idx) => {
     const pill = document.createElement("div");
     let pillTypeClass = "cal-pill-done";
     let icon = "🚜";
@@ -11583,27 +11612,45 @@ function createCalendarMonthDayCell(dayNum, dateStr, events, isOtherMonth, isTod
       pillTypeClass = "cal-pill-unbilled";
       icon = "⏳";
     }
-    pill.className = `cal-event-pill ${pillTypeClass}`;
+    const isHidden = idx >= maxVisible;
+    pill.className = `cal-event-pill ${pillTypeClass} ${isHidden ? "cal-pill-hidden" : ""}`;
     pill.title = `${evt.client} - ${evt.title} (${evt.status || ''})`;
     pill.innerHTML = `<span>${icon}</span> <strong style="max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHTML(evt.client)}</strong> <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHTML(evt.title)}</span>`;
+    
+    pill.addEventListener("click", (e) => {
+      e.stopPropagation();
+      selectCalendarDay(dateStr, cell, events, true);
+    });
+
     listDiv.appendChild(pill);
   });
 
   if (dayEvents.length > maxVisible) {
-    const morePill = document.createElement("div");
-    morePill.className = "cal-more-pill";
-    morePill.textContent = `+${dayEvents.length - maxVisible} de plus`;
-    listDiv.appendChild(morePill);
+    const remainingCount = dayEvents.length - maxVisible;
+    const moreBtn = document.createElement("button");
+    moreBtn.type = "button";
+    moreBtn.className = "cal-more-pill-btn";
+    moreBtn.innerHTML = `<span>＋ ${remainingCount} de plus</span>`;
+    moreBtn.title = `Cliquer pour afficher toutes les interventions du ${dateStr}`;
+
+    moreBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const isExpanded = cell.classList.toggle("is-expanded");
+      if (isExpanded) {
+        moreBtn.innerHTML = `<span>▲ Réduire</span>`;
+      } else {
+        moreBtn.innerHTML = `<span>＋ ${remainingCount} de plus</span>`;
+      }
+      selectCalendarDay(dateStr, cell, events, true);
+    });
+
+    listDiv.appendChild(moreBtn);
   }
 
   cell.appendChild(listDiv);
 
   cell.addEventListener("click", () => {
-    calendarSelectedDate = dateStr;
-    const allCells = document.querySelectorAll(".cal-day-cell");
-    allCells.forEach(c => c.classList.remove("is-selected"));
-    cell.classList.add("is-selected");
-    renderCalendarSelectedDayAgenda(dateStr, events);
+    selectCalendarDay(dateStr, cell, events, false);
   });
 
   cell.addEventListener("dblclick", () => {
@@ -11621,12 +11668,12 @@ function renderCalendarWeekGrid(events, mondayStr) {
 
   const [y, m, d] = mondayStr.split("-").map(Number);
   const monday = new Date(y, m - 1, d);
-  const todayStr = new Date().toISOString().split("T")[0];
+  const todayStr = formatCalendarLocalDate(new Date());
 
   for (let i = 0; i < 7; i++) {
     const cur = new Date(monday);
     cur.setDate(monday.getDate() + i);
-    const dateStr = cur.toISOString().split("T")[0];
+    const dateStr = formatCalendarLocalDate(cur);
     const dayEvents = events.filter(e => e.date === dateStr);
     const isToday = dateStr === todayStr;
 
@@ -12018,14 +12065,16 @@ function renderCalendarSelectedDayAgenda(dateStr, events) {
   const monthName = CAL_MONTHS_FR[curDate.getMonth()];
   const formattedDate = `${dayName} ${dayNum === 1 ? "1er" : dayNum} ${monthName} ${curDate.getFullYear()}`;
 
-  if (titleEl) titleEl.textContent = `Chantiers du ${formattedDate}`;
+  const dayEvents = (events || []).filter(e => e.date === dateStr);
 
-  const dayEvents = events.filter(e => e.date === dateStr);
+  if (titleEl) {
+    titleEl.textContent = `Chantiers du ${formattedDate} (${dayEvents.length} intervention${dayEvents.length > 1 ? 's' : ''})`;
+  }
 
   if (subtitleEl) {
     subtitleEl.textContent = dayEvents.length === 0
       ? `Aucun chantier pour cette journée. Cliquez sur « ＋ Saisir intervention » pour ajouter un travail.`
-      : `${dayEvents.length} chantier(s) répertorié(s) pour cette journée.`;
+      : `Voici la totalité des ${dayEvents.length} interventions et chantiers du ${formattedDate} :`;
   }
 
   container.innerHTML = "";
@@ -12111,7 +12160,7 @@ function renderCalendarView() {
     renderCalendarDayView(calendarSelectedDate, filteredEvents);
   }
 
-  const todayStr = new Date().toISOString().split("T")[0];
+  const todayStr = formatCalendarLocalDate(new Date());
   const todayCount = countCalendarEventsForDate(todayStr);
   const badgeEl = document.getElementById("sidebar-calendar-count");
   if (badgeEl) {
