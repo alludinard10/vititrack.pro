@@ -1104,6 +1104,43 @@
                   </div>
                 </div>
 
+                <!-- Menu déroulant multi-sélection pour l'équipe et le suivi des vendanges -->
+                <div class="filter-dropdown-btn-wrap select-team-wrap" id="wrap-vendanges-filter-team" style="position: relative;">
+                  <button type="button" class="filter-dropdown-pill filter-ms-trigger" id="btn-vendanges-filter-team" aria-haspopup="true" aria-expanded="false" aria-label="Filtrer par équipe et suivi">
+                    <span class="filter-dropdown-icon" id="vendanges-team-icon">👥</span>
+                    <div class="filter-dropdown-body">
+                      <span class="filter-dropdown-label">Équipe et suivi</span>
+                      <span class="filter-dropdown-value" id="vendanges-filter-team-text">Toutes les équipes</span>
+                    </div>
+                    <span class="filter-dropdown-arrow">
+                      <svg width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M1 1L5 5L9 1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                      </svg>
+                    </span>
+                  </button>
+
+                  <div class="filter-multiselect-dropdown" id="dropdown-vendanges-filter-team" style="display: none; min-width: 280px;">
+                    <div class="filter-multiselect-header">
+                      <div class="filter-ms-header-info">
+                        <span class="filter-ms-header-title">Équipe et suivi</span>
+                        <span class="filter-ms-count-badge" id="vendanges-filter-team-badge">Toutes</span>
+                      </div>
+                      <div class="filter-ms-actions">
+                        <button type="button" class="filter-ms-action-btn" id="btn-vendanges-select-all-teams">Tout cocher</button>
+                        <span class="filter-ms-sep">•</span>
+                        <button type="button" class="filter-ms-action-btn" id="btn-vendanges-clear-teams">Tout décocher</button>
+                      </div>
+                    </div>
+                    <div class="filter-ms-search-box">
+                      <span class="filter-ms-search-icon">🔍</span>
+                      <input type="text" id="search-vendanges-filter-team" class="filter-ms-search-input" placeholder="Chercher une équipe, membre..." autocomplete="off">
+                    </div>
+                    <div class="filter-ms-list" id="list-vendanges-filter-team" style="max-height: 250px;">
+                      <!-- Généré dynamiquement avec encoches (cases à cocher) -->
+                    </div>
+                  </div>
+                </div>
+
                 <button type="button" class="btn btn-ghost btn-xs btn-reset-filters" id="btn-reset-vendanges-filters" style="display: none;" title="Réinitialiser tous les filtres">
                   <span>✕ Réinitialiser</span>
                 </button>

@@ -221,6 +221,13 @@ Vititrack pro/
   - Champ de recherche instantanée par nom de parcelle, domaine et cépage.
   - Commandes rapides « Tout cocher » et « Tout décocher » avec affichage dynamique du nombre de parcelles sélectionnées sur le bouton déclencheur.
 
+- **Filtre Multi-Sélection Équipe et Suivi (Menu Déroulant à Encoches)** :
+  - Disposé directement à côté de *Domaine viticole*, *Parcelle(s)* et *Étape(s) vendange* dans la barre de contrôle de la feuille de route (`#wrap-vendanges-filter-team`).
+  - Menu déroulant multi-sélection permettant de filtrer les chantiers selon une ou plusieurs équipes / intervenants simultanément (`vendangesTeamFilters`).
+  - Intègre l'ensemble des membres de l'équipe du domaine (`teamUsers`) avec avatars colorés, rôles viticoles, ainsi que les intervenants tiers ou le statut « Non assigné » avec décompte direct des parcelles associées.
+  - Recherche textuelle instantanée, boutons « Tout cocher » et « Tout décocher », et synchronisation automatique avec l'export CSV et la réinitialisation rapide des filtres.
+
+
 - **Création & Planification Multi-Domaines & Multi-Parcelles (Modal 11)** :
   - Identique à l'ergonomie de Modal 6 (Travaux prévisionnels), le formulaire de nouvelle vendange propose deux menus déroulants élégants à encoches :
     - *Menu déroulant « Domaine(s) / Client(s) »* : recherche instantanée, boutons « Tout cocher / Tout décocher », et sélection multi-domaines simultanée avec affichage dynamique sur le déclencheur.

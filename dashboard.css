@@ -1160,7 +1160,9 @@ button.filter-dropdown-pill {
 
 .filter-dropdown-btn-wrap.is-open,
 #wrap-vendanges-filter-client.is-open,
+#wrap-vendanges-filter-parcel.is-open,
 #wrap-vendanges-filter-stage.is-open,
+#wrap-vendanges-filter-team.is-open,
 #wrap-ch-filter-client.is-open,
 #wrap-ch-filter-parcel.is-open {
   z-index: 130;
@@ -1168,7 +1170,9 @@ button.filter-dropdown-pill {
 
 .filter-dropdown-btn-wrap.is-open .filter-dropdown-arrow,
 #wrap-vendanges-filter-client.is-open .filter-dropdown-arrow,
+#wrap-vendanges-filter-parcel.is-open .filter-dropdown-arrow,
 #wrap-vendanges-filter-stage.is-open .filter-dropdown-arrow,
+#wrap-vendanges-filter-team.is-open .filter-dropdown-arrow,
 #wrap-ch-filter-client.is-open .filter-dropdown-arrow,
 #wrap-ch-filter-parcel.is-open .filter-dropdown-arrow {
   transform: rotate(180deg);
@@ -1177,7 +1181,9 @@ button.filter-dropdown-pill {
 
 .filter-dropdown-btn-wrap.is-open .filter-dropdown-pill,
 #wrap-vendanges-filter-client.is-open .filter-dropdown-pill,
+#wrap-vendanges-filter-parcel.is-open .filter-dropdown-pill,
 #wrap-vendanges-filter-stage.is-open .filter-dropdown-pill,
+#wrap-vendanges-filter-team.is-open .filter-dropdown-pill,
 #wrap-ch-filter-client.is-open .filter-dropdown-pill,
 #wrap-ch-filter-parcel.is-open .filter-dropdown-pill {
   border-color: rgba(82, 183, 136, 0.65);

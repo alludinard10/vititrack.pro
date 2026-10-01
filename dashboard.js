@@ -263,8 +263,8 @@ let vendangesSearchFilter = "";
 let vendangesClientFilter = "all";
 let vendangesClientFilters = [];
 let vendangesParcelFilters = [];
-let vendangesStageFilter = "all";
 let vendangesStageFilters = ["leaf_todo", "leaf_done", "cut_todo", "cut_done", "haul_todo", "haul_done"];
+let vendangesTeamFilters = [];
 
 // ==================== UNIQUE IDENTIFIER GENERATORS & REPAIR UTILS ====================
 
@@ -943,6 +943,7 @@ function saveTeamLocally() {
 function saveTeamUsers() {
   saveTeamLocally();
   syncGlobalTeamDirectory();
+  if (typeof populateVendangesTeamFilter === "function") populateVendangesTeamFilter();
 }
 
 // Unified save functions: Local cache + Background Supabase Sync
@@ -3312,6 +3313,10 @@ function closeAllFilterMultiSelects() {
   const wrapVendangesStage = document.getElementById("wrap-vendanges-filter-stage");
   const btnVendangesStage = document.getElementById("btn-vendanges-filter-stage");
 
+  const dropdownVendangesTeam = document.getElementById("dropdown-vendanges-filter-team");
+  const wrapVendangesTeam = document.getElementById("wrap-vendanges-filter-team");
+  const btnVendangesTeam = document.getElementById("btn-vendanges-filter-team");
+
   const dropdownCH = document.getElementById("dropdown-ch-filter-client");
   const wrapCH = document.getElementById("wrap-ch-filter-client");
   const btnCH = document.getElementById("btn-ch-filter-client");
@@ -3339,6 +3344,10 @@ function closeAllFilterMultiSelects() {
   if (dropdownVendangesStage) dropdownVendangesStage.style.display = "none";
   if (wrapVendangesStage) wrapVendangesStage.classList.remove("is-open");
   if (btnVendangesStage) btnVendangesStage.setAttribute("aria-expanded", "false");
+
+  if (dropdownVendangesTeam) dropdownVendangesTeam.style.display = "none";
+  if (wrapVendangesTeam) wrapVendangesTeam.classList.remove("is-open");
+  if (btnVendangesTeam) btnVendangesTeam.setAttribute("aria-expanded", "false");
 
   if (dropdownCH) dropdownCH.style.display = "none";
   if (wrapCH) wrapCH.classList.remove("is-open");
@@ -6737,6 +6746,7 @@ function renderVendangesView() {
   updateSidebarVendangesCount();
   populateVendangesClientFilter();
   populateVendangesParcelFilter();
+  populateVendangesTeamFilter();
   renderVendangesKPIs();
   renderVendangesTable();
 }
@@ -7443,6 +7453,262 @@ function toggleVendangesClientGroupParcels(cId, checkAll) {
   renderVendangesTable();
 }
 
+// ==================== FILTRE MULTI-SÉLECTION ÉQUIPES & SUIVI VENDANGES ====================
+
+let _vendangesTeamDropdownInitialized = false;
+function initVendangesTeamFilterMultiSelect() {
+  if (_vendangesTeamDropdownInitialized) return;
+  _vendangesTeamDropdownInitialized = true;
+
+  const wrap = document.getElementById("wrap-vendanges-filter-team");
+  const btn = document.getElementById("btn-vendanges-filter-team");
+  const dropdown = document.getElementById("dropdown-vendanges-filter-team");
+  const searchInput = document.getElementById("search-vendanges-filter-team");
+  const btnAll = document.getElementById("btn-vendanges-select-all-teams");
+  const btnClear = document.getElementById("btn-vendanges-clear-teams");
+
+  if (btn && dropdown) {
+    btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const isOpen = dropdown.style.display === "flex";
+      closeAllFilterMultiSelects();
+      if (!isOpen) {
+        dropdown.style.display = "flex";
+        if (wrap) wrap.classList.add("is-open");
+        btn.setAttribute("aria-expanded", "true");
+        if (searchInput) setTimeout(() => searchInput.focus(), 60);
+      }
+    });
+  }
+
+  if (dropdown) {
+    dropdown.addEventListener("click", (e) => e.stopPropagation());
+  }
+
+  if (searchInput) {
+    searchInput.addEventListener("input", (e) => {
+      const q = e.target.value.toLowerCase().trim();
+      const items = document.querySelectorAll("#list-vendanges-filter-team .filter-ms-item");
+      items.forEach(item => {
+        const text = item.textContent.toLowerCase();
+        item.style.display = text.includes(q) ? "flex" : "none";
+      });
+    });
+  }
+
+  if (btnAll) {
+    btnAll.addEventListener("click", (e) => {
+      e.preventDefault();
+      toggleAllVendangesTeams(true);
+    });
+  }
+
+  if (btnClear) {
+    btnClear.addEventListener("click", (e) => {
+      e.preventDefault();
+      toggleAllVendangesTeams(false);
+    });
+  }
+}
+
+function populateVendangesTeamFilter() {
+  initVendangesTeamFilterMultiSelect();
+  const listEl = document.getElementById("list-vendanges-filter-team");
+  if (!listEl) return;
+
+  listEl.innerHTML = "";
+
+  const teamsMap = new Map();
+
+  // Membres déclarés dans l'équipe (teamUsers)
+  (teamUsers || []).forEach(u => {
+    teamsMap.set(u.name, {
+      key: u.name,
+      name: u.name,
+      role: u.role || "Membre de l'équipe",
+      color: u.color || "#2d6a4f",
+      isTeamUser: true,
+      count: 0
+    });
+  });
+
+  // Décompte et repérage des équipes ou intervenants assignés dans harvestWorks
+  let hasUnassigned = false;
+  let unassignedCount = 0;
+
+  (harvestWorks || []).forEach(h => {
+    const w = (h.worker || "").trim();
+    if (!w || w.toLowerCase() === "non assigné" || w.toLowerCase() === "non assigne" || w.toLowerCase() === "à définir") {
+      hasUnassigned = true;
+      unassignedCount++;
+    } else {
+      let matchedKey = null;
+      if (teamsMap.has(w)) {
+        matchedKey = w;
+      } else {
+        for (const [k, v] of teamsMap.entries()) {
+          if (k.toLowerCase() === w.toLowerCase() || (w.includes(" ") && k.toLowerCase().startsWith(w.split(" ")[0].toLowerCase()))) {
+            matchedKey = k;
+            break;
+          }
+        }
+      }
+
+      if (matchedKey) {
+        teamsMap.get(matchedKey).count++;
+      } else {
+        teamsMap.set(w, {
+          key: w,
+          name: w,
+          role: "Équipe / Intervenant",
+          color: "#2563eb",
+          isTeamUser: false,
+          count: 1
+        });
+      }
+    }
+  });
+
+  if (hasUnassigned) {
+    teamsMap.set("__unassigned__", {
+      key: "__unassigned__",
+      name: "Non assigné",
+      role: "En attente d'affectation",
+      color: "#6c757d",
+      isUnassigned: true,
+      count: unassignedCount
+    });
+  }
+
+  const allTeams = Array.from(teamsMap.values());
+  const allKeys = allTeams.map(t => t.key);
+
+  if (allTeams.length === 0) {
+    listEl.innerHTML = '<div class="filter-ms-empty">Aucune équipe disponible</div>';
+    vendangesTeamFilters = [];
+    updateVendangesTeamFilterUI();
+    return;
+  }
+
+  // Synchronisation des clés actives
+  if (!Array.isArray(vendangesTeamFilters) || vendangesTeamFilters.length === 0 || vendangesTeamFilters.some(k => !allKeys.includes(k))) {
+    vendangesTeamFilters = [...allKeys];
+  }
+
+  allTeams.forEach(t => {
+    const isChecked = vendangesTeamFilters.includes(t.key);
+    const label = document.createElement("label");
+    label.className = `filter-ms-item ${isChecked ? "is-checked" : ""}`;
+    label.dataset.teamKey = t.key;
+
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.className = "filter-ms-cb vendanges-team-cb";
+    checkbox.value = t.key;
+    checkbox.checked = isChecked;
+
+    checkbox.addEventListener("change", () => {
+      toggleVendangesTeam(t.key, checkbox.checked);
+    });
+
+    const initial = (t.name || "U").charAt(0).toUpperCase();
+    const avatarBadge = t.isUnassigned
+      ? `<span style="display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; background: rgba(108,117,125,0.25); color: #adb5bd; font-size: 0.72rem; font-weight: 700; flex-shrink: 0;">?</span>`
+      : `<span style="display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; background: ${t.color || '#2d6a4f'}; color: #fff; font-size: 0.72rem; font-weight: 700; flex-shrink: 0;">${initial}</span>`;
+
+    label.innerHTML = `
+      <span class="filter-ms-checkbox-box"></span>
+      ${avatarBadge}
+      <div class="filter-ms-item-text" style="flex: 1; margin-left: 0.45rem;">
+        <span class="filter-ms-item-title">${escapeHTML(t.name)}</span>
+        <span class="filter-ms-item-sub">${escapeHTML(t.role)}</span>
+      </div>
+      <span class="filter-stage-item-badge badge-neutral" style="font-size: 0.72rem; padding: 2px 7px; border-radius: 10px; background: rgba(255,255,255,0.08);">${t.count} parcelle${t.count > 1 ? 's' : ''}</span>
+    `;
+    label.prepend(checkbox);
+    listEl.appendChild(label);
+  });
+
+  updateVendangesTeamFilterUI();
+}
+
+function updateVendangesTeamFilterUI() {
+  const textEl = document.getElementById("vendanges-filter-team-text");
+  const badgeEl = document.getElementById("vendanges-filter-team-badge");
+  const wrapEl = document.getElementById("wrap-vendanges-filter-team");
+
+  const checkboxes = document.querySelectorAll("#list-vendanges-filter-team .vendanges-team-cb");
+  const total = checkboxes.length;
+  const count = Array.isArray(vendangesTeamFilters) ? vendangesTeamFilters.length : 0;
+
+  if (textEl) {
+    if (total === 0) {
+      textEl.textContent = "Aucune équipe";
+    } else if (count === 0) {
+      textEl.textContent = "⚠️ Aucune sélectionnée";
+    } else if (count === total) {
+      textEl.textContent = "Toutes les équipes";
+    } else if (count === 1) {
+      const checkedItem = document.querySelector("#list-vendanges-filter-team .filter-ms-item.is-checked .filter-ms-item-title");
+      textEl.textContent = checkedItem ? checkedItem.textContent.trim() : "1 équipe sélectionnée";
+    } else {
+      textEl.textContent = `${count} équipes sélectionnées`;
+    }
+  }
+
+  if (badgeEl) {
+    if (total === 0 || count === 0) {
+      badgeEl.textContent = "0";
+    } else if (count === total) {
+      badgeEl.textContent = "Toutes";
+    } else {
+      badgeEl.textContent = `${count} / ${total}`;
+    }
+  }
+
+  if (wrapEl) {
+    wrapEl.classList.toggle("is-active", count > 0 && count < total);
+  }
+}
+
+function toggleVendangesTeam(teamKey, isChecked) {
+  if (isChecked) {
+    if (!vendangesTeamFilters.includes(teamKey)) {
+      vendangesTeamFilters.push(teamKey);
+    }
+  } else {
+    vendangesTeamFilters = vendangesTeamFilters.filter(k => k !== teamKey);
+  }
+
+  const item = document.querySelector(`#list-vendanges-filter-team .filter-ms-item[data-team-key="${teamKey}"]`);
+  if (item) {
+    item.classList.toggle("is-checked", isChecked);
+    const cb = item.querySelector(".vendanges-team-cb");
+    if (cb) cb.checked = isChecked;
+  }
+
+  updateVendangesTeamFilterUI();
+  renderVendangesTable();
+}
+
+function toggleAllVendangesTeams(checkAll) {
+  const checkboxes = document.querySelectorAll("#list-vendanges-filter-team .vendanges-team-cb");
+  vendangesTeamFilters = [];
+
+  checkboxes.forEach(cb => {
+    cb.checked = checkAll;
+    const item = cb.closest(".filter-ms-item");
+    if (item) item.classList.toggle("is-checked", checkAll);
+    if (checkAll) {
+      vendangesTeamFilters.push(cb.value);
+    }
+  });
+
+  updateVendangesTeamFilterUI();
+  renderVendangesTable();
+}
+
 function renderVendangesTable() {
   const tbody = document.getElementById("vendanges-table-tbody");
   const emptyState = document.getElementById("vendanges-empty-state");
@@ -7476,6 +7742,31 @@ function renderVendangesTable() {
         return vendangesParcelFilters.includes(pKey) ||
                vendangesParcelFilters.includes(h.parcelId) ||
                vendangesParcelFilters.includes(h.parcelName);
+      });
+    }
+  }
+
+  // 1c. Filtre par Équipe & Suivi (Multi-sélection à encoches)
+  const totalVendangesTeams = document.querySelectorAll("#list-vendanges-filter-team .vendanges-team-cb").length;
+  if (totalVendangesTeams > 0 && Array.isArray(vendangesTeamFilters)) {
+    const checkedTeamCbs = document.querySelectorAll("#list-vendanges-filter-team .vendanges-team-cb:checked");
+    if (checkedTeamCbs.length === 0 && vendangesTeamFilters.length === 0) {
+      filtered = [];
+    } else if (vendangesTeamFilters.length > 0 && vendangesTeamFilters.length < totalVendangesTeams) {
+      filtered = filtered.filter(h => {
+        const w = (h.worker || "").trim();
+        const isUnassigned = !w || w.toLowerCase() === "non assigné" || w.toLowerCase() === "non assigne" || w.toLowerCase() === "à définir";
+        if (isUnassigned) {
+          return vendangesTeamFilters.includes("__unassigned__");
+        }
+        if (vendangesTeamFilters.includes(w)) return true;
+        for (const tKey of vendangesTeamFilters) {
+          if (tKey === "__unassigned__") continue;
+          if (w.toLowerCase().includes(tKey.toLowerCase()) || tKey.toLowerCase().includes(w.toLowerCase())) return true;
+          const parts = tKey.split(" ");
+          if (parts.length >= 2 && w.toLowerCase().startsWith(parts[0].toLowerCase())) return true;
+        }
+        return false;
       });
     }
   }
@@ -7517,9 +7808,11 @@ function renderVendangesTable() {
   const resetBtn = document.getElementById("btn-reset-vendanges-filters");
   const totalVendangesCount = document.querySelectorAll("#list-vendanges-filter-client .vendanges-client-cb").length;
   const isParcelFiltered = totalVendangesParcels > 0 && vendangesParcelFilters.length < totalVendangesParcels;
+  const isTeamFiltered = totalVendangesTeams > 0 && vendangesTeamFilters.length < totalVendangesTeams;
   const isFiltered = (Array.isArray(vendangesClientFilters) && vendangesClientFilters.length > 0 && vendangesClientFilters.length < totalVendangesCount) ||
                      (vendangesClientFilter && vendangesClientFilter !== "all") ||
                      isParcelFiltered ||
+                     isTeamFiltered ||
                      (Array.isArray(vendangesStageFilters) && vendangesStageFilters.length < allStages.length) ||
                      (vendangesSearchFilter && vendangesSearchFilter.trim() !== "");
   if (resetBtn) resetBtn.style.display = isFiltered ? "inline-flex" : "none";
@@ -7678,6 +7971,9 @@ function resetVendangesFilters() {
 
   populateVendangesParcelFilter();
   toggleAllVendangesParcels(true);
+
+  populateVendangesTeamFilter();
+  toggleAllVendangesTeams(true);
 
   toggleAllVendangesStages(true);
   vendangesSearchFilter = "";
@@ -8461,7 +8757,15 @@ function openHarvestModal(editId = null) {
     onHarvestModalHaulChange();
 
     // Salarié, Date & Notes
-    if (workerSelect) workerSelect.value = item.worker || "";
+    if (workerSelect) {
+      if (item.worker && !Array.from(workerSelect.options).some(o => o.value === item.worker)) {
+        const opt = document.createElement("option");
+        opt.value = item.worker;
+        opt.textContent = `${item.worker} (Équipe)`;
+        workerSelect.appendChild(opt);
+      }
+      workerSelect.value = item.worker || "";
+    }
     const dateInput = document.getElementById("input-harvest-date");
     if (dateInput) dateInput.value = item.harvestDate || "";
     const notesInput = document.getElementById("input-harvest-notes");
@@ -9538,6 +9842,26 @@ function exportVendangesCSV() {
     });
   }
 
+  // 1c. Filtre Équipe & Suivi
+  const totalVendangesTeams = document.querySelectorAll("#list-vendanges-filter-team .vendanges-team-cb").length;
+  if (totalVendangesTeams > 0 && Array.isArray(vendangesTeamFilters) && vendangesTeamFilters.length < totalVendangesTeams) {
+    list = list.filter(h => {
+      const w = (h.worker || "").trim();
+      const isUnassigned = !w || w.toLowerCase() === "non assigné" || w.toLowerCase() === "non assigne" || w.toLowerCase() === "à définir";
+      if (isUnassigned) {
+        return vendangesTeamFilters.includes("__unassigned__");
+      }
+      if (vendangesTeamFilters.includes(w)) return true;
+      for (const tKey of vendangesTeamFilters) {
+        if (tKey === "__unassigned__") continue;
+        if (w.toLowerCase().includes(tKey.toLowerCase()) || tKey.toLowerCase().includes(w.toLowerCase())) return true;
+        const parts = tKey.split(" ");
+        if (parts.length >= 2 && w.toLowerCase().startsWith(parts[0].toLowerCase())) return true;
+      }
+      return false;
+    });
+  }
+
   // 2. Filtre Étape
   const allStages = ["leaf_todo", "leaf_done", "cut_todo", "cut_done", "haul_todo", "haul_done"];
   if (Array.isArray(vendangesStageFilters) && vendangesStageFilters.length < allStages.length) {
@@ -9722,6 +10046,11 @@ window.updateVendangesParcelFilterUI = updateVendangesParcelFilterUI;
 window.toggleVendangesParcel = toggleVendangesParcel;
 window.toggleAllVendangesParcels = toggleAllVendangesParcels;
 window.toggleVendangesClientGroupParcels = toggleVendangesClientGroupParcels;
+window.initVendangesTeamFilterMultiSelect = initVendangesTeamFilterMultiSelect;
+window.populateVendangesTeamFilter = populateVendangesTeamFilter;
+window.updateVendangesTeamFilterUI = updateVendangesTeamFilterUI;
+window.toggleVendangesTeam = toggleVendangesTeam;
+window.toggleAllVendangesTeams = toggleAllVendangesTeams;
 window.resetVendangesFilters = resetVendangesFilters;
 
 // ==================== HISTORIQUE & SUIVI PAR CLIENT ====================
