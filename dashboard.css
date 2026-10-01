@@ -1804,33 +1804,66 @@ button.filter-dropdown-pill {
   font-family: inherit;
 }
 
+/* Indicateur rond pour les statuts */
+.status-circle-dot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.95rem;
+  line-height: 1;
+  margin-right: 2px;
+  vertical-align: middle;
+}
+
+.status-circle-dot.unbilled-dot {
+  color: #f59e0b !important;
+  text-shadow: 0 0 8px rgba(245, 158, 11, 0.7);
+}
+
+.status-circle-dot.billed-dot {
+  color: #52b788 !important;
+  text-shadow: 0 0 8px rgba(82, 183, 136, 0.7);
+}
+
+/* Statut "À facturer" : retrait du rectangle orange, texte blanc pur et seul le rond affiché */
 .status-pill-toggle.status-unbilled,
-.status-pill-toggle.status-unbilled *,
 .status-badge.status-unbilled,
-.status-badge.status-unbilled *,
 .status-badge.status-a-facturer,
-.status-badge.status-a-facturer *,
 .ch-table .status-unbilled,
-.ch-table .status-unbilled * {
-  background: rgba(233, 196, 106, 0.22);
+.cal-status-tag-unbilled {
+  background: transparent !important;
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
   color: #ffffff !important;
-  border-color: rgba(233, 196, 106, 0.55);
   font-weight: 700;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  padding: 3px 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 9999px;
+  transition: transform 0.15s ease, opacity 0.15s ease;
 }
 
 .status-pill-toggle.status-unbilled:hover,
-.status-pill-toggle.status-unbilled:hover *,
 .status-badge.status-unbilled:hover,
-.status-badge.status-unbilled:hover *,
 .status-badge.status-a-facturer:hover,
-.status-badge.status-a-facturer:hover *,
 .ch-table .status-unbilled:hover,
-.ch-table .status-unbilled:hover * {
-  background: rgba(233, 196, 106, 0.35);
+.cal-status-tag-unbilled:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+  background-color: rgba(255, 255, 255, 0.08) !important;
+  border: none !important;
   color: #ffffff !important;
-  border-color: rgba(233, 196, 106, 0.75);
-  transform: scale(1.03);
+  transform: scale(1.04);
+}
+
+.status-pill-toggle.status-unbilled span,
+.status-badge.status-unbilled span,
+.status-badge.status-a-facturer span,
+.ch-table .status-unbilled span,
+.cal-status-tag-unbilled span {
+  background: transparent !important;
+  color: #ffffff !important;
 }
 
 .status-pill-toggle.status-billed,

@@ -4100,7 +4100,7 @@ function renderTable() {
           <span class="task-tag">✂️ ${escapeHTML(item.task)}</span>
         </td>
         <td>
-          <span class="volume-value">${item.unit === 'ha' ? formatSurface(item.quantity) : (item.unit === 'kg' ? Number(item.quantity).toLocaleString('fr-FR') : item.quantity)} ${item.unit}</span>
+          <span class="volume-value">${item.unit === 'ha' ? formatSurface(item.quantity) : (item.unit === 'kg' ? Number(item.quantity).toLocaleString('fr-FR') : item.quantity)} ${(item.unit === 'hourly' || item.unit === 'heures' || item.rateType === 'hourly') ? 'h' : item.unit}</span>
         </td>
         <td>
           <span class="amount-value">${item.total.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € HT</span>
@@ -4111,7 +4111,7 @@ function renderTable() {
         </td>
         <td>
           <button class="status-pill-toggle ${statusClass}" onclick="toggleInterventionStatus('${item.id}')" title="Cliquer pour basculer le statut">
-            <span>${statusIcon}</span>
+            <span class="status-circle-dot ${isUnbilled ? 'unbilled-dot' : 'billed-dot'}">●</span>
             <span>${item.status}</span>
           </button>
         </td>
@@ -5943,10 +5943,11 @@ function formatCurrency(val) {
 
 function formatVolumeUnit(volume, rateType) {
   const vol = parseFloat(volume) || 0;
-  const unit = rateType || 'ha';
-  if (unit === 'ha') return `${formatSurface(vol)} ha`;
-  if (unit === 'kg') return `${vol.toLocaleString('fr-FR')} kg`;
-  if (unit === 'h') return `${vol.toFixed(1)} h`;
+  const unit = (rateType || 'ha').toLowerCase();
+  if (unit === 'ha' || unit === 'surface') return `${formatSurface(vol)} ha`;
+  if (unit === 'kg' || unit === 'kilo') return `${vol.toLocaleString('fr-FR')} kg`;
+  if (unit === 'h' || unit === 'hourly' || unit === 'heures' || unit === 'heure') return `${vol} h`;
+  if (unit === 'fixed' || unit === 'forfait') return `${vol} forfait`;
   return `${vol} ${unit}`;
 }
 
@@ -10952,7 +10953,7 @@ function updateClientHistoryData() {
           </td>
           <td>
             <button type="button" class="status-pill-toggle status-badge ${statusClass}" onclick="toggleInterventionStatus('${i.id}')" title="Cliquer pour basculer le statut">
-              <span>${statusIcon}</span> <span>${escapeHTML(i.status)}</span>
+              <span class="status-circle-dot ${i.status === 'Facturée' ? 'billed-dot' : 'unbilled-dot'}">●</span> <span>${escapeHTML(i.status)}</span>
             </button>
           </td>
           <td>
@@ -11717,16 +11718,16 @@ function renderCalendarWeekGrid(events, mondayStr) {
           badgeContent = '<span>Vendange</span>';
         } else if (evt.type === "intervention") {
           if (evt.status === "Facturée") {
-            badgeContent = '<span class="cal-status-tag-billed">✅ Facturée</span>';
+            badgeContent = '<span class="cal-status-tag-billed"><span class="status-circle-dot billed-dot">●</span> Facturée</span>';
           } else {
-            badgeContent = '<span class="cal-status-tag-unbilled">⏳ À facturer</span>';
+            badgeContent = '<span class="cal-status-tag-unbilled"><span class="status-circle-dot unbilled-dot">●</span> À facturer</span>';
           }
         }
         card.className = `cal-card-compact ${cardTypeClass}`;
         card.innerHTML = `
           <div class="cal-card-top-row">
             <span>${icon} ${badgeContent}</span>
-            <span>${evt.time || (evt.quantity ? evt.quantity + " ha" : "")}</span>
+            <span>${evt.time || (evt.quantity ? formatVolumeUnit(evt.quantity, evt.rateType) : "")}</span>
           </div>
           <div class="cal-card-title">${escapeHTML(evt.title)}</div>
           <div class="cal-card-client">🏰 ${escapeHTML(evt.client)}</div>
@@ -11929,7 +11930,8 @@ function createCalendarFullEventCard(evt) {
           </div>
         </div>
         <button type="button" class="status-badge ${statusBadgeClass}" onclick="toggleInterventionStatus('${evt.id}'); renderCalendarView();" title="Cliquer pour basculer le statut de facturation">
-          <span>${statusBadgeIcon} ${escapeHTML(evt.status)}</span>
+          <span class="status-circle-dot ${isBilled ? 'billed-dot' : 'unbilled-dot'}">●</span>
+          <span>${escapeHTML(evt.status)}</span>
         </button>
       </div>
 
@@ -12126,11 +12128,12 @@ function renderCalendarSelectedDayAgenda(dateStr, events) {
         ${evt.amount > 0 ? `<span class="cal-agenda-amount">${formatCurrency(evt.amount)} HT</span>` : ""}
         ${evt.quantity ? `<span class="badge-tag">${formatVolumeUnit(evt.quantity, evt.rateType)}</span>` : ""}
         ${evt.type === "intervention" 
-          ? `<button type="button" class="status-badge ${evt.status === 'Facturée' ? 'status-billed' : 'status-unbilled'}" onclick="toggleInterventionStatus('${evt.id}'); renderCalendarView();">
-               <span>${evt.status === 'Facturée' ? '✅' : '⏳'} ${escapeHTML(evt.status)}</span>
+          ? `<button type="button" class="status-badge ${evt.status === 'Facturée' ? 'status-billed' : 'status-unbilled'}" onclick="toggleInterventionStatus('${evt.id}'); renderCalendarView();" title="Cliquer pour basculer le statut">
+               <span class="status-circle-dot ${evt.status === 'Facturée' ? 'billed-dot' : 'unbilled-dot'}">●</span>
+               <span>${escapeHTML(evt.status)}</span>
              </button>`
           : (evt.type === "planned"
-              ? `<button type="button" class="btn btn-primary btn-xs" onclick="window.convertPlannedWork('${evt.id}')">🚜 Faire</button>`
+              ? `<button type="button" class="btn btn-primary btn-xs" onclick="window.convertPlannedWork('${evt.id}')" title="Marquer comme fait / enregistrer intervention">🚜 Fait</button>`
               : `<span class="badge-tag" style="background: rgba(168, 85, 247, 0.2); color: #e9d5ff;">🍇 ${escapeHTML(evt.status)}</span>`
             )
         }
