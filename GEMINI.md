@@ -277,7 +277,24 @@ Vititrack pro/
   - Export CSV dédié de l'historique filtré (monoclient ou multi-domaines) avec téléchargement instantané compatible Excel.
   - Bouton rapide d'ajout d'intervention pré-assigné.
 
-#### H. Expérience Mobile / Smartphone
+#### H. Vue 6 : Calendrier & Planning au Jour le Jour (Onglet Calendrier dans Pilotage)
+- **Accès dédié depuis la section Pilotage** : Onglet `📅 Calendrier & Planning` (`#nav-btn-calendar`) avec pastille dynamique affichant le nombre d'événements du jour (`#sidebar-calendar-count`).
+- **3 Modes d'Affichage Interactifs** :
+  1. *Vue Mois (Grille mensuelle)* : Vue d'ensemble du mois avec pastilles colorées par type d'événement (vert émeraude = intervention réalisée, ambre = travail planifié, violet = vendange). Clic sur un jour pour ouvrir l'agenda détaillé du jour juste en-dessous avec boutons d'ajout direct ; double-clic pour basculer instantanément en vue Jour le jour.
+  2. *Vue Semaine* : Découpage par colonnes de jours (du lundi au dimanche) avec créneaux et liste ordonnée des interventions et travaux.
+  3. *Vue Jour le jour (« au jour le jour »)* : Fiche journalière détaillée complète avec cartes complètes pour chaque chantier (horaires, client, parcelles avec surface à 4 décimales, prestation, salarié assigné, valorisation HT/TTC, statut facturation avec bascule 1-clic, conversion directe des travaux prévus en interventions réalisées).
+- **Barre d'outils & Navigation Temporelle** :
+  - Boutons de navigation *Précédent*, *Aujourd'hui*, *Suivant* avec libellé dynamique du mois/semaine/jour affiché.
+  - Filtres instantanés combinables : par Type d'événement (*Tous*, *Interventions réalisées*, *Travaux planifiés*, *Vendanges*), par Domaine / Client, et par Salarié / Opérateur.
+  - Légende claire des codes couleurs.
+  - Raccourcis d'action rapide : *📌 Planifier un travail* et *＋ Nouvelle intervention* avec pré-remplissage automatique de la date sélectionnée.
+- **Synthèse & 4 KPIs Dynamiques de la Période** :
+  - *Événements / Chantiers* : Nombre total d'événements et nombre de jours actifs sur la période affichée.
+  - *Surface cumulée* : Superficie totale couverte (en hectares avec précision à 4 décimales).
+  - *Valorisation HT* : Montant total HT réalisé ou prévisionnel de la période.
+  - *À facturer / En attente* : Montant en attente et statut des chantiers.
+
+#### I. Expérience Mobile / Smartphone
 - **Barre de Navigation Inférieure Fixe (`.mobile-bottom-nav`)** :
   - Toujours accessible au pouce sur smartphone.
   - Icônes claires : *Tableau*, *Clients*, *Prestations*, *Menu*.

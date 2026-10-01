@@ -1582,6 +1582,7 @@ function setupEventListeners() {
 
   // Navigation View Switching
   const navOverview = document.getElementById("nav-btn-overview");
+  const navCalendar = document.getElementById("nav-btn-calendar");
   const navClients = document.getElementById("nav-btn-clients");
   const navServices = document.getElementById("nav-btn-services");
   const navPlanned = document.getElementById("nav-btn-planned");
@@ -1591,6 +1592,7 @@ function setupEventListeners() {
   const navBilling = document.getElementById("nav-btn-billing");
 
   if (navOverview) navOverview.addEventListener("click", (e) => { e.preventDefault(); switchView("overview"); closeSidebar(); });
+  if (navCalendar) navCalendar.addEventListener("click", (e) => { e.preventDefault(); switchView("calendar"); closeSidebar(); });
   if (navClientHistory) navClientHistory.addEventListener("click", (e) => { e.preventDefault(); switchView("client-history"); closeSidebar(); });
   if (navClients) navClients.addEventListener("click", (e) => { e.preventDefault(); switchView("clients"); closeSidebar(); });
   if (navServices) navServices.addEventListener("click", (e) => { e.preventDefault(); switchView("services"); closeSidebar(); });
@@ -1606,6 +1608,10 @@ function setupEventListeners() {
     switchView("billing");
     closeSidebar();
   });
+
+  if (typeof initCalendarControls === "function") {
+    initCalendarControls();
+  }
 
   // Mobile Bottom Navigation Bar Listeners
   const mNavOverview = document.getElementById("mobile-nav-overview");
@@ -2297,8 +2303,10 @@ function switchView(viewName, preselectedClientId = null) {
   const viewServices = document.getElementById("view-services");
   const viewVendanges = document.getElementById("view-vendanges");
   const viewClientHistory = document.getElementById("view-client-history");
+  const viewCalendar = document.getElementById("view-calendar");
 
   const navOverview = document.getElementById("nav-btn-overview");
+  const navCalendar = document.getElementById("nav-btn-calendar");
   const navClientHistory = document.getElementById("nav-btn-client-history");
   const navClients = document.getElementById("nav-btn-clients");
   const navServices = document.getElementById("nav-btn-services");
@@ -2308,7 +2316,7 @@ function switchView(viewName, preselectedClientId = null) {
   const navBilling = document.getElementById("nav-btn-billing");
 
   // Deactivate all navigation links
-  [navOverview, navClientHistory, navClients, navServices, navPlanned, navVendanges, navInterventions, navBilling].forEach(b => {
+  [navOverview, navCalendar, navClientHistory, navClients, navServices, navPlanned, navVendanges, navInterventions, navBilling].forEach(b => {
     if (b) b.classList.remove("active");
   });
 
@@ -2319,11 +2327,22 @@ function switchView(viewName, preselectedClientId = null) {
     if (b) b.classList.remove("active");
   });
 
-  if (viewName === "client-history") {
-    if (viewOverview) { viewOverview.style.display = "none"; viewOverview.classList.remove("active"); }
-    if (viewClients) { viewClients.style.display = "none"; viewClients.classList.remove("active"); }
-    if (viewServices) { viewServices.style.display = "none"; viewServices.classList.remove("active"); }
-    if (viewVendanges) { viewVendanges.style.display = "none"; viewVendanges.classList.remove("active"); }
+  // Masquer toutes les vues
+  [viewOverview, viewClients, viewServices, viewVendanges, viewClientHistory, viewCalendar].forEach(v => {
+    if (v) {
+      v.style.display = "none";
+      v.classList.remove("active");
+    }
+  });
+
+  if (viewName === "calendar") {
+    if (viewCalendar) {
+      viewCalendar.style.display = "flex";
+      viewCalendar.classList.add("active");
+    }
+    if (navCalendar) navCalendar.classList.add("active");
+    renderCalendarView();
+  } else if (viewName === "client-history") {
     if (viewClientHistory) {
       viewClientHistory.style.display = "flex";
       viewClientHistory.classList.add("active");
@@ -2331,10 +2350,6 @@ function switchView(viewName, preselectedClientId = null) {
     if (navClientHistory) navClientHistory.classList.add("active");
     renderClientHistoryView(preselectedClientId);
   } else if (viewName === "clients") {
-    if (viewOverview) { viewOverview.style.display = "none"; viewOverview.classList.remove("active"); }
-    if (viewServices) { viewServices.style.display = "none"; viewServices.classList.remove("active"); }
-    if (viewVendanges) { viewVendanges.style.display = "none"; viewVendanges.classList.remove("active"); }
-    if (viewClientHistory) { viewClientHistory.style.display = "none"; viewClientHistory.classList.remove("active"); }
     if (viewClients) {
       viewClients.style.display = "flex";
       viewClients.classList.add("active");
@@ -2343,10 +2358,6 @@ function switchView(viewName, preselectedClientId = null) {
     if (mNavClients) mNavClients.classList.add("active");
     renderClientsView();
   } else if (viewName === "services") {
-    if (viewOverview) { viewOverview.style.display = "none"; viewOverview.classList.remove("active"); }
-    if (viewClients) { viewClients.style.display = "none"; viewClients.classList.remove("active"); }
-    if (viewVendanges) { viewVendanges.style.display = "none"; viewVendanges.classList.remove("active"); }
-    if (viewClientHistory) { viewClientHistory.style.display = "none"; viewClientHistory.classList.remove("active"); }
     if (viewServices) {
       viewServices.style.display = "flex";
       viewServices.classList.add("active");
@@ -2369,10 +2380,6 @@ function switchView(viewName, preselectedClientId = null) {
 
     renderServicesView();
   } else if (viewName === "planned") {
-    if (viewOverview) { viewOverview.style.display = "none"; viewOverview.classList.remove("active"); }
-    if (viewClients) { viewClients.style.display = "none"; viewClients.classList.remove("active"); }
-    if (viewVendanges) { viewVendanges.style.display = "none"; viewVendanges.classList.remove("active"); }
-    if (viewClientHistory) { viewClientHistory.style.display = "none"; viewClientHistory.classList.remove("active"); }
     if (viewServices) {
       viewServices.style.display = "flex";
       viewServices.classList.add("active");
@@ -2395,10 +2402,6 @@ function switchView(viewName, preselectedClientId = null) {
     renderPlannedWorks();
     renderServicesKPIs();
   } else if (viewName === "vendanges") {
-    if (viewOverview) { viewOverview.style.display = "none"; viewOverview.classList.remove("active"); }
-    if (viewClients) { viewClients.style.display = "none"; viewClients.classList.remove("active"); }
-    if (viewServices) { viewServices.style.display = "none"; viewServices.classList.remove("active"); }
-    if (viewClientHistory) { viewClientHistory.style.display = "none"; viewClientHistory.classList.remove("active"); }
     if (viewVendanges) {
       viewVendanges.style.display = "flex";
       viewVendanges.classList.add("active");
@@ -2406,10 +2409,6 @@ function switchView(viewName, preselectedClientId = null) {
     if (navVendanges) navVendanges.classList.add("active");
     renderVendangesView();
   } else if (viewName === "interventions") {
-    if (viewClients) { viewClients.style.display = "none"; viewClients.classList.remove("active"); }
-    if (viewServices) { viewServices.style.display = "none"; viewServices.classList.remove("active"); }
-    if (viewVendanges) { viewVendanges.style.display = "none"; viewVendanges.classList.remove("active"); }
-    if (viewClientHistory) { viewClientHistory.style.display = "none"; viewClientHistory.classList.remove("active"); }
     if (viewOverview) {
       viewOverview.style.display = "flex";
       viewOverview.classList.add("active");
@@ -2420,10 +2419,6 @@ function switchView(viewName, preselectedClientId = null) {
     renderTable();
     renderKPIs();
   } else if (viewName === "billing") {
-    if (viewClients) { viewClients.style.display = "none"; viewClients.classList.remove("active"); }
-    if (viewServices) { viewServices.style.display = "none"; viewServices.classList.remove("active"); }
-    if (viewVendanges) { viewVendanges.style.display = "none"; viewVendanges.classList.remove("active"); }
-    if (viewClientHistory) { viewClientHistory.style.display = "none"; viewClientHistory.classList.remove("active"); }
     if (viewOverview) {
       viewOverview.style.display = "flex";
       viewOverview.classList.add("active");
@@ -2435,10 +2430,6 @@ function switchView(viewName, preselectedClientId = null) {
     renderKPIs();
   } else {
     // Default Overview
-    if (viewClients) { viewClients.style.display = "none"; viewClients.classList.remove("active"); }
-    if (viewServices) { viewServices.style.display = "none"; viewServices.classList.remove("active"); }
-    if (viewVendanges) { viewVendanges.style.display = "none"; viewVendanges.classList.remove("active"); }
-    if (viewClientHistory) { viewClientHistory.style.display = "none"; viewClientHistory.classList.remove("active"); }
     if (viewOverview) {
       viewOverview.style.display = "flex";
       viewOverview.classList.add("active");
@@ -2976,7 +2967,7 @@ function updateParcelSelectionSummary(client, autoUpdateQuantity = true) {
 }
 
 // ==================== INTERVENTION CREATION & MODIFICATION ====================
-function openCreateModal(interventionId = null) {
+function openCreateModal(interventionId = null, prefillDate = null) {
   convertingPlannedWorkId = null;
   const modal = document.getElementById("create-modal");
   const form = document.getElementById("create-intervention-form");
@@ -3123,13 +3114,17 @@ function openCreateModal(interventionId = null) {
     if (submitText) submitText.textContent = "Enregistrer l'intervention";
 
     if (datetimeInput) {
-      const now = new Date();
-      const year = now.getFullYear();
-      const month = String(now.getMonth() + 1).padStart(2, '0');
-      const day = String(now.getDate()).padStart(2, '0');
-      const hours = String(now.getHours()).padStart(2, '0');
-      const minutes = String(now.getMinutes()).padStart(2, '0');
-      datetimeInput.value = `${year}-${month}-${day}T${hours}:${minutes}`;
+      if (prefillDate) {
+        datetimeInput.value = `${prefillDate}T08:00`;
+      } else {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        datetimeInput.value = `${year}-${month}-${day}T${hours}:${minutes}`;
+      }
     }
 
     // Reset rateType labels to default (surface)
@@ -3865,6 +3860,9 @@ function renderAll() {
   if (typeof updateClientHistoryData === "function" && clientHistorySelectedClientId) {
     updateClientHistoryData();
   }
+  if (typeof renderCalendarView === "function" && document.getElementById("view-calendar")?.classList.contains("active")) {
+    renderCalendarView();
+  }
 }
 
 function renderKPIs() {
@@ -3942,6 +3940,17 @@ function renderKPIs() {
   setElemText("sidebar-services-count", services.length);
   setElemText("sidebar-planned-count", (plannedWorks || []).length);
   setElemText("sidebar-team-count", totalTeam);
+
+  // Sidebar badge Calendrier (nombre de chantiers prévus/faits aujourd'hui)
+  if (typeof countCalendarEventsForDate === "function") {
+    const todayStr = new Date().toISOString().split("T")[0];
+    const todayCount = countCalendarEventsForDate(todayStr);
+    const calBadge = document.getElementById("sidebar-calendar-count");
+    if (calBadge) {
+      calBadge.textContent = todayCount;
+      calBadge.style.display = todayCount > 0 ? "inline-block" : "none";
+    }
+  }
 
   // Topbar badge
   setElemText("topbar-team-text", `Équipe (${totalTeam})`);
@@ -5681,7 +5690,7 @@ function updatePlannedParcelsSummary() {
   }
 }
 
-function openPlannedModal() {
+function openPlannedModal(prefillDate = null) {
   const modal = document.getElementById("planned-modal");
   const form = document.getElementById("create-planned-form");
   const dateInput = document.getElementById("input-planned-date");
@@ -5703,7 +5712,7 @@ function openPlannedModal() {
 
   if (dateInput) {
     const today = new Date().toISOString().split("T")[0];
-    dateInput.value = today;
+    dateInput.value = prefillDate || today;
   }
 
   if (modal) {
@@ -11117,5 +11126,996 @@ window.openCreateModalForCurrentHistoryClient = openCreateModalForCurrentHistory
 window.exportClientHistoryCSV = exportClientHistoryCSV;
 window.syncTeamUserToSupabaseAuth = syncTeamUserToSupabaseAuth;
 
+// ==========================================================================
+// VUE CALENDRIER & PLANNING AU JOUR LE JOUR
+// ==========================================================================
 
+let calendarCurrentDate = new Date();
+let calendarViewMode = "month"; // "month" | "week" | "day"
+let calendarTypeFilter = "all"; // "all" | "interventions" | "planned" | "harvest"
+let calendarClientFilter = "all";
+let calendarWorkerFilter = "all";
+let calendarSelectedDate = new Date().toISOString().split("T")[0];
 
+const CAL_MONTHS_FR = [
+  "Janvier", "Février", "Mars", "Avril", "Mai", "Juin",
+  "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"
+];
+
+const CAL_DAYS_FULL_FR = [
+  "Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"
+];
+
+const CAL_DAYS_SHORT_FR = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
+
+function initCalendarControls() {
+  const btnPrev = document.getElementById("btn-cal-prev");
+  const btnNext = document.getElementById("btn-cal-next");
+  const btnToday = document.getElementById("btn-cal-today");
+
+  const btnMonth = document.getElementById("btn-cal-mode-month");
+  const btnWeek = document.getElementById("btn-cal-mode-week");
+  const btnDay = document.getElementById("btn-cal-mode-day");
+
+  const filterType = document.getElementById("cal-filter-type");
+  const filterClient = document.getElementById("cal-filter-client");
+  const filterWorker = document.getElementById("cal-filter-worker");
+
+  const btnAgendaPlan = document.getElementById("btn-cal-agenda-plan");
+  const btnAgendaAdd = document.getElementById("btn-cal-agenda-add");
+
+  if (btnPrev) btnPrev.addEventListener("click", () => navigateCalendar(-1));
+  if (btnNext) btnNext.addEventListener("click", () => navigateCalendar(1));
+  if (btnToday) btnToday.addEventListener("click", () => {
+    calendarCurrentDate = new Date();
+    calendarSelectedDate = new Date().toISOString().split("T")[0];
+    renderCalendarView();
+  });
+
+  if (btnMonth) btnMonth.addEventListener("click", () => setCalendarViewMode("month"));
+  if (btnWeek) btnWeek.addEventListener("click", () => setCalendarViewMode("week"));
+  if (btnDay) btnDay.addEventListener("click", () => setCalendarViewMode("day"));
+
+  if (filterType) filterType.addEventListener("change", (e) => {
+    calendarTypeFilter = e.target.value;
+    renderCalendarView();
+  });
+  if (filterClient) filterClient.addEventListener("change", (e) => {
+    calendarClientFilter = e.target.value;
+    renderCalendarView();
+  });
+  if (filterWorker) filterWorker.addEventListener("change", (e) => {
+    calendarWorkerFilter = e.target.value;
+    renderCalendarView();
+  });
+
+  if (btnAgendaPlan) btnAgendaPlan.addEventListener("click", () => {
+    openPlannedModal(calendarSelectedDate);
+  });
+  if (btnAgendaAdd) btnAgendaAdd.addEventListener("click", () => {
+    openCreateModal(null, calendarSelectedDate);
+  });
+}
+
+function setCalendarViewMode(mode) {
+  calendarViewMode = mode;
+  ["month", "week", "day"].forEach(m => {
+    const btn = document.getElementById(`btn-cal-mode-${m}`);
+    const panel = document.getElementById(`cal-view-${m}`);
+    if (btn) btn.classList.toggle("active", m === mode);
+    if (panel) panel.style.display = m === mode ? "block" : "none";
+  });
+
+  if (mode === "day" && calendarSelectedDate) {
+    const parts = calendarSelectedDate.split("-").map(Number);
+    if (parts.length === 3 && !isNaN(parts[0])) {
+      calendarCurrentDate = new Date(parts[0], parts[1] - 1, parts[2]);
+    }
+  }
+
+  const agendaSec = document.getElementById("cal-selected-day-agenda");
+  if (agendaSec) {
+    agendaSec.style.display = mode === "month" ? "flex" : "none";
+  }
+
+  renderCalendarView();
+}
+
+function navigateCalendar(delta) {
+  const cur = new Date(calendarCurrentDate);
+  if (calendarViewMode === "month") {
+    cur.setMonth(cur.getMonth() + delta);
+  } else if (calendarViewMode === "week") {
+    cur.setDate(cur.getDate() + (delta * 7));
+  } else if (calendarViewMode === "day") {
+    cur.setDate(cur.getDate() + delta);
+    calendarSelectedDate = cur.toISOString().split("T")[0];
+  }
+  calendarCurrentDate = cur;
+  renderCalendarView();
+}
+
+// Extraction globale et unifiée de tous les événements
+function getAllCalendarEvents() {
+  const events = [];
+
+  // 1. Interventions réalisées
+  (interventions || []).forEach(inv => {
+    if (!inv) return;
+    const dateStr = (inv.datetime || "").split("T")[0].split(" ")[0];
+    if (!dateStr || dateStr.length < 10) return;
+    events.push({
+      id: inv.id,
+      type: "intervention",
+      date: dateStr,
+      time: (inv.datetime && inv.datetime.includes("T")) ? inv.datetime.split("T")[1].slice(0, 5) : "",
+      title: inv.task || inv.service || "Intervention viticole",
+      client: inv.client || "Client non spécifié",
+      clientId: inv.clientId || "",
+      parcel: inv.parcel || "",
+      worker: inv.worker || "",
+      quantity: parseFloat(inv.quantity || 0),
+      rateType: inv.rateType || "ha",
+      unit: inv.unit || inv.rateType || "ha",
+      unitPrice: parseFloat(inv.unitPrice || 0),
+      amount: parseFloat(inv.total || 0),
+      status: inv.status || "À facturer",
+      notes: inv.notes || "",
+      raw: inv
+    });
+  });
+
+  // 2. Travaux à faire & Planifiés
+  (plannedWorks || []).forEach(pw => {
+    if (!pw) return;
+    const dateStr = (pw.date || "").split("T")[0];
+    if (!dateStr || dateStr.length < 10) return;
+    events.push({
+      id: pw.id,
+      type: "planned",
+      date: dateStr,
+      time: "",
+      title: pw.service || "Travail planifié",
+      client: pw.clientName || "Client non spécifié",
+      clientId: pw.clientId || "",
+      parcel: pw.parcel || "",
+      worker: pw.worker || "",
+      quantity: parseFloat(pw.quantity || 0),
+      rateType: "ha",
+      unit: "ha",
+      unitPrice: 0,
+      amount: 0,
+      status: pw.status || "À réaliser",
+      notes: pw.notes || "",
+      raw: pw
+    });
+  });
+
+  // 3. Suivi des vendanges
+  (harvestWorks || []).forEach(hw => {
+    if (!hw) return;
+    const dateStr = (hw.cutDate || hw.date || "").split("T")[0];
+    if (!dateStr || dateStr.length < 10) return;
+    events.push({
+      id: hw.id || ("HW-" + Math.random().toString(36).slice(2, 7)),
+      type: "harvest",
+      date: dateStr,
+      time: "",
+      title: `Vendange • ${hw.grape || "Cépage"}`,
+      client: hw.clientName || hw.domain || "Domaine",
+      clientId: hw.clientId || "",
+      parcel: hw.parcelName || hw.parcel || "",
+      worker: hw.worker || "",
+      quantity: parseFloat(hw.surface || 0),
+      rateType: "kg",
+      unit: "ha",
+      amount: 0,
+      status: hw.statusCut === "COUPEE" ? "Coupée" : "À couper",
+      notes: hw.notes || "",
+      raw: hw
+    });
+  });
+
+  return events;
+}
+
+function countCalendarEventsForDate(dateStr) {
+  if (!dateStr) return 0;
+  const all = getAllCalendarEvents();
+  return all.filter(e => e.date === dateStr).length;
+}
+
+function getFilteredCalendarEvents() {
+  const all = getAllCalendarEvents();
+  return all.filter(e => {
+    if (calendarTypeFilter === "interventions" && e.type !== "intervention") return false;
+    if (calendarTypeFilter === "planned" && e.type !== "planned") return false;
+    if (calendarTypeFilter === "harvest" && e.type !== "harvest") return false;
+
+    if (calendarClientFilter !== "all") {
+      const matchName = (e.client || "").toLowerCase() === calendarClientFilter.toLowerCase();
+      const matchId = e.clientId === calendarClientFilter;
+      if (!matchName && !matchId) return false;
+    }
+
+    if (calendarWorkerFilter !== "all") {
+      const wLower = (e.worker || "").toLowerCase().trim();
+      const targetLower = calendarWorkerFilter.toLowerCase().trim();
+      if (!wLower.includes(targetLower)) return false;
+    }
+
+    return true;
+  });
+}
+
+function getCalendarPeriodBounds(mode, refDate) {
+  const d = new Date(refDate);
+  const y = d.getFullYear();
+  const m = d.getMonth();
+
+  if (mode === "month") {
+    const firstDay = new Date(y, m, 1);
+    const lastDay = new Date(y, m + 1, 0);
+    const title = `${CAL_MONTHS_FR[m]} ${y}`;
+    return {
+      start: firstDay.toISOString().split("T")[0],
+      end: lastDay.toISOString().split("T")[0],
+      title
+    };
+  } else if (mode === "week") {
+    const dayOfWeek = d.getDay();
+    const diffToMonday = (dayOfWeek === 0 ? -6 : 1) - dayOfWeek;
+    const monday = new Date(d);
+    monday.setDate(d.getDate() + diffToMonday);
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+
+    const monStr = `${monday.getDate()} ${CAL_MONTHS_FR[monday.getMonth()].slice(0, 4)}.`;
+    const sunStr = `${sunday.getDate()} ${CAL_MONTHS_FR[sunday.getMonth()].slice(0, 4)}. ${sunday.getFullYear()}`;
+    const title = `Semaine • ${monStr} au ${sunStr}`;
+    return {
+      start: monday.toISOString().split("T")[0],
+      end: sunday.toISOString().split("T")[0],
+      title
+    };
+  } else {
+    const dayName = CAL_DAYS_FULL_FR[d.getDay()];
+    const dayNum = d.getDate();
+    const monthName = CAL_MONTHS_FR[m];
+    const title = `${dayName} ${dayNum === 1 ? "1er" : dayNum} ${monthName} ${y}`;
+    const dateStr = d.toISOString().split("T")[0];
+    return {
+      start: dateStr,
+      end: dateStr,
+      title
+    };
+  }
+}
+
+function populateCalendarFilterSelects() {
+  const clientSelect = document.getElementById("cal-filter-client");
+  const workerSelect = document.getElementById("cal-filter-worker");
+
+  if (clientSelect) {
+    const prevClient = clientSelect.value || "all";
+    const clientMap = new Map();
+    (clients || []).forEach(c => clientMap.set(c.id, c.name));
+    (interventions || []).forEach(i => {
+      if (i.client && !clientMap.has(i.clientId || i.client)) clientMap.set(i.clientId || i.client, i.client);
+    });
+    (plannedWorks || []).forEach(pw => {
+      if (pw.clientName && !clientMap.has(pw.clientId || pw.clientName)) clientMap.set(pw.clientId || pw.clientName, pw.clientName);
+    });
+
+    let html = '<option value="all">🍇 Tous les domaines</option>';
+    clientMap.forEach((name, id) => {
+      html += `<option value="${escapeHTML(id)}">${escapeHTML(name)}</option>`;
+    });
+    clientSelect.innerHTML = html;
+    if (Array.from(clientSelect.options).some(o => o.value === prevClient)) {
+      clientSelect.value = prevClient;
+    }
+  }
+
+  if (workerSelect) {
+    const prevWorker = workerSelect.value || "all";
+    const workerSet = new Set();
+    (teamUsers || []).forEach(u => { if (u.name) workerSet.add(u.name); });
+    (interventions || []).forEach(i => { if (i.worker) workerSet.add(i.worker); });
+    (plannedWorks || []).forEach(pw => { if (pw.worker) workerSet.add(pw.worker); });
+
+    let html = '<option value="all">👥 Toute l\'équipe</option>';
+    workerSet.forEach(name => {
+      html += `<option value="${escapeHTML(name)}">${escapeHTML(name)}</option>`;
+    });
+    workerSelect.innerHTML = html;
+    if (Array.from(workerSelect.options).some(o => o.value === prevWorker)) {
+      workerSelect.value = prevWorker;
+    }
+  }
+}
+
+function calculateAndRenderCalendarKPIs(events, startStr, endStr) {
+  const periodEvents = events.filter(e => e.date >= startStr && e.date <= endStr);
+  const doneEvents = periodEvents.filter(e => e.type === "intervention");
+  const plannedEvents = periodEvents.filter(e => e.type === "planned");
+
+  let totalSurface = 0;
+  let totalHours = 0;
+  let totalRevenue = 0;
+  const activeDates = new Set();
+
+  periodEvents.forEach(e => {
+    activeDates.add(e.date);
+    if (e.type === "intervention") {
+      if (e.unit === "ha" || e.rateType === "ha") {
+        totalSurface += (e.quantity || 0);
+      } else if (e.unit === "h" || e.rateType === "hourly") {
+        totalHours += (e.quantity || 0);
+      }
+      totalRevenue += (e.amount || 0);
+    } else if (e.type === "planned") {
+      totalSurface += (e.quantity || 0);
+    }
+  });
+
+  const totalRevenueTTC = totalRevenue * 1.20;
+
+  const todayStr = new Date().toISOString().split("T")[0];
+  const todayEvents = events.filter(e => e.date === todayStr);
+
+  setElemText("cal-kpi-total-events", periodEvents.length);
+  setElemText("cal-kpi-done-count", `${doneEvents.length} réalisé${doneEvents.length > 1 ? 's' : ''}`);
+  setElemText("cal-kpi-planned-count", `${plannedEvents.length} planifié${plannedEvents.length > 1 ? 's' : ''}`);
+
+  setElemText("cal-kpi-surface", `${formatSurface(totalSurface)} ha`);
+  setElemText("cal-kpi-hours", `${totalHours.toFixed(1)} h machine`);
+
+  setElemText("cal-kpi-revenue", formatCurrency(totalRevenue));
+  setElemText("cal-kpi-revenue-ttc", `${formatCurrency(totalRevenueTTC)} TTC`);
+
+  setElemText("cal-kpi-active-days", `${activeDates.size} j`);
+  setElemText("cal-kpi-today-status", `Aujourd'hui : ${todayEvents.length} chantier${todayEvents.length > 1 ? 's' : ''}`);
+}
+
+function renderCalendarMonthGrid(events) {
+  const gridEl = document.getElementById("cal-month-grid-days");
+  if (!gridEl) return;
+  gridEl.innerHTML = "";
+
+  const y = calendarCurrentDate.getFullYear();
+  const m = calendarCurrentDate.getMonth();
+  const firstDayOfMonth = new Date(y, m, 1);
+  const lastDayOfMonth = new Date(y, m + 1, 0);
+
+  let startDayOfWeek = firstDayOfMonth.getDay();
+  startDayOfWeek = startDayOfWeek === 0 ? 6 : startDayOfWeek - 1; // 0 = Lundi, 6 = Dimanche
+
+  const totalDays = lastDayOfMonth.getDate();
+  const prevMonthLastDay = new Date(y, m, 0).getDate();
+
+  const todayStr = new Date().toISOString().split("T")[0];
+
+  // Jours du mois précédent
+  for (let i = startDayOfWeek - 1; i >= 0; i--) {
+    const dayNum = prevMonthLastDay - i;
+    const prevDate = new Date(y, m - 1, dayNum);
+    const dateStr = prevDate.toISOString().split("T")[0];
+    const cell = createCalendarMonthDayCell(dayNum, dateStr, events, true, dateStr === todayStr, dateStr === calendarSelectedDate);
+    gridEl.appendChild(cell);
+  }
+
+  // Jours du mois en cours
+  for (let dayNum = 1; dayNum <= totalDays; dayNum++) {
+    const curDate = new Date(y, m, dayNum);
+    const dateStr = curDate.toISOString().split("T")[0];
+    const cell = createCalendarMonthDayCell(dayNum, dateStr, events, false, dateStr === todayStr, dateStr === calendarSelectedDate);
+    gridEl.appendChild(cell);
+  }
+
+  // Jours du mois suivant
+  const currentTotalCells = startDayOfWeek + totalDays;
+  const neededCells = currentTotalCells <= 35 ? 35 : 42;
+  const remaining = neededCells - currentTotalCells;
+
+  for (let dayNum = 1; dayNum <= remaining; dayNum++) {
+    const nextDate = new Date(y, m + 1, dayNum);
+    const dateStr = nextDate.toISOString().split("T")[0];
+    const cell = createCalendarMonthDayCell(dayNum, dateStr, events, true, dateStr === todayStr, dateStr === calendarSelectedDate);
+    gridEl.appendChild(cell);
+  }
+}
+
+function createCalendarMonthDayCell(dayNum, dateStr, events, isOtherMonth, isToday, isSelected) {
+  const cell = document.createElement("div");
+  cell.className = `cal-day-cell ${isOtherMonth ? "is-other-month" : ""} ${isToday ? "is-today" : ""} ${isSelected ? "is-selected" : ""}`;
+  cell.dataset.date = dateStr;
+
+  const dayEvents = events.filter(e => e.date === dateStr);
+
+  const topDiv = document.createElement("div");
+  topDiv.className = "cal-day-top";
+
+  const numSpan = document.createElement("span");
+  numSpan.className = "cal-day-num";
+  numSpan.textContent = dayNum;
+  topDiv.appendChild(numSpan);
+
+  const actionsDiv = document.createElement("div");
+  actionsDiv.className = "cal-day-quick-actions";
+
+  if (dayEvents.length > 0) {
+    const badge = document.createElement("span");
+    badge.className = "cal-day-count-badge";
+    badge.textContent = dayEvents.length;
+    actionsDiv.appendChild(badge);
+  }
+
+  const addBtn = document.createElement("button");
+  addBtn.type = "button";
+  addBtn.className = "cal-day-add-btn";
+  addBtn.title = `Ajouter une intervention pour le ${dateStr}`;
+  addBtn.innerHTML = "＋";
+  addBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    openCreateModal(null, dateStr);
+  });
+  actionsDiv.appendChild(addBtn);
+
+  topDiv.appendChild(actionsDiv);
+  cell.appendChild(topDiv);
+
+  const listDiv = document.createElement("div");
+  listDiv.className = "cal-day-events-list";
+
+  const maxVisible = 3;
+  dayEvents.slice(0, maxVisible).forEach(evt => {
+    const pill = document.createElement("div");
+    let pillTypeClass = "cal-pill-done";
+    let icon = "🚜";
+    if (evt.type === "planned") {
+      pillTypeClass = "cal-pill-planned";
+      icon = "📌";
+    } else if (evt.type === "harvest") {
+      pillTypeClass = "cal-pill-harvest";
+      icon = "🍇";
+    }
+    pill.className = `cal-event-pill ${pillTypeClass}`;
+    pill.title = `${evt.client} - ${evt.title} (${evt.worker || 'Non assigné'})`;
+    pill.innerHTML = `<span>${icon}</span> <strong style="max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHTML(evt.client)}</strong> <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHTML(evt.title)}</span>`;
+    listDiv.appendChild(pill);
+  });
+
+  if (dayEvents.length > maxVisible) {
+    const morePill = document.createElement("div");
+    morePill.className = "cal-more-pill";
+    morePill.textContent = `+${dayEvents.length - maxVisible} de plus`;
+    listDiv.appendChild(morePill);
+  }
+
+  cell.appendChild(listDiv);
+
+  cell.addEventListener("click", () => {
+    calendarSelectedDate = dateStr;
+    const allCells = document.querySelectorAll(".cal-day-cell");
+    allCells.forEach(c => c.classList.remove("is-selected"));
+    cell.classList.add("is-selected");
+    renderCalendarSelectedDayAgenda(dateStr, events);
+  });
+
+  cell.addEventListener("dblclick", () => {
+    calendarSelectedDate = dateStr;
+    setCalendarViewMode("day");
+  });
+
+  return cell;
+}
+
+function renderCalendarWeekGrid(events, mondayStr) {
+  const container = document.getElementById("cal-week-grid-container");
+  if (!container) return;
+  container.innerHTML = "";
+
+  const [y, m, d] = mondayStr.split("-").map(Number);
+  const monday = new Date(y, m - 1, d);
+  const todayStr = new Date().toISOString().split("T")[0];
+
+  for (let i = 0; i < 7; i++) {
+    const cur = new Date(monday);
+    cur.setDate(monday.getDate() + i);
+    const dateStr = cur.toISOString().split("T")[0];
+    const dayEvents = events.filter(e => e.date === dateStr);
+    const isToday = dateStr === todayStr;
+
+    const col = document.createElement("div");
+    col.className = `cal-week-col ${isToday ? "is-today" : ""}`;
+
+    const colHeader = document.createElement("div");
+    colHeader.className = "cal-week-col-header";
+    colHeader.innerHTML = `
+      <div class="cal-week-dayname">${CAL_DAYS_SHORT_FR[i]}</div>
+      <div class="cal-week-daynum">${cur.getDate()}</div>
+      <span class="cal-week-count">${dayEvents.length} chantier(s)</span>
+    `;
+    colHeader.addEventListener("click", () => {
+      calendarSelectedDate = dateStr;
+      setCalendarViewMode("day");
+    });
+    col.appendChild(colHeader);
+
+    const colBody = document.createElement("div");
+    colBody.className = "cal-week-body";
+
+    if (dayEvents.length === 0) {
+      const emptyP = document.createElement("div");
+      emptyP.className = "cal-week-empty-text";
+      emptyP.textContent = "Aucun chantier";
+      colBody.appendChild(emptyP);
+    } else {
+      dayEvents.forEach(evt => {
+        const card = document.createElement("div");
+        let cardTypeClass = "card-done";
+        let icon = "🚜";
+        let badgeText = "Réalisé";
+        if (evt.type === "planned") {
+          cardTypeClass = "card-planned";
+          icon = "📌";
+          badgeText = "À faire";
+        } else if (evt.type === "harvest") {
+          cardTypeClass = "card-harvest";
+          icon = "🍇";
+          badgeText = "Vendange";
+        }
+        card.className = `cal-card-compact ${cardTypeClass}`;
+        card.innerHTML = `
+          <div class="cal-card-top-row">
+            <span>${icon} ${badgeText}</span>
+            <span>${evt.time || (evt.quantity ? evt.quantity + " ha" : "")}</span>
+          </div>
+          <div class="cal-card-title">${escapeHTML(evt.title)}</div>
+          <div class="cal-card-client">🏰 ${escapeHTML(evt.client)}</div>
+          <div class="cal-card-meta">
+            <span>👤 ${escapeHTML(evt.worker || "Équipe")}</span>
+            ${evt.amount > 0 ? `<strong>${formatCurrency(evt.amount)}</strong>` : ""}
+          </div>
+        `;
+        card.addEventListener("click", () => {
+          calendarSelectedDate = dateStr;
+          setCalendarViewMode("day");
+        });
+        colBody.appendChild(card);
+      });
+    }
+
+    col.appendChild(colBody);
+    container.appendChild(col);
+  }
+}
+
+function renderCalendarDayView(dateStr, events) {
+  const container = document.getElementById("cal-day-container-content");
+  if (!container) return;
+  container.innerHTML = "";
+
+  const [y, m, d] = dateStr.split("-").map(Number);
+  const curDate = new Date(y, m - 1, d);
+  const dayName = CAL_DAYS_FULL_FR[curDate.getDay()];
+  const dayNum = curDate.getDate();
+  const monthName = CAL_MONTHS_FR[curDate.getMonth()];
+  const fullDateLabel = `${dayName} ${dayNum === 1 ? "1er" : dayNum} ${monthName} ${curDate.getFullYear()}`;
+
+  const dayEvents = events.filter(e => e.date === dateStr);
+  const interventionsList = dayEvents.filter(e => e.type === "intervention");
+  const plannedList = dayEvents.filter(e => e.type === "planned");
+  const harvestList = dayEvents.filter(e => e.type === "harvest");
+
+  let totalSurface = 0;
+  let totalRevenue = 0;
+  const workersSet = new Set();
+
+  dayEvents.forEach(e => {
+    if (e.quantity && (e.unit === "ha" || e.rateType === "ha")) totalSurface += e.quantity;
+    if (e.amount) totalRevenue += e.amount;
+    if (e.worker) workersSet.add(e.worker);
+  });
+
+  // Bannière du jour
+  const banner = document.createElement("div");
+  banner.className = "cal-day-banner";
+  banner.innerHTML = `
+    <div class="cal-day-banner-left">
+      <span class="cal-day-banner-label">Planning & Suivi au Jour le Jour</span>
+      <div class="cal-day-banner-date">📅 ${fullDateLabel}</div>
+    </div>
+    <div class="cal-day-banner-stats">
+      <div class="cal-day-stat-chip">
+        <span class="cal-day-stat-num">${dayEvents.length}</span>
+        <span class="cal-day-stat-desc">Chantier(s)</span>
+      </div>
+      <div class="cal-day-stat-chip">
+        <span class="cal-day-stat-num">${formatSurface(totalSurface)} ha</span>
+        <span class="cal-day-stat-desc">Surface</span>
+      </div>
+      <div class="cal-day-stat-chip">
+        <span class="cal-day-stat-num">${formatCurrency(totalRevenue)}</span>
+        <span class="cal-day-stat-desc">Total HT</span>
+      </div>
+      <div class="cal-day-stat-chip">
+        <span class="cal-day-stat-num">${workersSet.size}</span>
+        <span class="cal-day-stat-desc">Salarié(s)</span>
+      </div>
+    </div>
+    <div class="cal-day-banner-actions">
+      <button type="button" class="btn btn-outline btn-sm" onclick="openPlannedModal('${dateStr}')">
+        <span>📌 Planifier ce jour</span>
+      </button>
+      <button type="button" class="btn btn-primary btn-sm" onclick="openCreateModal(null, '${dateStr}')">
+        <span>＋ Saisir intervention</span>
+      </button>
+    </div>
+  `;
+  container.appendChild(banner);
+
+  if (dayEvents.length === 0) {
+    const emptyBox = document.createElement("div");
+    emptyBox.className = "cal-day-empty";
+    emptyBox.innerHTML = `
+      <div class="cal-empty-icon">🍇</div>
+      <div class="cal-empty-title">Aucun chantier programmé pour le ${fullDateLabel}</div>
+      <div class="cal-empty-sub">Tous les travaux réalisés ou prévus pour cette journée apparaîtront ici avec leur détail complet.</div>
+      <div class="cal-empty-btns">
+        <button type="button" class="btn btn-primary btn-sm" onclick="openCreateModal(null, '${dateStr}')">
+          <span>🚜 Enregistrer une intervention</span>
+        </button>
+        <button type="button" class="btn btn-outline btn-sm" onclick="openPlannedModal('${dateStr}')">
+          <span>📌 Planifier un travail</span>
+        </button>
+      </div>
+    `;
+    container.appendChild(emptyBox);
+    return;
+  }
+
+  const sectionsGrid = document.createElement("div");
+  sectionsGrid.className = "cal-day-sections-grid";
+
+  // Section 1 : Interventions Réalisées
+  if (interventionsList.length > 0) {
+    const sec1 = document.createElement("div");
+    sec1.innerHTML = `
+      <div class="cal-day-group-header">
+        <div class="cal-day-group-title">
+          <span>🚜</span>
+          <span>Interventions Réalisées du Jour</span>
+        </div>
+        <span class="cal-day-group-count">${interventionsList.length} réalisée(s)</span>
+      </div>
+    `;
+    const cardsList = document.createElement("div");
+    cardsList.className = "cal-day-cards-list";
+
+    interventionsList.forEach(inv => {
+      const card = createCalendarFullEventCard(inv);
+      cardsList.appendChild(card);
+    });
+    sec1.appendChild(cardsList);
+    sectionsGrid.appendChild(sec1);
+  }
+
+  // Section 2 : Travaux Planifiés & À Réaliser
+  if (plannedList.length > 0) {
+    const sec2 = document.createElement("div");
+    sec2.innerHTML = `
+      <div class="cal-day-group-header">
+        <div class="cal-day-group-title">
+          <span>📌</span>
+          <span>Travaux à Réaliser & Planifiés</span>
+        </div>
+        <span class="cal-day-group-count">${plannedList.length} à faire</span>
+      </div>
+    `;
+    const cardsList = document.createElement("div");
+    cardsList.className = "cal-day-cards-list";
+
+    plannedList.forEach(pw => {
+      const card = createCalendarFullEventCard(pw);
+      cardsList.appendChild(card);
+    });
+    sec2.appendChild(cardsList);
+    sectionsGrid.appendChild(sec2);
+  }
+
+  // Section 3 : Vendanges & Récoltes
+  if (harvestList.length > 0) {
+    const sec3 = document.createElement("div");
+    sec3.innerHTML = `
+      <div class="cal-day-group-header">
+        <div class="cal-day-group-title">
+          <span>🍇</span>
+          <span>Vendanges & Récoltes</span>
+        </div>
+        <span class="cal-day-group-count">${harvestList.length} parcelle(s)</span>
+      </div>
+    `;
+    const cardsList = document.createElement("div");
+    cardsList.className = "cal-day-cards-list";
+
+    harvestList.forEach(hw => {
+      const card = createCalendarFullEventCard(hw);
+      cardsList.appendChild(card);
+    });
+    sec3.appendChild(cardsList);
+    sectionsGrid.appendChild(sec3);
+  }
+
+  container.appendChild(sectionsGrid);
+}
+
+function createCalendarFullEventCard(evt) {
+  const card = document.createElement("div");
+  let cardClass = "card-done";
+  if (evt.type === "planned") cardClass = "card-planned";
+  if (evt.type === "harvest") cardClass = "card-harvest";
+  card.className = `cal-full-card ${cardClass}`;
+
+  if (evt.type === "intervention") {
+    const isBilled = evt.status === "Facturée";
+    const statusBadgeClass = isBilled ? "status-facturee" : "status-a-facturer";
+    const statusBadgeIcon = isBilled ? "✅" : "⏳";
+
+    card.innerHTML = `
+      <div class="cal-full-card-header">
+        <div>
+          <div class="cal-full-card-task">${escapeHTML(evt.title)}</div>
+          <div class="cal-full-card-client-row">
+            <span>🏰 ${escapeHTML(evt.client)}</span>
+            ${evt.time ? `<span style="color: var(--color-text-secondary); font-size: 0.78rem;">• 🕒 ${evt.time}</span>` : ""}
+          </div>
+        </div>
+        <button type="button" class="status-badge ${statusBadgeClass}" onclick="toggleInterventionStatus('${evt.id}'); renderCalendarView();" title="Cliquer pour basculer le statut de facturation">
+          <span>${statusBadgeIcon} ${escapeHTML(evt.status)}</span>
+        </button>
+      </div>
+
+      <div>
+        <span class="cal-full-card-parcel-tag">🌿 Parcelles : ${escapeHTML(evt.parcel || "Toutes")}</span>
+      </div>
+
+      <div class="cal-full-card-metrics-grid">
+        <div class="cal-metric-box">
+          <span class="cal-metric-label">Volume / Surface</span>
+          <span class="cal-metric-val">${formatVolumeUnit(evt.quantity, evt.rateType)}</span>
+        </div>
+        <div class="cal-metric-box">
+          <span class="cal-metric-label">Prix unitaire HT</span>
+          <span class="cal-metric-val">${formatCurrency(evt.unitPrice)}</span>
+        </div>
+        <div class="cal-metric-box">
+          <span class="cal-metric-label">Montant HT</span>
+          <span class="cal-metric-val" style="color: #74c69d;">${formatCurrency(evt.amount)} HT</span>
+        </div>
+        <div class="cal-metric-box">
+          <span class="cal-metric-label">Montant TTC</span>
+          <span class="cal-metric-val">${formatCurrency(evt.amount * 1.20)} TTC</span>
+        </div>
+      </div>
+
+      <div class="cal-full-card-footer">
+        <div class="cal-full-card-worker">
+          <span>👤</span>
+          <span>${escapeHTML(evt.worker || "Équipe générale")}</span>
+        </div>
+        <div class="cal-full-card-actions">
+          ${evt.clientId ? `<button type="button" class="btn btn-outline btn-xs" onclick="openClientDossier('${evt.clientId}')" title="Voir le dossier complet du client">📋 Dossier</button>` : ""}
+          <button type="button" class="btn btn-outline btn-xs" onclick="openCreateModal('${evt.id}')" title="Modifier l'intervention">✏️ Modifier</button>
+        </div>
+      </div>
+    `;
+  } else if (evt.type === "planned") {
+    card.innerHTML = `
+      <div class="cal-full-card-header">
+        <div>
+          <div class="cal-full-card-task">${escapeHTML(evt.title)}</div>
+          <div class="cal-full-card-client-row">
+            <span>🏰 ${escapeHTML(evt.client)}</span>
+          </div>
+        </div>
+        <span class="status-badge" style="background: rgba(245, 158, 11, 0.2); color: #fde68a; border: 1px solid rgba(245, 158, 11, 0.5);">
+          <span>📌 À réaliser</span>
+        </span>
+      </div>
+
+      <div>
+        <span class="cal-full-card-parcel-tag">🌿 Parcelles prévues : ${escapeHTML(evt.parcel || "À définir")}</span>
+      </div>
+
+      <div class="cal-full-card-metrics-grid">
+        <div class="cal-metric-box">
+          <span class="cal-metric-label">Surface prévue</span>
+          <span class="cal-metric-val">${formatSurface(evt.quantity)} ha</span>
+        </div>
+        <div class="cal-metric-box">
+          <span class="cal-metric-label">Salarié assigné</span>
+          <span class="cal-metric-val">${escapeHTML(evt.worker || "Non assigné")}</span>
+        </div>
+      </div>
+
+      <div class="cal-full-card-footer">
+        <div class="cal-full-card-worker">
+          <span>💡 Travail prévisionnel</span>
+        </div>
+        <div class="cal-full-card-actions">
+          <button type="button" class="btn btn-primary btn-xs" onclick="window.convertPlannedWork('${evt.id}')" title="Convertir en intervention réalisée">
+            <span>🚜 Valider & enregistrer comme fait</span>
+          </button>
+        </div>
+      </div>
+    `;
+  } else if (evt.type === "harvest") {
+    card.innerHTML = `
+      <div class="cal-full-card-header">
+        <div>
+          <div class="cal-full-card-task">${escapeHTML(evt.title)}</div>
+          <div class="cal-full-card-client-row">
+            <span>🏰 ${escapeHTML(evt.client)}</span>
+          </div>
+        </div>
+        <span class="status-badge" style="background: rgba(168, 85, 247, 0.2); color: #e9d5ff; border: 1px solid rgba(168, 85, 247, 0.5);">
+          <span>🍇 ${escapeHTML(evt.status)}</span>
+        </span>
+      </div>
+
+      <div>
+        <span class="cal-full-card-parcel-tag">🌿 Parcelle : ${escapeHTML(evt.parcel || "Vignoble")}</span>
+      </div>
+
+      <div class="cal-full-card-metrics-grid">
+        <div class="cal-metric-box">
+          <span class="cal-metric-label">Superficie</span>
+          <span class="cal-metric-val">${formatSurface(evt.quantity)} ha</span>
+        </div>
+        <div class="cal-metric-box">
+          <span class="cal-metric-label">Étape vendange</span>
+          <span class="cal-metric-val">${escapeHTML(evt.status)}</span>
+        </div>
+      </div>
+
+      <div class="cal-full-card-footer">
+        <div class="cal-full-card-worker">
+          <span>🧺 Suivi vendange</span>
+        </div>
+        <div class="cal-full-card-actions">
+          <button type="button" class="btn btn-outline btn-xs" onclick="switchView('vendanges')" title="Consulter le pilotage vendanges">
+            <span>🍇 Suivi vendanges</span>
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  return card;
+}
+
+function renderCalendarSelectedDayAgenda(dateStr, events) {
+  const container = document.getElementById("cal-agenda-items-list");
+  const titleEl = document.getElementById("cal-agenda-date-title");
+  const subtitleEl = document.getElementById("cal-agenda-date-subtitle");
+  if (!container) return;
+
+  const [y, m, d] = dateStr.split("-").map(Number);
+  const curDate = new Date(y, m - 1, d);
+  const dayName = CAL_DAYS_FULL_FR[curDate.getDay()];
+  const dayNum = curDate.getDate();
+  const monthName = CAL_MONTHS_FR[curDate.getMonth()];
+  const formattedDate = `${dayName} ${dayNum === 1 ? "1er" : dayNum} ${monthName} ${curDate.getFullYear()}`;
+
+  if (titleEl) titleEl.textContent = `Chantiers du ${formattedDate}`;
+
+  const dayEvents = events.filter(e => e.date === dateStr);
+
+  if (subtitleEl) {
+    subtitleEl.textContent = dayEvents.length === 0
+      ? `Aucun chantier pour cette journée. Cliquez sur « ＋ Saisir intervention » pour ajouter un travail.`
+      : `${dayEvents.length} chantier(s) répertorié(s) pour cette journée.`;
+  }
+
+  container.innerHTML = "";
+
+  if (dayEvents.length === 0) {
+    const emptyRow = document.createElement("div");
+    emptyRow.style.textAlign = "center";
+    emptyRow.style.padding = "1.5rem";
+    emptyRow.style.color = "var(--color-text-secondary)";
+    emptyRow.style.fontSize = "0.88rem";
+    emptyRow.innerHTML = `
+      <span>🌱 Aucun chantier enregistré le ${formattedDate}.</span>
+      <div style="margin-top: 0.75rem; display: flex; gap: 0.5rem; justify-content: center;">
+        <button type="button" class="btn btn-primary btn-xs" onclick="openCreateModal(null, '${dateStr}')">＋ Saisir une intervention</button>
+        <button type="button" class="btn btn-outline btn-xs" onclick="openPlannedModal('${dateStr}')">📌 Planifier un travail</button>
+      </div>
+    `;
+    container.appendChild(emptyRow);
+    return;
+  }
+
+  dayEvents.forEach(evt => {
+    const row = document.createElement("div");
+    let rowTypeClass = "item-done";
+    let icon = "🚜";
+    if (evt.type === "planned") {
+      rowTypeClass = "item-planned";
+      icon = "📌";
+    } else if (evt.type === "harvest") {
+      rowTypeClass = "item-harvest";
+      icon = "🍇";
+    }
+    row.className = `cal-agenda-item-row ${rowTypeClass}`;
+
+    row.innerHTML = `
+      <div class="cal-agenda-item-left">
+        <span class="cal-agenda-type-icon">${icon}</span>
+        <div class="cal-agenda-item-info">
+          <div class="cal-agenda-item-task">${escapeHTML(evt.title)}</div>
+          <div class="cal-agenda-item-details">
+            <span>🏰 <strong>${escapeHTML(evt.client)}</strong></span>
+            ${evt.parcel ? `<span>• 🌿 ${escapeHTML(evt.parcel)}</span>` : ""}
+            ${evt.worker ? `<span>• 👤 ${escapeHTML(evt.worker)}</span>` : ""}
+            ${evt.time ? `<span>• 🕒 ${evt.time}</span>` : ""}
+          </div>
+        </div>
+      </div>
+      <div class="cal-agenda-item-right">
+        ${evt.amount > 0 ? `<span class="cal-agenda-amount">${formatCurrency(evt.amount)} HT</span>` : ""}
+        ${evt.quantity ? `<span class="badge-tag">${formatVolumeUnit(evt.quantity, evt.rateType)}</span>` : ""}
+        ${evt.type === "intervention" 
+          ? `<button type="button" class="status-badge ${evt.status === 'Facturée' ? 'status-facturee' : 'status-a-facturer'}" onclick="toggleInterventionStatus('${evt.id}'); renderCalendarView();">
+               <span>${evt.status === 'Facturée' ? '✅' : '⏳'} ${escapeHTML(evt.status)}</span>
+             </button>`
+          : (evt.type === "planned"
+              ? `<button type="button" class="btn btn-primary btn-xs" onclick="window.convertPlannedWork('${evt.id}')">🚜 Faire</button>`
+              : `<span class="badge-tag" style="background: rgba(168, 85, 247, 0.2); color: #e9d5ff;">🍇 ${escapeHTML(evt.status)}</span>`
+            )
+        }
+      </div>
+    `;
+    container.appendChild(row);
+  });
+}
+
+function renderCalendarView() {
+  populateCalendarFilterSelects();
+
+  const titleEl = document.getElementById("cal-period-title");
+  const filteredEvents = getFilteredCalendarEvents();
+
+  const bounds = getCalendarPeriodBounds(calendarViewMode, calendarCurrentDate);
+  if (titleEl) titleEl.textContent = bounds.title;
+
+  calculateAndRenderCalendarKPIs(filteredEvents, bounds.start, bounds.end);
+
+  if (calendarViewMode === "month") {
+    renderCalendarMonthGrid(filteredEvents);
+    renderCalendarSelectedDayAgenda(calendarSelectedDate, filteredEvents);
+  } else if (calendarViewMode === "week") {
+    renderCalendarWeekGrid(filteredEvents, bounds.start);
+  } else if (calendarViewMode === "day") {
+    renderCalendarDayView(calendarSelectedDate, filteredEvents);
+  }
+
+  const todayStr = new Date().toISOString().split("T")[0];
+  const todayCount = countCalendarEventsForDate(todayStr);
+  const badgeEl = document.getElementById("sidebar-calendar-count");
+  if (badgeEl) {
+    badgeEl.textContent = todayCount;
+    badgeEl.style.display = todayCount > 0 ? "inline-block" : "none";
+  }
+}
+
+// Window Exports for Calendar
+window.initCalendarControls = initCalendarControls;
+window.renderCalendarView = renderCalendarView;
+window.setCalendarViewMode = setCalendarViewMode;
+window.navigateCalendar = navigateCalendar;
+window.countCalendarEventsForDate = countCalendarEventsForDate;
+window.getAllCalendarEvents = getAllCalendarEvents;
+window.getFilteredCalendarEvents = getFilteredCalendarEvents;

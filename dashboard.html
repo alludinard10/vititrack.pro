@@ -111,6 +111,11 @@
           <span class="nav-icon">📊</span>
           <span class="nav-label">Tableau de bord</span>
         </a>
+        <a href="javascript:void(0)" class="nav-item" id="nav-btn-calendar" data-view="calendar" title="Calendrier et planning au jour le jour">
+          <span class="nav-icon">📅</span>
+          <span class="nav-label">Calendrier</span>
+          <span class="nav-badge badge-info" id="sidebar-calendar-count">0</span>
+        </a>
         <a href="javascript:void(0)" class="nav-item" id="nav-btn-client-history" data-view="client-history" title="Historique des travaux par client et parcelles">
           <span class="nav-icon">📋</span>
           <span class="nav-label">Historique Client</span>
@@ -1515,6 +1520,206 @@
                 <button type="button" class="btn btn-outline btn-xs" onclick="exportClientHistoryCSV()">📥 Exporter (CSV)</button>
                 <button type="button" class="btn btn-primary btn-xs" onclick="openCreateModalForCurrentHistoryClient()">＋ Nouvelle intervention</button>
               </div>
+            </div>
+          </section>
+        </div>
+
+        <!-- ==================== VUE 6 : CALENDRIER & PLANNING AU JOUR LE JOUR ==================== -->
+        <div class="app-view" id="view-calendar" style="display: none;">
+          <!-- 1. EN-TÊTE DE LA VUE -->
+          <div class="view-header">
+            <div>
+              <div class="view-badge">📅 PILOTAGE & PLANNING AU JOUR LE JOUR</div>
+              <h1 class="view-heading">Calendrier & Chantiers Viticoles</h1>
+              <p class="view-subheading">Suivez au jour le jour l'ensemble de vos chantiers, interventions réalisées, vendanges et travaux prévisionnels.</p>
+            </div>
+            <div class="services-view-actions">
+              <button type="button" class="btn btn-outline btn-sm" onclick="openPlannedModal()" title="Planifier un chantier à venir">
+                <span>📌 Planifier un travail</span>
+              </button>
+              <button type="button" class="btn btn-primary btn-glow btn-sm" onclick="openCreateModal()" title="Enregistrer une intervention réalisée">
+                <span class="btn-icon">＋</span>
+                <span>Nouvelle intervention</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- 2. BARRE DE COMMANDE & NAVIGATION DU CALENDRIER -->
+          <div class="calendar-controls-card">
+            <div class="cal-controls-top">
+              <!-- Navigation temporelle (Mois/Semaine/Jour) -->
+              <div class="cal-nav-group">
+                <button type="button" class="btn-cal-nav" id="btn-cal-prev" title="Période précédente">
+                  <span>◀</span>
+                </button>
+                <button type="button" class="btn-cal-today" id="btn-cal-today" title="Revenir à aujourd'hui">
+                  <span>Aujourd'hui</span>
+                </button>
+                <button type="button" class="btn-cal-nav" id="btn-cal-next" title="Période suivante">
+                  <span>▶</span>
+                </button>
+                <div class="cal-current-label" id="cal-period-title">Octobre 2026</div>
+              </div>
+
+              <!-- Bascule Mode de Vue (Mois / Semaine / Jour le jour) -->
+              <div class="cal-viewmode-segmented">
+                <button type="button" class="cal-viewmode-btn active" id="btn-cal-mode-month" data-calmode="month">
+                  <span>📅 Mois</span>
+                </button>
+                <button type="button" class="cal-viewmode-btn" id="btn-cal-mode-week" data-calmode="week">
+                  <span>🗓️ Semaine</span>
+                </button>
+                <button type="button" class="cal-viewmode-btn" id="btn-cal-mode-day" data-calmode="day">
+                  <span>📋 Jour le jour</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Filtres rapides sous forme de pills & dropdowns -->
+            <div class="cal-filters-bar">
+              <div class="cal-filters-left">
+                <!-- Filtre Type d'événements -->
+                <div class="cal-filter-item">
+                  <span class="cal-filter-label">Type :</span>
+                  <select id="cal-filter-type" class="cal-select-filter">
+                    <option value="all">🌟 Tous les chantiers</option>
+                    <option value="interventions">🚜 Interventions faites</option>
+                    <option value="planned">📌 Travaux planifiés</option>
+                    <option value="harvest">🍇 Vendanges</option>
+                  </select>
+                </div>
+
+                <!-- Filtre Client / Domaine -->
+                <div class="cal-filter-item">
+                  <span class="cal-filter-label">Client :</span>
+                  <select id="cal-filter-client" class="cal-select-filter">
+                    <option value="all">🍇 Tous les domaines</option>
+                  </select>
+                </div>
+
+                <!-- Filtre Salarié / Équipe -->
+                <div class="cal-filter-item">
+                  <span class="cal-filter-label">Salarié :</span>
+                  <select id="cal-filter-worker" class="cal-select-filter">
+                    <option value="all">👥 Toute l'équipe</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Légende des couleurs -->
+              <div class="cal-legend">
+                <span class="cal-legend-tag tag-done"><span class="legend-dot dot-done"></span> Réalisé</span>
+                <span class="cal-legend-tag tag-planned"><span class="legend-dot dot-planned"></span> Planifié</span>
+                <span class="cal-legend-tag tag-harvest"><span class="legend-dot dot-harvest"></span> Vendange</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3. KPI BANNER DE LA PÉRIODE SÉLECTIONNÉE -->
+          <div class="kpi-grid cal-kpi-grid">
+            <div class="kpi-card" id="cal-kpi-events-card">
+              <div class="kpi-header">
+                <span class="kpi-title">Chantiers sur la période</span>
+                <span class="kpi-icon icon-blue">📅</span>
+              </div>
+              <div class="kpi-value" id="cal-kpi-total-events">0</div>
+              <div class="kpi-footer">
+                <span class="badge-tag" id="cal-kpi-done-count">0 réalisés</span>
+                <span class="kpi-sub" id="cal-kpi-planned-count">0 planifiés</span>
+              </div>
+            </div>
+
+            <div class="kpi-card" id="cal-kpi-surface-card">
+              <div class="kpi-header">
+                <span class="kpi-title">Surface / Volume travaillé</span>
+                <span class="kpi-icon icon-green">🌿</span>
+              </div>
+              <div class="kpi-value" id="cal-kpi-surface">0.0000 ha</div>
+              <div class="kpi-footer">
+                <span class="badge-tag" id="cal-kpi-hours">0 h</span>
+                <span class="kpi-sub">temps machine / ouvrier</span>
+              </div>
+            </div>
+
+            <div class="kpi-card" id="cal-kpi-revenue-card">
+              <div class="kpi-header">
+                <span class="kpi-title">Montant réalisé HT</span>
+                <span class="kpi-icon icon-purple">💶</span>
+              </div>
+              <div class="kpi-value" id="cal-kpi-revenue">0.00 € HT</div>
+              <div class="kpi-footer">
+                <span class="badge-tag" id="cal-kpi-revenue-ttc" style="color: #74c69d; font-weight: 700;">0.00 € TTC</span>
+                <span class="kpi-sub">chiffre d'affaires</span>
+              </div>
+            </div>
+
+            <div class="kpi-card" id="cal-kpi-active-card">
+              <div class="kpi-header">
+                <span class="kpi-title">Journées actives</span>
+                <span class="kpi-icon icon-emerald">🚜</span>
+              </div>
+              <div class="kpi-value value-success" id="cal-kpi-active-days">0 j</div>
+              <div class="kpi-footer">
+                <span class="badge-pill pill-success" id="cal-kpi-today-status">Aujourd'hui : 0 chantier</span>
+                <span class="kpi-sub">dans les vignes</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 4. CONTENEUR PRINCIPAL DU CALENDRIER (MOIS, SEMAINE, JOUR LE JOUR) -->
+          <div class="calendar-display-container">
+            <!-- VUE MOIS -->
+            <div id="cal-view-month" class="cal-view-panel">
+              <div class="cal-month-grid-header">
+                <div>Lundi</div>
+                <div>Mardi</div>
+                <div>Mercredi</div>
+                <div>Jeudi</div>
+                <div>Vendredi</div>
+                <div>Samedi</div>
+                <div>Dimanche</div>
+              </div>
+              <div class="cal-month-grid" id="cal-month-grid-days">
+                <!-- Rempli dynamiquement en JS avec les cases du mois -->
+              </div>
+            </div>
+
+            <!-- VUE SEMAINE -->
+            <div id="cal-view-week" class="cal-view-panel" style="display: none;">
+              <div class="cal-week-grid" id="cal-week-grid-container">
+                <!-- Rempli dynamiquement en JS avec 7 colonnes -->
+              </div>
+            </div>
+
+            <!-- VUE JOUR LE JOUR (AU JOUR LE JOUR) -->
+            <div id="cal-view-day" class="cal-view-panel" style="display: none;">
+              <div class="cal-day-container" id="cal-day-container-content">
+                <!-- Rempli dynamiquement en JS avec timeline et cartes complètes -->
+              </div>
+            </div>
+          </div>
+
+          <!-- 5. AGENDA DU JOUR SÉLECTIONNÉ (AFFICHÉ SOUS LA GRILLE DU MOIS) -->
+          <section class="cal-selected-day-agenda" id="cal-selected-day-agenda">
+            <div class="cal-agenda-header">
+              <div class="cal-agenda-title-group">
+                <span class="cal-agenda-icon">📋</span>
+                <div>
+                  <h3 class="cal-agenda-title" id="cal-agenda-date-title">Chantiers du jour sélectionné</h3>
+                  <p class="cal-agenda-subtitle" id="cal-agenda-date-subtitle">Cliquez sur un jour du calendrier pour consulter le détail au jour le jour.</p>
+                </div>
+              </div>
+              <div class="cal-agenda-actions">
+                <button type="button" class="btn btn-outline btn-xs" id="btn-cal-agenda-plan" title="Planifier un chantier ce jour-là">
+                  <span>📌 Planifier ce jour</span>
+                </button>
+                <button type="button" class="btn btn-primary btn-xs" id="btn-cal-agenda-add" title="Enregistrer une intervention réalisée pour ce jour">
+                  <span>＋ Saisir intervention</span>
+                </button>
+              </div>
+            </div>
+            <div class="cal-agenda-list" id="cal-agenda-items-list">
+              <!-- Liste dynamique des chantiers du jour sélectionné -->
             </div>
           </section>
         </div>
