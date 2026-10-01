@@ -148,15 +148,17 @@ Vititrack pro/
   2. *🚜 Toutes les interventions* : tableau filtré par la date choisie avec bascule de statut sans perte d'onglet.
   3. *👤 Coordonnées & Notes* : fiche contact complète.
 
-#### D. Vue 3 : Prestations & Travaux à faire
-- **Sous-onglet 1 : Catalogue des prestations viticoles** :
+#### D. Vue 3 : Prestations & Travaux à faire & Planification (Onglets dédiés dans Pilotage)
+- **Onglet Pilotage 1 : Prestations (Catalogue des prestations viticoles)** :
+  - Accès direct depuis le menu latéral *Pilotage* avec badge dynamique du nombre de prestations.
   - **Modes de facturation multiples** : Taux horaire (`€/h`), Forfait à l'hectare (`€/ha`), Forfait fixe global (`€`), et Facturation au kilo (`€/kg` pour vendanges et récoltes au poids).
   - **Filtres sous forme de menus déroulants** : deux sélecteurs compacts pour filtrer instantanément par *Catégorie viticole* et par *Mode de facturation* (€/h, €/ha, forfait, au kilo).
   - **Organisation en menus déroulants accordéons par catégorie** : affichage soigné regroupé par catégorie avec compteurs de prestations et chevrons repliables.
   - Unités de facturation : à l'hectare (`ha`), à l'heure (`h`), au forfait (`forfait`), au kilo (`kg`).
   - Tarifs indicatifs HT avec calcul automatique lors de la saisie d'une intervention.
   - Création, modification et suppression de prestations.
-- **Sous-onglet 2 : Planning des travaux à faire (travaux prévisionnels)** :
+- **Onglet Pilotage 2 : Travaux à faire & Planification (Planning des travaux prévisionnels)** :
+  - **Accès direct depuis la section Pilotage** dans le menu latéral (`#nav-btn-planned`) avec badge d'alerte ambre affichant le nombre de chantiers en attente (`#sidebar-planned-count`).
   - **Planification multi-domaines & multi-parcelles en menus déroulants (Modal 6)** : Deux menus déroulants compacts et élégants (`.modal-dropdown-wrap`) côte à côte :
     - *Menu déroulant « Domaines / Clients »* : sélecteur avec recherche instantanée, boutons « Tout cocher / Tout décocher », pastilles de statut, et sélection simultanée de multiples domaines avec affichage dynamique des domaines choisis sur le bouton déclencheur.
     - *Menu déroulant « Parcelles associées »* : activé dès la sélection d'au moins un client, liste déroulante groupée par domaine avec cases à cocher, recherche de parcelles, boutons « Tout / Aucun », et calcul en direct du nombre de parcelles et de la surface cumulée totale (**précision à 4 décimales**).

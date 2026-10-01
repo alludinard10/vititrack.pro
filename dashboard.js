@@ -1538,6 +1538,7 @@ function setupEventListeners() {
   const navOverview = document.getElementById("nav-btn-overview");
   const navClients = document.getElementById("nav-btn-clients");
   const navServices = document.getElementById("nav-btn-services");
+  const navPlanned = document.getElementById("nav-btn-planned");
   const navVendanges = document.getElementById("nav-btn-vendanges");
   const navClientHistory = document.getElementById("nav-btn-client-history");
   const navInterventions = document.getElementById("nav-btn-interventions");
@@ -1547,6 +1548,7 @@ function setupEventListeners() {
   if (navClientHistory) navClientHistory.addEventListener("click", (e) => { e.preventDefault(); switchView("client-history"); closeSidebar(); });
   if (navClients) navClients.addEventListener("click", (e) => { e.preventDefault(); switchView("clients"); closeSidebar(); });
   if (navServices) navServices.addEventListener("click", (e) => { e.preventDefault(); switchView("services"); closeSidebar(); });
+  if (navPlanned) navPlanned.addEventListener("click", (e) => { e.preventDefault(); switchView("planned"); closeSidebar(); });
   if (navVendanges) navVendanges.addEventListener("click", (e) => { e.preventDefault(); switchView("vendanges"); closeSidebar(); });
   if (navInterventions) navInterventions.addEventListener("click", (e) => {
     e.preventDefault();
@@ -1643,6 +1645,11 @@ function setupEventListeners() {
       if (planContent) planContent.style.display = "none";
       const searchWrapper = document.getElementById("services-search-wrapper");
       if (searchWrapper) searchWrapper.style.display = "block";
+
+      const navSrv = document.getElementById("nav-btn-services");
+      const navPln = document.getElementById("nav-btn-planned");
+      if (navSrv) navSrv.classList.add("active");
+      if (navPln) navPln.classList.remove("active");
     });
   }
 
@@ -1657,6 +1664,12 @@ function setupEventListeners() {
       if (planContent) planContent.style.display = "block";
       const searchWrapper = document.getElementById("services-search-wrapper");
       if (searchWrapper) searchWrapper.style.display = "none";
+
+      const navSrv = document.getElementById("nav-btn-services");
+      const navPln = document.getElementById("nav-btn-planned");
+      if (navPln) navPln.classList.add("active");
+      if (navSrv) navSrv.classList.remove("active");
+
       renderPlannedWorks();
     });
   }
@@ -2243,12 +2256,13 @@ function switchView(viewName, preselectedClientId = null) {
   const navClientHistory = document.getElementById("nav-btn-client-history");
   const navClients = document.getElementById("nav-btn-clients");
   const navServices = document.getElementById("nav-btn-services");
+  const navPlanned = document.getElementById("nav-btn-planned");
   const navVendanges = document.getElementById("nav-btn-vendanges");
   const navInterventions = document.getElementById("nav-btn-interventions");
   const navBilling = document.getElementById("nav-btn-billing");
 
   // Deactivate all navigation links
-  [navOverview, navClientHistory, navClients, navServices, navVendanges, navInterventions, navBilling].forEach(b => {
+  [navOverview, navClientHistory, navClients, navServices, navPlanned, navVendanges, navInterventions, navBilling].forEach(b => {
     if (b) b.classList.remove("active");
   });
 
@@ -2293,7 +2307,47 @@ function switchView(viewName, preselectedClientId = null) {
     }
     if (navServices) navServices.classList.add("active");
     if (mNavServices) mNavServices.classList.add("active");
+
+    // Activer l'onglet Catalogue Prestations
+    servicesActiveSubtab = "catalog";
+    const tabBtnCatalog = document.getElementById("tab-btn-catalog");
+    const tabBtnPlanned = document.getElementById("tab-btn-planned");
+    if (tabBtnCatalog) tabBtnCatalog.classList.add("active");
+    if (tabBtnPlanned) tabBtnPlanned.classList.remove("active");
+    const catContent = document.getElementById("services-catalog-tab-content");
+    const planContent = document.getElementById("services-planned-tab-content");
+    if (catContent) catContent.style.display = "block";
+    if (planContent) planContent.style.display = "none";
+    const searchWrapper = document.getElementById("services-search-wrapper");
+    if (searchWrapper) searchWrapper.style.display = "block";
+
     renderServicesView();
+  } else if (viewName === "planned") {
+    if (viewOverview) { viewOverview.style.display = "none"; viewOverview.classList.remove("active"); }
+    if (viewClients) { viewClients.style.display = "none"; viewClients.classList.remove("active"); }
+    if (viewVendanges) { viewVendanges.style.display = "none"; viewVendanges.classList.remove("active"); }
+    if (viewClientHistory) { viewClientHistory.style.display = "none"; viewClientHistory.classList.remove("active"); }
+    if (viewServices) {
+      viewServices.style.display = "flex";
+      viewServices.classList.add("active");
+    }
+    if (navPlanned) navPlanned.classList.add("active");
+
+    // Activer l'onglet Travaux à faire & Planification
+    servicesActiveSubtab = "planned";
+    const tabBtnCatalog = document.getElementById("tab-btn-catalog");
+    const tabBtnPlanned = document.getElementById("tab-btn-planned");
+    if (tabBtnPlanned) tabBtnPlanned.classList.add("active");
+    if (tabBtnCatalog) tabBtnCatalog.classList.remove("active");
+    const catContent = document.getElementById("services-catalog-tab-content");
+    const planContent = document.getElementById("services-planned-tab-content");
+    if (catContent) catContent.style.display = "none";
+    if (planContent) planContent.style.display = "block";
+    const searchWrapper = document.getElementById("services-search-wrapper");
+    if (searchWrapper) searchWrapper.style.display = "none";
+
+    renderPlannedWorks();
+    renderServicesKPIs();
   } else if (viewName === "vendanges") {
     if (viewOverview) { viewOverview.style.display = "none"; viewOverview.classList.remove("active"); }
     if (viewClients) { viewClients.style.display = "none"; viewClients.classList.remove("active"); }
@@ -3840,6 +3894,7 @@ function renderKPIs() {
   setElemText("sidebar-interventions-count", totalInterventions);
   setElemText("sidebar-unbilled-count", unbilledCount);
   setElemText("sidebar-services-count", services.length);
+  setElemText("sidebar-planned-count", (plannedWorks || []).length);
   setElemText("sidebar-team-count", totalTeam);
 
   // Topbar badge
@@ -4722,6 +4777,7 @@ function renderServicesKPIs() {
   setElemText("services-surface-count", surfaceCount);
   setElemText("services-fixed-count", fixedCount);
   setElemText("services-planned-count", plannedCount);
+  setElemText("sidebar-planned-count", plannedCount);
 
   setElemText("count-tab-catalog", total);
   setElemText("count-tab-planned", plannedCount);
