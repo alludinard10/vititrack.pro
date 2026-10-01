@@ -1805,34 +1805,85 @@ button.filter-dropdown-pill {
 }
 
 .status-pill-toggle.status-unbilled,
+.status-pill-toggle.status-unbilled *,
 .status-badge.status-unbilled,
-.ch-table .status-unbilled {
-  background: rgba(233, 196, 106, 0.20);
+.status-badge.status-unbilled *,
+.status-badge.status-a-facturer,
+.status-badge.status-a-facturer *,
+.ch-table .status-unbilled,
+.ch-table .status-unbilled * {
+  background: rgba(233, 196, 106, 0.22);
   color: #ffffff !important;
-  border-color: rgba(233, 196, 106, 0.45);
+  border-color: rgba(233, 196, 106, 0.55);
+  font-weight: 700;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
 }
 
 .status-pill-toggle.status-unbilled:hover,
+.status-pill-toggle.status-unbilled:hover *,
 .status-badge.status-unbilled:hover,
-.ch-table .status-unbilled:hover {
-  background: rgba(233, 196, 106, 0.32);
+.status-badge.status-unbilled:hover *,
+.status-badge.status-a-facturer:hover,
+.status-badge.status-a-facturer:hover *,
+.ch-table .status-unbilled:hover,
+.ch-table .status-unbilled:hover * {
+  background: rgba(233, 196, 106, 0.35);
   color: #ffffff !important;
+  border-color: rgba(233, 196, 106, 0.75);
   transform: scale(1.03);
 }
 
 .status-pill-toggle.status-billed,
+.status-pill-toggle.status-billed *,
 .status-badge.status-billed,
-.ch-table .status-billed {
+.status-badge.status-billed *,
+.status-badge.status-facturee,
+.status-badge.status-facturee *,
+.ch-table .status-billed,
+.ch-table .status-billed * {
   background: rgba(82, 183, 136, 0.15);
   color: #52b788;
   border-color: rgba(82, 183, 136, 0.35);
 }
 
 .status-pill-toggle.status-billed:hover,
+.status-pill-toggle.status-billed:hover *,
 .status-badge.status-billed:hover,
-.ch-table .status-billed:hover {
+.status-badge.status-billed:hover *,
+.status-badge.status-facturee:hover,
+.status-badge.status-facturee:hover *,
+.ch-table .status-billed:hover,
+.ch-table .status-billed:hover * {
   background: rgba(82, 183, 136, 0.25);
   transform: scale(1.03);
+}
+
+/* Mode Nuit : Filtre et onglet "À facturer" en blanc pur dans Chantiers */
+.status-tab[data-status="À facturer"],
+.status-tab[data-status="À facturer"] span,
+.status-tab.ch-status-tab[data-status="À facturer"],
+.status-tab.ch-status-tab[data-status="À facturer"] span {
+  color: #ffffff !important;
+}
+
+.status-tab[data-status="À facturer"] .status-tab-badge,
+.status-tab[data-status="À facturer"] .status-tab-badge.badge-warn,
+.status-tab.ch-status-tab[data-status="À facturer"] .status-tab-badge {
+  color: #ffffff !important;
+  background: rgba(233, 196, 106, 0.35) !important;
+  border: 1px solid rgba(233, 196, 106, 0.6) !important;
+}
+
+/* Mode Nuit : Cartes KPI Chantiers / Historique "À facturer" en blanc pur */
+#kpi-card-unbilled .kpi-title,
+#kpi-card-unbilled #kpi-unbilled-amount,
+#kpi-card-unbilled #kpi-unbilled-ttc,
+#kpi-card-unbilled #kpi-unbilled-badge,
+#ch-kpi-card-unbilled .kpi-title,
+#ch-kpi-card-unbilled #ch-kpi-amount-unbilled,
+#ch-kpi-card-unbilled #ch-kpi-unbilled-count,
+#dossier-unbilled {
+  color: #ffffff !important;
 }
 
 .row-actions {
@@ -8058,6 +8109,52 @@ body[data-theme="light"],
   color: #e9d5ff;
 }
 
+.cal-pill-unbilled {
+  background: rgba(233, 196, 106, 0.28);
+  border: 1px solid rgba(233, 196, 106, 0.65);
+  color: #ffffff !important;
+  font-weight: 700;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.cal-status-tag-unbilled {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: rgba(233, 196, 106, 0.25);
+  border: 1px solid rgba(233, 196, 106, 0.55);
+  color: #ffffff !important;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.cal-status-tag-billed {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: rgba(82, 183, 136, 0.15);
+  border: 1px solid rgba(82, 183, 136, 0.35);
+  color: #52b788;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.72rem;
+}
+
+.cal-meta-unbilled {
+  color: #ffffff !important;
+  font-weight: 800;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.cal-meta-billed {
+  color: #52b788;
+  font-weight: 700;
+}
+
 .cal-more-pill {
   font-size: 0.68rem;
   font-weight: 700;
@@ -8783,6 +8880,25 @@ body[data-theme="light"],
 [data-theme="light"] .cal-day-empty {
   background: #f9fbf9 !important;
   border-color: rgba(45, 106, 79, 0.3) !important;
+}
+
+[data-theme="light"] .cal-pill-unbilled {
+  background: #fff8e6 !important;
+  border-color: rgba(212, 163, 115, 0.6) !important;
+  color: #9c6c06 !important;
+  text-shadow: none !important;
+}
+
+[data-theme="light"] .cal-status-tag-unbilled {
+  background: #fff8e6 !important;
+  border-color: rgba(212, 163, 115, 0.6) !important;
+  color: #9c6c06 !important;
+  text-shadow: none !important;
+}
+
+[data-theme="light"] .cal-meta-unbilled {
+  color: #9c6c06 !important;
+  text-shadow: none !important;
 }
 
 /* Responsive Mobile */

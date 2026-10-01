@@ -11579,9 +11579,12 @@ function createCalendarMonthDayCell(dayNum, dateStr, events, isOtherMonth, isTod
     } else if (evt.type === "harvest") {
       pillTypeClass = "cal-pill-harvest";
       icon = "🍇";
+    } else if (evt.type === "intervention" && evt.status === "À facturer") {
+      pillTypeClass = "cal-pill-unbilled";
+      icon = "⏳";
     }
     pill.className = `cal-event-pill ${pillTypeClass}`;
-    pill.title = `${evt.client} - ${evt.title} (${evt.worker || 'Non assigné'})`;
+    pill.title = `${evt.client} - ${evt.title} (${evt.status || ''})`;
     pill.innerHTML = `<span>${icon}</span> <strong style="max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHTML(evt.client)}</strong> <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHTML(evt.title)}</span>`;
     listDiv.appendChild(pill);
   });
@@ -11656,20 +11659,26 @@ function renderCalendarWeekGrid(events, mondayStr) {
         const card = document.createElement("div");
         let cardTypeClass = "card-done";
         let icon = "🚜";
-        let badgeText = "Réalisé";
+        let badgeContent = '<span class="cal-status-tag-unbilled">⏳ À facturer</span>';
         if (evt.type === "planned") {
           cardTypeClass = "card-planned";
           icon = "📌";
-          badgeText = "À faire";
+          badgeContent = '<span>À faire</span>';
         } else if (evt.type === "harvest") {
           cardTypeClass = "card-harvest";
           icon = "🍇";
-          badgeText = "Vendange";
+          badgeContent = '<span>Vendange</span>';
+        } else if (evt.type === "intervention") {
+          if (evt.status === "Facturée") {
+            badgeContent = '<span class="cal-status-tag-billed">✅ Facturée</span>';
+          } else {
+            badgeContent = '<span class="cal-status-tag-unbilled">⏳ À facturer</span>';
+          }
         }
         card.className = `cal-card-compact ${cardTypeClass}`;
         card.innerHTML = `
           <div class="cal-card-top-row">
-            <span>${icon} ${badgeText}</span>
+            <span>${icon} ${badgeContent}</span>
             <span>${evt.time || (evt.quantity ? evt.quantity + " ha" : "")}</span>
           </div>
           <div class="cal-card-title">${escapeHTML(evt.title)}</div>
@@ -11860,7 +11869,7 @@ function createCalendarFullEventCard(evt) {
 
   if (evt.type === "intervention") {
     const isBilled = evt.status === "Facturée";
-    const statusBadgeClass = isBilled ? "status-facturee" : "status-a-facturer";
+    const statusBadgeClass = isBilled ? "status-billed" : "status-unbilled";
     const statusBadgeIcon = isBilled ? "✅" : "⏳";
 
     card.innerHTML = `
@@ -12068,7 +12077,7 @@ function renderCalendarSelectedDayAgenda(dateStr, events) {
         ${evt.amount > 0 ? `<span class="cal-agenda-amount">${formatCurrency(evt.amount)} HT</span>` : ""}
         ${evt.quantity ? `<span class="badge-tag">${formatVolumeUnit(evt.quantity, evt.rateType)}</span>` : ""}
         ${evt.type === "intervention" 
-          ? `<button type="button" class="status-badge ${evt.status === 'Facturée' ? 'status-facturee' : 'status-a-facturer'}" onclick="toggleInterventionStatus('${evt.id}'); renderCalendarView();">
+          ? `<button type="button" class="status-badge ${evt.status === 'Facturée' ? 'status-billed' : 'status-unbilled'}" onclick="toggleInterventionStatus('${evt.id}'); renderCalendarView();">
                <span>${evt.status === 'Facturée' ? '✅' : '⏳'} ${escapeHTML(evt.status)}</span>
              </button>`
           : (evt.type === "planned"
