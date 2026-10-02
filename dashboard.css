@@ -980,6 +980,11 @@
   min-width: 170px;
 }
 
+.select-team-wrap {
+  flex: 1 1 200px;
+  min-width: 180px;
+}
+
 .date-range-inputs {
   display: flex;
   align-items: center;
@@ -1163,6 +1168,10 @@ button.filter-dropdown-pill {
 #wrap-vendanges-filter-parcel.is-open,
 #wrap-vendanges-filter-stage.is-open,
 #wrap-vendanges-filter-team.is-open,
+#wrap-palissage-filter-client.is-open,
+#wrap-palissage-filter-parcel.is-open,
+#wrap-palissage-filter-stage.is-open,
+#wrap-palissage-filter-team.is-open,
 #wrap-ch-filter-client.is-open,
 #wrap-ch-filter-parcel.is-open {
   z-index: 130;
@@ -1173,6 +1182,10 @@ button.filter-dropdown-pill {
 #wrap-vendanges-filter-parcel.is-open .filter-dropdown-arrow,
 #wrap-vendanges-filter-stage.is-open .filter-dropdown-arrow,
 #wrap-vendanges-filter-team.is-open .filter-dropdown-arrow,
+#wrap-palissage-filter-client.is-open .filter-dropdown-arrow,
+#wrap-palissage-filter-parcel.is-open .filter-dropdown-arrow,
+#wrap-palissage-filter-stage.is-open .filter-dropdown-arrow,
+#wrap-palissage-filter-team.is-open .filter-dropdown-arrow,
 #wrap-ch-filter-client.is-open .filter-dropdown-arrow,
 #wrap-ch-filter-parcel.is-open .filter-dropdown-arrow {
   transform: rotate(180deg);
@@ -1184,6 +1197,10 @@ button.filter-dropdown-pill {
 #wrap-vendanges-filter-parcel.is-open .filter-dropdown-pill,
 #wrap-vendanges-filter-stage.is-open .filter-dropdown-pill,
 #wrap-vendanges-filter-team.is-open .filter-dropdown-pill,
+#wrap-palissage-filter-client.is-open .filter-dropdown-pill,
+#wrap-palissage-filter-parcel.is-open .filter-dropdown-pill,
+#wrap-palissage-filter-stage.is-open .filter-dropdown-pill,
+#wrap-palissage-filter-team.is-open .filter-dropdown-pill,
 #wrap-ch-filter-client.is-open .filter-dropdown-pill,
 #wrap-ch-filter-parcel.is-open .filter-dropdown-pill {
   border-color: rgba(82, 183, 136, 0.65);
@@ -7501,6 +7518,260 @@ body[data-theme="light"],
 [data-theme="light"] .yield-billing-option {
   background: #fffbf0 !important;
   border-color: rgba(217, 119, 6, 0.35) !important;
+}
+
+/* ========================================================
+   SECTION PALISSAGE & RELEVAGE (PILOTAGE)
+   ======================================================== */
+.palissage-controls-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+.palissage-controls-bar .search-box {
+  flex: 1 1 210px;
+  min-width: 180px;
+  max-width: 280px;
+}
+
+/* Onglets de filtres horizontaux : Domaine, Parcelles, Étape, Salariés */
+.palissage-filters-horizontal-row {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  gap: 0.65rem;
+  flex: 4 1 auto;
+  min-width: 0;
+}
+
+.palissage-filters-horizontal-row .filter-dropdown-btn-wrap {
+  flex: 1 1 0;
+  min-width: 160px;
+}
+
+.palissage-filters-horizontal-row .filter-dropdown-pill {
+  width: 100%;
+  height: 100%;
+  white-space: nowrap;
+}
+
+.palissage-filters-horizontal-row .filter-dropdown-value {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 135px;
+}
+
+@media (max-width: 1150px) {
+  .palissage-controls-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .palissage-controls-bar .search-box {
+    max-width: 100%;
+    width: 100%;
+  }
+  .palissage-filters-horizontal-row {
+    flex-wrap: wrap;
+  }
+  .palissage-filters-horizontal-row .filter-dropdown-btn-wrap {
+    flex: 1 1 calc(50% - 0.5rem);
+    min-width: 140px;
+  }
+}
+
+@media (max-width: 640px) {
+  .palissage-filters-horizontal-row .filter-dropdown-btn-wrap {
+    flex: 1 1 100%;
+  }
+}
+
+.palissage-table-card {
+  margin-top: 1.75rem;
+  background: #111a15;
+  border: 1px solid rgba(82, 183, 136, 0.18);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 8px 36px rgba(0, 0, 0, 0.35);
+  overflow: visible;
+}
+
+.palissage-table {
+  width: 100% !important;
+  min-width: 1100px;
+  border-collapse: collapse;
+  table-layout: auto;
+}
+
+.palissage-table th,
+.palissage-table td {
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.palissage-table th:first-child,
+.palissage-table td:first-child {
+  padding-left: 1.5rem;
+}
+
+.palissage-table th:last-child,
+.palissage-table td:last-child {
+  padding-right: 1.5rem;
+}
+
+/* Menus déroulants interactifs du tableau de palissage */
+.palissage-table-select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.32rem 1.65rem 0.32rem 0.7rem;
+  border-radius: var(--radius-full);
+  font-size: 0.76rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  background-repeat: no-repeat;
+  background-position: right 0.5rem center;
+  background-size: 9px 6px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%23ffffff' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  transition: all var(--transition-fast);
+  outline: none;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+}
+
+.palissage-table-select:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.15);
+}
+
+.palissage-table-select:focus {
+  box-shadow: 0 0 0 2px rgba(82, 183, 136, 0.45);
+}
+
+.palissage-table-select option {
+  background: #111d17;
+  color: #fff;
+  font-size: 0.82rem;
+  padding: 6px;
+}
+
+/* Badges Entretien Piquets/Fils */
+.badge-maint-todo {
+  background: rgba(245, 158, 11, 0.14);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.35);
+}
+
+.badge-maint-done {
+  background: rgba(16, 185, 129, 0.16);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.4);
+}
+
+.badge-maint-none {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--color-text-muted);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+/* Badges Relevage */
+.badge-lifting-todo {
+  background: rgba(233, 196, 106, 0.14);
+  color: #e9c46a;
+  border: 1px solid rgba(233, 196, 106, 0.35);
+}
+
+.badge-lifting-done {
+  background: rgba(82, 183, 136, 0.16);
+  color: #74c69d;
+  border: 1px solid rgba(82, 183, 136, 0.35);
+}
+
+.badge-lifting-none {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--color-text-muted);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+/* Badges génériques des passages Palissage (À faire, Fait, Ne pas faire) */
+.badge-p-todo {
+  background: rgba(245, 158, 11, 0.14);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.35);
+}
+
+.badge-p-done {
+  background: rgba(16, 185, 129, 0.16);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.4);
+}
+
+.badge-p-none {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--color-text-muted);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+/* Light Theme for Palissage */
+[data-theme="light"] .palissage-table-card {
+  background: #ffffff !important;
+  border-color: rgba(45, 106, 79, 0.16) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06) !important;
+}
+
+[data-theme="light"] .palissage-table-select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%2314241d' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+
+[data-theme="light"] .palissage-table-select option {
+  background: #ffffff;
+  color: #14241d;
+}
+
+[data-theme="light"] .badge-maint-todo {
+  background: rgba(217, 119, 6, 0.12);
+  color: #b45309;
+  border-color: rgba(217, 119, 6, 0.35);
+}
+
+[data-theme="light"] .badge-maint-done {
+  background: rgba(16, 185, 129, 0.14);
+  color: #047857;
+  border-color: rgba(16, 185, 129, 0.35);
+}
+
+[data-theme="light"] .badge-lifting-todo {
+  background: rgba(217, 119, 6, 0.12);
+  color: #b45309;
+  border-color: rgba(217, 119, 6, 0.35);
+}
+
+[data-theme="light"] .badge-lifting-done {
+  background: rgba(45, 106, 79, 0.12);
+  color: #1b4332;
+  border-color: rgba(45, 106, 79, 0.35);
+}
+
+[data-theme="light"] .badge-p-todo {
+  background: rgba(217, 119, 6, 0.12);
+  color: #b45309;
+  border-color: rgba(217, 119, 6, 0.35);
+}
+
+[data-theme="light"] .badge-p-done {
+  background: rgba(16, 185, 129, 0.14);
+  color: #047857;
+  border-color: rgba(16, 185, 129, 0.35);
+}
+
+[data-theme="light"] .badge-p-none {
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--color-text-muted);
+  border-color: rgba(0, 0, 0, 0.12);
 }
 
 /* ========================================================

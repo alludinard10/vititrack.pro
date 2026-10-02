@@ -108,13 +108,13 @@ Vititrack pro/
   - **Filtre multi-sélection Prestation viticole à encoches (cases à cocher)** : regroupé par catégories viticoles avec tarifs indicatifs, recherche intégrée et sélection multiple simultanée.
   - Filtre par plage de dates interactif (*Toutes les dates*, *Aujourd'hui*, *Cette semaine*, *Ce mois-ci*, *30 derniers jours*, *Année en cours*, ou sélecteurs personnalisés *Du ... Au ...*).
 - **Création d'Intervention Ergonomique & Intelligente** :
-  - **Formulaire épuré** : saisie directe de la date & heure, du client et des parcelles travaillées sans saisie superflue d'opérateur/salarié.
+  - **Formulaire épuré** : saisie directe de la date & heure, de l'utilisateur / salarié (sélection dynamique de l'équipe), du client et des parcelles travaillées.
   - **Multi-sélection de parcelles** : Possibilité de cocher une ou plusieurs parcelles travaillées pour le client avec bouton « Tout cocher / Tout décocher ».
   - **Sommation et report automatique de la surface** : La somme exacte des surfaces parcellaires (à 4 décimales) est immédiatement calculée et pré-remplit le champ « Surface travaillée ».
   - **Calcul en direct du total HT** : Dès le choix de la prestation (ex: *Traitement anti-mildiou*, travail du sol...) ou de la surface, le montant total HT estimé est calculé et affiché en temps réel exclusivement en hors taxe (`Surface (ha) × Prix (€/ha)`), sans mention de TVA.
   - Possibilité pour l'utilisateur d'ajuster manuellement la surface travaillée si le chantier n'a couvert qu'une fraction de la parcelle.
 - **Tableau Principal des Interventions (Journal des interventions)** :
-  - Colonnes épurées : Date/Heure, Client, Parcelle, Prestation, Volume/Surface, Montant HT, Montant TTC, Statut, Actions (la colonne Salarié/Exploitant a été retirée pour simplifier la consultation).
+  - Colonnes : Date/Heure, Client, Utilisateur, Parcelle & Surface, Prestation viticole, Volume / Durée, Montant estimé Hors Taxe, Montant estimé TTC, Statut facturation, Actions.
   - Bascule de statut d'un clic (*Facturée* ✅ vs *À facturer* ⏳).
   - Actions rapides : Consulter la fiche complète du client, Éditer l'intervention, Dupliquer le chantier, Supprimer.
   - Export CSV / Excel des interventions filtrées.
@@ -256,8 +256,60 @@ Vititrack pro/
     - Dès le passage à **« ✅ Débardée »**, l'intervention de débardage est créée immédiatement au statut « À facturer » avec le tarif préenregistré (0,15 €/kg).
 
 - **Export CSV enrichi** : Le fichier CSV exporté intègre les colonnes *Prix au Kilo (€ HT/kg)*, *Montant Total HT (€)*, *Statut Facturation*, *Prestation Débardage* et *Tarif Débardage (€ HT)*.
+- **Planification des Parcelles de Vendanges pour plus tard (`openVendangesPlanningModal`)** :
+  - **Bouton officiel « ＋ Planification »** : Accessible directement en en-tête de la vue (`#btn-vendanges-planification`), dans le tableau des actions (`#btn-vendanges-planification-table`), et via le raccourci de la carte KPI (`#kpi-harvest-card-parcels`).
+  - **Formulaire identique à « Nouvelle parcelle à vendanger » avec les 3 étapes complètes** :
+    - *Étape 1 : Effeuillage* (statut `🍃 À effeuiller / 🚫 Non nécessaire / ✅ Effeuillée`, prestation catalogue liée et tarif HT).
+    - *Étape 2 : Coupe / Récolte* (statut `⏳ À couper / 🍇 Coupée`, prestation catalogue liée et prix du kilo € HT / kg).
+    - *Étape 3 : Débardage* (statut `🚜 À débarder / ⚪ Non nécessaire / ✅ Débardée`, prestation catalogue liée et tarif unitaire HT).
+    - Menus déroulants multi-domaines et multi-parcelles à encoches, salarié pressenti, date programmée et notes.
+  - **Indicateur de chantiers planifiés dans le KPI** : Badge dynamique `#kpi-harvest-planned-count` affichant en temps réel le décompte des chantiers programmés pour plus tard.
+  - **Section dédiée des chantiers planifiés (`#vendanges-planned-card`)** : Située entre les cartes KPI et la feuille de route des vendanges, affichant la liste complète des parcelles planifiées, la date prévue, le client, les 3 étapes configurées avec badges clairs, le salarié pressenti, la surface et les notes.
+  - **Action de lancement au suivi en 1 clic (`convertPlannedToHarvestWork`)** : Bouton « 🚀 Lancer au suivi » transférant instantanément les parcelles programmées dans le suivi actif de la feuille de route des vendanges en conservant fidèlement l'ensemble des 3 étapes, tarifs et options configurées lors de la planification, avec suppression automatique de la file d'attente.
 
-#### G. Vue 5 : Historique & Suivi par Client (Onglet Client dans Pilotage)
+#### G. Vue 4B : Pilotage du Palissage & Feuille de Route du Palissage
+- **Accès dédié depuis la section Pilotage** : Onglet `🌿 Palissage` (`#nav-btn-palissage`) situé sous *PILOTAGE* dans le menu latéral avec badge dynamique affichant le nombre de parcelles au suivi (`#sidebar-palissage-count`), et raccourci d'action dans *OUTILS & BASE* (`#sidebar-add-palissage-btn`, *🌿 Nouveau Palissage*).
+- **Structure des 3 Passages Clés du Palissage** :
+  1. **🌱 1er passage : Relevage** : options d'état `⏳ À faire`, `✅ Fait`, `⚪ Ne pas faire`.
+  2. **🌿 2ème passage** : options d'état `⏳ À faire`, `✅ Fait`, `⚪ Ne pas faire`.
+  3. **📎 3ème passage : Agrafage** : options d'état `⏳ À faire`, `✅ Fait`, `⚪ Ne pas faire`.
+- **Tableau de Bord & 5 KPIs Clés du Palissage** :
+  1. *Parcelles au suivi* : Total de parcelles et superficie cumulée (**précision à 4 décimales obligatoire**, ex. `14.5200 ha`).
+  2. *1er passage (Relevage)* : Pourcentage d'avancement, jauge de progression, décompte (fait(s) vs à faire), rappel de la prestation liée et bouton de filtre rapide.
+  3. *2ème passage* : Pourcentage de réalisation, jauge verte, décompte (fait(s) vs à faire), rappel de la prestation liée et bouton de filtre rapide.
+  4. *3ème passage (Agrafage)* : Pourcentage d'avancement, jauge bleue, décompte (fait(s) vs à faire), rappel de la prestation liée et bouton de filtre rapide.
+  5. *Surfaces Réalisées & Valorisation HT* : Superficie totale couverte (ha à 4 décimales), badge des parcelles terminées et montant valorisé HT en direct.
+- **Section Feuille de Route du Palissage (`#palissage-table-section`)** :
+  - **Titre officiel** : `Feuille de route du palissage` avec badge dynamique du nombre de parcelles.
+  - **Barre de filtres horizontaux (`.palissage-controls-bar` & `.palissage-filters-horizontal-row`)** :
+    - Recherche plein texte (domaine, parcelle, cépage, salarié, notes).
+    - **4 onglets de filtres alignés de façon horizontale** :
+      1. Menu déroulant multi-sélection *Domaine Viticole* à encoches (cases à cocher, boutons Tout cocher/décocher).
+      2. Menu déroulant multi-sélection *Parcelles* à encoches (groupement par domaine, surface à 4 décimales).
+      3. Menu déroulant multi-sélection *Étape Palissage* : 1er passage (Relevage) [À faire / Fait], 2ème passage [À faire / Fait], 3ème passage (Agrafage) [À faire / Fait].
+      4. Menu déroulant multi-sélection *Salariés* à encoches (salariés et tractoristes de l'équipe).
+    - Bouton de réinitialisation rapide des filtres `✕ Réinitialiser`.
+  - **Tableau ergonomique des parcelles en palissage (`#palissage-table`)** :
+    - Colonnes : Domaine Viticole, Parcelle Cadastrale, Surface (4 décimales) & Cépage, 1er passage (Relevage), 2ème passage, 3ème passage (Agrafage), Salarié / Équipe, Facturation, Actions.
+    - **Menus déroulants interactifs dans le tableau** : Sélection directe de l'état de chaque passage (`⏳ À faire`, `✅ Fait`, `⚪ Ne pas faire`) avec mise à jour instantanée des KPIs et sauvegarde locale.
+    - **Liaison automatique 3ème passage (Agrafage) ➔ Tableau de Bord** : Dès qu'une parcelle passe à `✅ Fait` sur le 3ème passage (dans le tableau ou la modale), la prestation de palissage est immédiatement inscrite au Tableau de Bord (Journal des interventions) au statut `« À facturer »` (`syncPalissagePassage3ToDashboard`) avec le tarif et la surface exacte.
+    - **Bascule de facturation bidirectionnelle en 1 clic** : L'utilisateur peut valider la facturation (`⏳ À facturer` ➔ `✅ Facturée`) indifféremment depuis le Tableau de Bord principal ou depuis la colonne Facturation de la Feuille de route, avec synchronisation bilatérale instantanée.
+    - Export CSV dédié de la feuille de route du palissage (`exportPalissageCSV()`).
+- **Modale de Saisie & Planification Palissage (`#trellising-modal`)** :
+  - Menus déroulants multi-domaines et parcelles associées (identique au modèle Vendanges) avec calcul automatique en direct de la superficie cumulée.
+  - Sélection des statuts pour le **1er passage : Relevage**, le **2ème passage** et le **3ème passage : Agrafage** (`⏳ À faire`, `✅ Fait`, `⚪ Ne pas faire`).
+  - **Champ Prestation** (intitulé sobrement `Prestation`) : restreint **exclusivement aux prestations de palissage** (ex: *Palissage & Relevage des fils*), sans inclusion d'écimage, rognage ou effeuillage.
+  - Affectation d'un membre d'équipe, tarif HT, date et notes de chantier.
+  - Option d'envoi automatique vers le Journal des interventions au statut `« À facturer »` dès réalisation.
+- **Planification des Parcelles de Palissage pour plus tard (`openPalissagePlanningModal`)** :
+  - **Bouton officiel « ＋ Planification »** : Accessible directement en en-tête de la vue (`#btn-palissage-planification`), dans le tableau des actions (`#btn-palissage-planification-table`), et via le raccourci de la carte KPI (`#kpi-trellising-card-parcels`).
+  - **Modale de programmation prévisionnelle** : Ouvre la modale de planification multi-domaines avec sélection automatique de la prestation de palissage (*« Palissage & Relevage des fils »*), personnalisation des titres et consignes.
+  - **Indicateur de chantiers planifiés dans le KPI** : Badge dynamique `#kpi-trellising-planned-count` affichant en temps réel le décompte des chantiers programmés pour plus tard.
+  - **Section dédiée des chantiers planifiés (`#palissage-planned-card`)** : Située entre les cartes KPI et la feuille de route, affichant la liste complète des parcelles planifiées, la date prévue, le client, le salarié pressenti, la surface et les notes.
+  - **Action de lancement au suivi en 1 clic (`convertPlannedToPalissageWork`)** : Bouton « 🚀 Lancer au suivi » transférant instantanément les parcelles programmées dans le suivi actif de la feuille de route du palissage (avec statuts initiaux `⏳ À faire` sur les 3 passages) et suppression automatique de la file prévisionnelle.
+- **Intégration au Calendrier Agenda** : Les opérations de palissage programmées ou réalisées s'affichent automatiquement dans le calendrier au jour le jour avec l'icône 🌿 et un lien d'accès direct à la feuille de route.
+
+#### H. Vue 5 : Historique & Suivi par Client (Onglet Client dans Pilotage)
 - **Accès dédié depuis la section Pilotage** : Onglet `📋 Historique Client` (`#nav-btn-client-history`) situé dans la sidebar sous *PILOTAGE*, permettant un accès direct au suivi complet par client.
 - **Sélecteur Biparti Multi-Domaines & Parcelles en Menus Déroulants** :
   - *Étape 1 : Choix Multi-Domaines / Clients à encoches (cases à cocher)* : Menu déroulant élégant avec recherche instantanée, boutons « Tout cocher » / « Tout décocher », pastilles de statut, et sélection simultanée de multiples domaines avec affichage dynamique sur le bouton déclencheur.

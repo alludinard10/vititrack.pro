@@ -10,6 +10,7 @@ const STORAGE_SERVICES_BASE = "vititrack_services_user_v3";
 const STORAGE_PLANNED_BASE = "vititrack_planned_works_user_v3";
 const STORAGE_TEAM_BASE = "vititrack_team_users_v3";
 const STORAGE_HARVEST_BASE = "vititrack_harvest_works_user_v3";
+const STORAGE_PALISSAGE_BASE = "vititrack_palissage_works_user_v3";
 
 let currentAuthUser = null;
 
@@ -265,6 +266,14 @@ let vendangesClientFilters = [];
 let vendangesParcelFilters = [];
 let vendangesStageFilters = ["leaf_todo", "leaf_done", "cut_todo", "cut_done", "haul_todo", "haul_done"];
 let vendangesTeamFilters = [];
+
+// Palissage & Relevage State
+let palissageWorks = [];
+let palissageSearchFilter = "";
+let palissageClientFilters = [];
+let palissageParcelFilters = [];
+let palissageStageFilters = ["p1_todo", "p1_done", "p2_todo", "p2_done", "p3_todo", "p3_done"];
+let palissageTeamFilters = [];
 
 // ==================== UNIQUE IDENTIFIER GENERATORS & REPAIR UTILS ====================
 
@@ -748,6 +757,108 @@ function getDemoHarvestWorks() {
   ];
 }
 
+function getDemoPalissageWorks() {
+  const today = new Date().toISOString().split("T")[0];
+  return [
+    {
+      id: "pali-demo-01",
+      clientId: "CLI-1001",
+      clientName: "Château Grand Chêne",
+      parcelId: "PAR-01",
+      parcelName: "Les Hauts de Chêne",
+      surface: 2.4500,
+      grapeVariety: "Cabernet Sauvignon",
+      passage1Status: "fait",
+      passage2Status: "fait",
+      passage3Status: "fait",
+      maintStatus: "repare",
+      liftingStatus: "releve",
+      trellisingStatus: "palisse",
+      serviceName: "Palissage & Relevage des fils",
+      price: 36,
+      liftingPrice: 36,
+      trellisingPrice: 36,
+      worker: "Alexandre L.",
+      interventionDate: today,
+      billingStatus: "Facturée",
+      notes: "Végétation bien dressée, agrafes biodégradables posées sur toute la parcelle.",
+      createdAt: new Date().toISOString()
+    },
+    {
+      id: "pali-demo-02",
+      clientId: "CLI-1001",
+      clientName: "Château Grand Chêne",
+      parcelId: "PAR-02",
+      parcelName: "Le Clos du Moulin",
+      surface: 1.8200,
+      grapeVariety: "Merlot",
+      passage1Status: "fait",
+      passage2Status: "a_faire",
+      passage3Status: "a_faire",
+      maintStatus: "repare",
+      liftingStatus: "releve",
+      trellisingStatus: "a_palisser",
+      serviceName: "Palissage & Relevage des fils",
+      price: 36,
+      liftingPrice: 36,
+      trellisingPrice: 36,
+      worker: "Thomas M.",
+      interventionDate: today,
+      billingStatus: "À facturer",
+      notes: "1er relevage terminé, 2ème passage et agrafage prévus sous peu.",
+      createdAt: new Date().toISOString()
+    },
+    {
+      id: "pali-demo-03",
+      clientId: "CLI-1002",
+      clientName: "Domaine Belle Vue",
+      parcelId: "PAR-03",
+      parcelName: "Le Plateau Sud",
+      surface: 3.1250,
+      grapeVariety: "Merlot",
+      passage1Status: "a_faire",
+      passage2Status: "a_faire",
+      passage3Status: "a_faire",
+      maintStatus: "a_reviser",
+      liftingStatus: "a_relever",
+      trellisingStatus: "a_palisser",
+      serviceName: "Palissage & Relevage des fils",
+      price: 36,
+      liftingPrice: 36,
+      trellisingPrice: 36,
+      worker: "Claire B.",
+      interventionDate: "",
+      billingStatus: "À facturer",
+      notes: "Passage des fils releveurs à planifier.",
+      createdAt: new Date().toISOString()
+    },
+    {
+      id: "pali-demo-04",
+      clientId: "CLI-1002",
+      clientName: "Domaine Belle Vue",
+      parcelId: "PAR-04",
+      parcelName: "Les Terrasses",
+      surface: 1.6400,
+      grapeVariety: "Cabernet Franc",
+      passage1Status: "fait",
+      passage2Status: "fait",
+      passage3Status: "ne_pas_faire",
+      maintStatus: "repare",
+      liftingStatus: "releve",
+      trellisingStatus: "non_necessaire",
+      serviceName: "Palissage & Relevage des fils",
+      price: 36,
+      liftingPrice: 36,
+      trellisingPrice: 36,
+      worker: "Alexandre L.",
+      interventionDate: today,
+      billingStatus: "À facturer",
+      notes: "2ème passage achevé, pas d'agrafage requis sur ce porte-greffe.",
+      createdAt: new Date().toISOString()
+    }
+  ];
+}
+
 // Load isolated user database from localStorage (cache local immédiat)
 function loadDatabase() {
   const user = getAuthUser();
@@ -889,6 +1000,22 @@ function loadDatabase() {
     saveHarvestWorksLocally();
   }
 
+  // PALISSAGE & RELEVAGE PAR PARCELLE
+  const palissageKey = getUserStorageKey(STORAGE_PALISSAGE_BASE);
+  const savedPalissage = localStorage.getItem(palissageKey);
+  if (savedPalissage) {
+    try {
+      palissageWorks = JSON.parse(savedPalissage);
+      if (!Array.isArray(palissageWorks)) palissageWorks = [];
+    } catch (e) {
+      console.error("Erreur de parsing palissage", e);
+      palissageWorks = [];
+    }
+  } else {
+    palissageWorks = isDemo ? getDemoPalissageWorks() : [];
+    savePalissageWorksLocally();
+  }
+
   // ÉQUIPE & UTILISATEURS DU DOMAINE
   const teamKey = getUserStorageKey(STORAGE_TEAM_BASE);
   const savedTeam = localStorage.getItem(teamKey);
@@ -940,6 +1067,14 @@ function saveHarvestWorksLocally() {
 
 function saveHarvestWorks() {
   saveHarvestWorksLocally();
+}
+
+function savePalissageWorksLocally() {
+  localStorage.setItem(getUserStorageKey(STORAGE_PALISSAGE_BASE), JSON.stringify(palissageWorks));
+}
+
+function savePalissageWorks() {
+  savePalissageWorksLocally();
 }
 
 function saveTeamLocally() {
@@ -1587,6 +1722,7 @@ function setupEventListeners() {
   const navServices = document.getElementById("nav-btn-services");
   const navPlanned = document.getElementById("nav-btn-planned");
   const navVendanges = document.getElementById("nav-btn-vendanges");
+  const navPalissage = document.getElementById("nav-btn-palissage");
   const navClientHistory = document.getElementById("nav-btn-client-history");
   const navInterventions = document.getElementById("nav-btn-interventions");
   const navBilling = document.getElementById("nav-btn-billing");
@@ -1598,6 +1734,7 @@ function setupEventListeners() {
   if (navServices) navServices.addEventListener("click", (e) => { e.preventDefault(); switchView("services"); closeSidebar(); });
   if (navPlanned) navPlanned.addEventListener("click", (e) => { e.preventDefault(); switchView("planned"); closeSidebar(); });
   if (navVendanges) navVendanges.addEventListener("click", (e) => { e.preventDefault(); switchView("vendanges"); closeSidebar(); });
+  if (navPalissage) navPalissage.addEventListener("click", (e) => { e.preventDefault(); switchView("palissage"); closeSidebar(); });
   if (navInterventions) navInterventions.addEventListener("click", (e) => {
     e.preventDefault();
     switchView("interventions");
@@ -1796,6 +1933,7 @@ function setupEventListeners() {
   setupModalCloser("team-member-modal", null, null, closeTeamMemberModal);
   setupModalCloser("harvest-modal", "harvest-modal-close-btn", null, closeHarvestModal);
   setupModalCloser("harvest-yield-modal", null, null, closeYieldModal);
+  setupModalCloser("trellising-modal", "trellising-modal-close-btn", null, closeTrellisingModal);
 
   // Forms Submissions
   const clientForm = document.getElementById("create-client-form");
@@ -1832,8 +1970,23 @@ function setupEventListeners() {
 
   const sidebarAddHarvestBtn = document.getElementById("sidebar-add-harvest-btn");
   const btnOpenHarvestModal = document.getElementById("btn-open-harvest-modal");
+  const btnVendangesPlanification = document.getElementById("btn-vendanges-planification");
+  const btnVendangesPlanificationTable = document.getElementById("btn-vendanges-planification-table");
   if (sidebarAddHarvestBtn) sidebarAddHarvestBtn.addEventListener("click", (e) => { e.preventDefault(); openHarvestModal(); closeSidebar(); });
   if (btnOpenHarvestModal) btnOpenHarvestModal.addEventListener("click", () => openHarvestModal());
+  if (btnVendangesPlanification) btnVendangesPlanification.addEventListener("click", () => openVendangesPlanningModal());
+  if (btnVendangesPlanificationTable) btnVendangesPlanificationTable.addEventListener("click", () => openVendangesPlanningModal());
+
+  const sidebarAddPalissageBtn = document.getElementById("sidebar-add-palissage-btn");
+  const btnOpenTrellisingModal = document.getElementById("btn-open-trellising-modal");
+  const btnAddPalissageTableTop = document.getElementById("btn-add-palissage-table-top");
+  const btnPalissagePlanification = document.getElementById("btn-palissage-planification");
+  const btnPalissagePlanificationTable = document.getElementById("btn-palissage-planification-table");
+  if (sidebarAddPalissageBtn) sidebarAddPalissageBtn.addEventListener("click", (e) => { e.preventDefault(); openTrellisingModal(); closeSidebar(); });
+  if (btnOpenTrellisingModal) btnOpenTrellisingModal.addEventListener("click", () => openTrellisingModal());
+  if (btnAddPalissageTableTop) btnAddPalissageTableTop.addEventListener("click", () => openTrellisingModal());
+  if (btnPalissagePlanification) btnPalissagePlanification.addEventListener("click", () => openPalissagePlanningModal());
+  if (btnPalissagePlanificationTable) btnPalissagePlanificationTable.addEventListener("click", () => openPalissagePlanningModal());
 
   const harvestClientSelect = document.getElementById("input-harvest-client");
   if (harvestClientSelect) harvestClientSelect.addEventListener("change", handleHarvestClientChange);
@@ -1882,6 +2035,37 @@ function setupEventListeners() {
       resetVendangesFilters();
     });
   }
+
+  // Palissage Search & Reset Listeners
+  const palissageSearchInput = document.getElementById("palissage-search-input");
+  const palissageSearchClear = document.getElementById("palissage-search-clear");
+  if (palissageSearchInput) {
+    palissageSearchInput.addEventListener("input", (e) => {
+      palissageSearchFilter = e.target.value.toLowerCase().trim();
+      if (palissageSearchClear) palissageSearchClear.style.display = palissageSearchFilter ? "block" : "none";
+      renderPalissageTable();
+    });
+  }
+  if (palissageSearchClear) {
+    palissageSearchClear.addEventListener("click", () => {
+      if (palissageSearchInput) palissageSearchInput.value = "";
+      palissageSearchFilter = "";
+      palissageSearchClear.style.display = "none";
+      renderPalissageTable();
+    });
+  }
+
+  const btnResetPalissage = document.getElementById("btn-reset-palissage-filters");
+  if (btnResetPalissage) {
+    btnResetPalissage.addEventListener("click", () => {
+      resetPalissageFilters();
+    });
+  }
+
+  initPalissageClientFilterMultiSelect();
+  initPalissageStageFilterDropdown();
+  initPalissageParcelFilterMultiSelect();
+  initPalissageTeamFilterMultiSelect();
 
   // Historique Client Search Listener
   const chSearchInput = document.getElementById("ch-search-input");
@@ -2302,6 +2486,7 @@ function switchView(viewName, preselectedClientId = null) {
   const viewClients = document.getElementById("view-clients");
   const viewServices = document.getElementById("view-services");
   const viewVendanges = document.getElementById("view-vendanges");
+  const viewPalissage = document.getElementById("view-palissage");
   const viewClientHistory = document.getElementById("view-client-history");
   const viewCalendar = document.getElementById("view-calendar");
 
@@ -2312,11 +2497,12 @@ function switchView(viewName, preselectedClientId = null) {
   const navServices = document.getElementById("nav-btn-services");
   const navPlanned = document.getElementById("nav-btn-planned");
   const navVendanges = document.getElementById("nav-btn-vendanges");
+  const navPalissage = document.getElementById("nav-btn-palissage");
   const navInterventions = document.getElementById("nav-btn-interventions");
   const navBilling = document.getElementById("nav-btn-billing");
 
   // Deactivate all navigation links
-  [navOverview, navCalendar, navClientHistory, navClients, navServices, navPlanned, navVendanges, navInterventions, navBilling].forEach(b => {
+  [navOverview, navCalendar, navClientHistory, navClients, navServices, navPlanned, navVendanges, navPalissage, navInterventions, navBilling].forEach(b => {
     if (b) b.classList.remove("active");
   });
 
@@ -2328,7 +2514,7 @@ function switchView(viewName, preselectedClientId = null) {
   });
 
   // Masquer toutes les vues
-  [viewOverview, viewClients, viewServices, viewVendanges, viewClientHistory, viewCalendar].forEach(v => {
+  [viewOverview, viewClients, viewServices, viewVendanges, viewPalissage, viewClientHistory, viewCalendar].forEach(v => {
     if (v) {
       v.style.display = "none";
       v.classList.remove("active");
@@ -2408,6 +2594,13 @@ function switchView(viewName, preselectedClientId = null) {
     }
     if (navVendanges) navVendanges.classList.add("active");
     renderVendangesView();
+  } else if (viewName === "palissage") {
+    if (viewPalissage) {
+      viewPalissage.style.display = "flex";
+      viewPalissage.classList.add("active");
+    }
+    if (navPalissage) navPalissage.classList.add("active");
+    renderPalissageView();
   } else if (viewName === "interventions") {
     if (viewOverview) {
       viewOverview.style.display = "flex";
@@ -2985,6 +3178,7 @@ function openCreateModal(interventionId = null, prefillDate = null) {
   const statusSelect = document.getElementById("input-status");
 
   populateClientSelect();
+  populateWorkerSelect(interventionId ? (interventions.find(i => i.id === interventionId)?.worker || null) : null);
 
   // Affichage du bandeau collaborateur terrain si connecté avec son compte
   const authUser = getAuthUser();
@@ -3854,6 +4048,7 @@ function renderAll() {
   renderClientsView();
   renderServicesView();
   renderVendangesView();
+  renderPalissageView();
   if (typeof populateClientHistoryClientSelect === "function") {
     populateClientHistoryClientSelect();
   }
@@ -4004,13 +4199,13 @@ function renderTable() {
       if (itemDate && itemDate > currentFilter.dateTo) return false;
     }
     if (currentFilter.search) {
-      const q = currentFilter.search;
-      const match = item.client.toLowerCase().includes(q) ||
-                    item.parcel.toLowerCase().includes(q) ||
-                    item.worker.toLowerCase().includes(q) ||
-                    item.task.toLowerCase().includes(q) ||
+      const q = currentFilter.search.toLowerCase();
+      const match = (item.client || "").toLowerCase().includes(q) ||
+                    (item.parcel || "").toLowerCase().includes(q) ||
+                    ((item.worker || "").toLowerCase().includes(q)) ||
+                    (item.task || "").toLowerCase().includes(q) ||
                     (item.notes && item.notes.toLowerCase().includes(q)) ||
-                    item.id.toLowerCase().includes(q);
+                    (item.id || "").toLowerCase().includes(q);
       if (!match) return false;
     }
     return true;
@@ -4080,6 +4275,9 @@ function renderTable() {
     const statusIcon = isUnbilled ? "⏳" : "✅";
     const newClass = item.isNewlyCreated ? "newly-added" : "";
 
+    const workerName = item.worker || "Exploitant";
+    const initials = getInitials(workerName);
+
     html += `
       <tr class="${newClass}" data-id="${item.id}">
         <td>
@@ -4090,6 +4288,12 @@ function renderTable() {
         </td>
         <td>
           <span class="client-name">${escapeHTML(item.client)}</span>
+        </td>
+        <td>
+          <div class="worker-badge" title="Utilisateur : ${escapeHTML(workerName)}">
+            <span class="worker-avatar-mini">${initials}</span>
+            <span>${escapeHTML(workerName)}</span>
+          </div>
         </td>
         <td>
           <div class="parcel-info">
@@ -4579,6 +4783,17 @@ window.toggleInterventionStatus = function(id) {
   } else {
     item.status = "À facturer";
     showToast(`Intervention #${id} remise en « À facturer »`, "info");
+  }
+
+  // Synchroniser avec le suivi du palissage si cette intervention est issue du 3ème passage
+  if (item.source === "palissage" || item.palissageWorkId) {
+    const pw = (palissageWorks || []).find(p => p.id === item.palissageWorkId || p.passage3InterventionId === id);
+    if (pw) {
+      pw.billingStatus = item.status;
+      savePalissageWorks();
+      if (typeof renderPalissageTable === "function") renderPalissageTable();
+      if (typeof renderPalissageKPIs === "function") renderPalissageKPIs();
+    }
   }
 
   saveInterventionsLocally();
@@ -5690,7 +5905,7 @@ function updatePlannedParcelsSummary() {
   }
 }
 
-function openPlannedModal(prefillDate = null) {
+function openPlannedModal(prefillDate = null, defaultService = null) {
   const modal = document.getElementById("planned-modal");
   const form = document.getElementById("create-planned-form");
   const dateInput = document.getElementById("input-planned-date");
@@ -5715,6 +5930,50 @@ function openPlannedModal(prefillDate = null) {
     dateInput.value = prefillDate || today;
   }
 
+  // Pré-sélection de la prestation si demandée (ex: Palissage)
+  if (defaultService) {
+    const serviceInput = document.getElementById("input-planned-service");
+    if (serviceInput) {
+      let found = false;
+      for (let i = 0; i < serviceInput.options.length; i++) {
+        if (serviceInput.options[i].value.toLowerCase().includes(defaultService.toLowerCase())) {
+          serviceInput.selectedIndex = i;
+          found = true;
+          break;
+        }
+      }
+      if (!found) {
+        const opt = document.createElement("option");
+        opt.value = defaultService;
+        opt.textContent = defaultService;
+        serviceInput.appendChild(opt);
+        serviceInput.value = defaultService;
+      }
+    }
+  }
+
+  // Adapter le titre et sous-titre selon le contexte
+  const modalTitle = modal ? modal.querySelector(".modal-title") : null;
+  const modalSubtitle = modal ? modal.querySelector(".modal-subtitle") : null;
+  if (modalTitle) {
+    if (defaultService && defaultService.toLowerCase().includes("vendange")) {
+      modalTitle.textContent = "Planification des Vendanges";
+    } else if (defaultService && defaultService.toLowerCase().includes("palissage")) {
+      modalTitle.textContent = "Planification du Palissage";
+    } else {
+      modalTitle.textContent = "Planifier un travail à faire";
+    }
+  }
+  if (modalSubtitle) {
+    if (defaultService && defaultService.toLowerCase().includes("vendange")) {
+      modalSubtitle.textContent = "Planifiez les parcelles et chantiers de vendanges à récolter ultérieurement pour vos clients.";
+    } else if (defaultService && defaultService.toLowerCase().includes("palissage")) {
+      modalSubtitle.textContent = "Planifiez les parcelles et travaux de palissage à réaliser ultérieurement pour vos clients.";
+    } else {
+      modalSubtitle.textContent = "Programmation d'un chantier futur pour un ou plusieurs domaines viticoles";
+    }
+  }
+
   if (modal) {
     modal.classList.add("open");
     modal.setAttribute("aria-hidden", "false");
@@ -5722,6 +5981,14 @@ function openPlannedModal(prefillDate = null) {
     const modalBody = modal.querySelector(".modal-body");
     if (modalBody) modalBody.scrollTop = 0;
   }
+}
+
+function openPalissagePlanningModal() {
+  openPlannedModal(null, "Palissage & Relevage");
+}
+
+function openVendangesPlanningModal() {
+  openHarvestModal(null, true);
 }
 
 function closePlannedModal() {
@@ -5816,6 +6083,8 @@ function handleCreatePlannedSubmit(e) {
   savePlannedWorks();
   closePlannedModal();
   renderServicesView();
+  if (typeof renderPalissageKPIs === "function") renderPalissageKPIs();
+  if (typeof renderVendangesKPIs === "function") renderVendangesKPIs();
 
   if (createdWorks.length === 1) {
     showToast(`Travail à faire « ${service} » planifié pour ${createdWorks[0].clientName} (${createdWorks[0].parcel}) !`, "success");
@@ -5830,6 +6099,8 @@ window.deletePlannedWork = function(id) {
     savePlannedWorksLocally();
     deletePlannedWorkFromSupabase(id);
     renderServicesView();
+    if (typeof renderPalissageKPIs === "function") renderPalissageKPIs();
+    if (typeof renderVendangesKPIs === "function") renderVendangesKPIs();
     showToast("Travail planifié supprimé.", "info");
   }
 };
@@ -6887,11 +7158,58 @@ function populatePlannedWorkerSelect() {
   if (currentVal) {
     select.value = currentVal;
   }
+
+  // Maintient également synchronisé le sélecteur d'interventions
+  populateWorkerSelect();
+}
+
+function populateWorkerSelect(selectedWorker = null) {
+  const select = document.getElementById("input-worker");
+  if (!select) return;
+
+  const currentVal = selectedWorker !== null ? selectedWorker : select.value;
+  select.innerHTML = "";
+
+  const authUser = getAuthUser();
+  const defaultName = authUser ? (authUser.fullName || authUser.name || "Exploitant") : "Exploitant";
+
+  // Option par défaut : utilisateur connecté / exploitant
+  const defaultOpt = document.createElement("option");
+  defaultOpt.value = defaultName;
+  defaultOpt.textContent = `👑 ${defaultName} (Gérant / Connecté)`;
+  select.appendChild(defaultOpt);
+
+  const addedNames = new Set([defaultName.toLowerCase()]);
+
+  (teamUsers || []).forEach(u => {
+    if (!u || !u.name) return;
+    if (addedNames.has(u.name.toLowerCase())) return;
+    addedNames.add(u.name.toLowerCase());
+    const opt = document.createElement("option");
+    opt.value = u.name;
+    const roleIcon = (u.role && u.role.toLowerCase().includes("gérant")) ? "👑" : "👤";
+    opt.textContent = `${roleIcon} ${u.name}${u.role ? ` (${u.role})` : ""}`;
+    select.appendChild(opt);
+  });
+
+  if (currentVal && !addedNames.has(currentVal.toLowerCase())) {
+    const opt = document.createElement("option");
+    opt.value = currentVal;
+    opt.textContent = `👤 ${currentVal}`;
+    select.appendChild(opt);
+  }
+
+  if (currentVal) {
+    select.value = currentVal;
+  } else {
+    select.value = defaultName;
+  }
 }
 
 // Initialisation globale au chargement
 document.addEventListener("DOMContentLoaded", () => {
   populatePlannedWorkerSelect();
+  populateWorkerSelect();
 });
 
 // ==================== VENDANGES & RÉCOLTES PAR PARCELLE ====================
@@ -6990,6 +7308,157 @@ function renderVendangesKPIs() {
   setElemText("count-vendanges-cut-done", coupeeCount);
   setElemText("count-vendanges-haul-todo", aDebarderCount);
   setElemText("count-vendanges-haul-done", debardeeCount);
+
+  // Parcelles et chantiers de vendanges planifiés pour plus tard
+  const plannedVendanges = (plannedWorks || []).filter(pw => {
+    const s = ((pw.task || pw.service || "") + " " + (pw.notes || "")).toLowerCase();
+    return s.includes("vendange") || s.includes("récolte") || s.includes("recolte") || s.includes("coupe vendange") || s.includes("débardage") || s.includes("debardage");
+  });
+
+  const plannedCountBadge = document.getElementById("kpi-harvest-planned-count");
+  if (plannedCountBadge) {
+    if (plannedVendanges.length > 0) {
+      plannedCountBadge.textContent = `📅 ${plannedVendanges.length} planifiée(s) pour plus tard`;
+      plannedCountBadge.style.display = "inline-block";
+    } else {
+      plannedCountBadge.textContent = "📅 0 planifiée pour plus tard";
+      plannedCountBadge.style.display = "inline-block";
+    }
+  }
+
+  renderVendangesPlannedSection(plannedVendanges);
+}
+
+function renderVendangesPlannedSection(plannedVendanges) {
+  const card = document.getElementById("vendanges-planned-card");
+  const tbody = document.getElementById("vendanges-planned-tbody");
+  const subtitle = document.getElementById("vendanges-planned-subtitle");
+  if (!card || !tbody) return;
+
+  if (!plannedVendanges || plannedVendanges.length === 0) {
+    card.style.display = "none";
+    tbody.innerHTML = "";
+    return;
+  }
+
+  card.style.display = "block";
+  if (subtitle) {
+    const totalSurface = plannedVendanges.reduce((acc, p) => acc + (parseFloat(p.quantity) || 0), 0);
+    subtitle.textContent = `${plannedVendanges.length} chantier(s) de vendanges programmé(s) pour plus tard • Total : ${formatSurface(totalSurface)} ha`;
+  }
+
+  tbody.innerHTML = plannedVendanges.map(w => {
+    const formatted = formatDateDisplay(w.date);
+    const leafText = w.leafStatus === "non_necessaire" ? "🚫 Pas d'effeuillage" : (w.leafStatus === "effeuillee" ? "✅ Effeuillée" : "🍃 À effeuiller");
+    const cutText = w.cutStatus === "coupee" ? "🍇 Coupée" : `✂️ À couper (${w.yieldPricePerKg || 0.35} €/kg)`;
+    const haulText = w.haulStatus === "non_necessaire" ? "⚪ Sortie directe" : (w.haulStatus === "debardee" ? "✅ Débardée" : "🚜 À débarder");
+
+    return `
+      <tr>
+        <td>
+          <div class="cell-datetime">
+            <span class="date-main">📅 ${formatted.date}</span>
+          </div>
+        </td>
+        <td><strong>🏰 ${escapeHTML(w.clientName)}</strong></td>
+        <td><span class="cell-parcel-name">🍇 ${escapeHTML(w.parcel)}</span></td>
+        <td>
+          <div style="display: flex; flex-direction: column; gap: 3px; align-items: flex-start;">
+            <span class="badge-tag" style="font-size: 0.72rem; padding: 2px 6px;">${leafText}</span>
+            <span class="badge-tag" style="font-size: 0.72rem; padding: 2px 6px; color: #ffb703; background: rgba(255, 183, 3, 0.15);">${cutText}</span>
+            <span class="badge-tag" style="font-size: 0.72rem; padding: 2px 6px; color: #4cc9f0; background: rgba(76, 201, 240, 0.15);">${haulText}</span>
+          </div>
+        </td>
+        <td>👤 ${escapeHTML(w.worker || 'Non assigné')}</td>
+        <td><strong style="color: var(--primary-light);">${w.quantity ? formatSurface(w.quantity) + ' ha' : '—'}</strong></td>
+        <td><small style="color: var(--text-muted);">${w.notes ? escapeHTML(w.notes) : '—'}</small></td>
+        <td class="text-right">
+          <div style="display: flex; gap: 0.35rem; justify-content: flex-end; align-items: center;">
+            <button type="button" class="btn btn-primary btn-xs" onclick="convertPlannedToHarvestWork('${escapeHTML(w.id)}')" title="Lancer ces parcelles au suivi actif des vendanges">
+              <span>🚀 Lancer au suivi</span>
+            </button>
+            <button type="button" class="btn-delete-parcel" onclick="deletePlannedWork('${escapeHTML(w.id)}')" title="Supprimer cette planification" style="padding: 0.25rem 0.4rem;">
+              🗑️
+            </button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join("");
+}
+
+function convertPlannedToHarvestWork(id) {
+  const planned = (plannedWorks || []).find(w => w.id === id);
+  if (!planned) return;
+
+  const client = (clients || []).find(c => c.id === planned.clientId || c.name === planned.clientName);
+  const parcelNames = (planned.parcel || "").split(",").map(s => s.trim()).filter(Boolean);
+
+  if (parcelNames.length === 0) {
+    parcelNames.push("Parcelle principale");
+  }
+
+  // Prestations vendanges par défaut
+  const defaultCutSrv = (services || []).find(s => s.name && s.name.toLowerCase().includes("coupe vendange")) || { name: "Coupe vendange (au kilo)", price: 0.35 };
+  const defaultLeafSrv = (services || []).find(s => s.name && s.name.toLowerCase().includes("effeuillage")) || { name: "Effeuillage manuel", price: 550 };
+  const defaultHaulSrv = (services || []).find(s => s.name && (s.name.toLowerCase().includes("débardage") || s.name.toLowerCase().includes("debardage"))) || { name: "Débardage vendange (tracteur / porteur)", price: 0.15 };
+
+  const createdItems = [];
+  parcelNames.forEach(pName => {
+    let surface = 0;
+    let grape = "Vigne";
+    if (client && client.parcels && Array.isArray(client.parcels)) {
+      const pObj = client.parcels.find(p => p.name.toLowerCase() === pName.toLowerCase());
+      if (pObj) {
+        surface = parseFloat(pObj.surface) || 0;
+        grape = pObj.grapeVariety || pObj.variety || "Vigne";
+      }
+    }
+    if (surface === 0 && parcelNames.length === 1 && planned.quantity) {
+      surface = parseFloat(planned.quantity) || 0;
+    }
+
+    const newHarvest = {
+      id: generateUniqueId("HARV"),
+      clientId: planned.clientId || (client ? client.id : ""),
+      clientName: planned.clientName || (client ? client.name : "Client Inconnu"),
+      parcelId: `PAR-${Date.now()}`,
+      parcelName: pName,
+      surface: surface,
+      grapeVariety: grape,
+      leafStatus: planned.leafStatus || "a_effeuiller",
+      leafServiceName: planned.leafServiceName || defaultLeafSrv.name,
+      leafPrice: planned.leafPrice || defaultLeafSrv.price,
+      cutStatus: planned.cutStatus || "a_couper",
+      yieldKg: 0,
+      boxesCount: 0,
+      yieldPricePerKg: planned.yieldPricePerKg || defaultCutSrv.price || 0.35,
+      harvestServiceName: planned.harvestServiceName || planned.service || defaultCutSrv.name,
+      totalAmountHT: 0,
+      haulStatus: planned.haulStatus || "a_debarder",
+      haulServiceName: planned.haulServiceName || defaultHaulSrv.name,
+      haulPrice: planned.haulPrice || defaultHaulSrv.price,
+      worker: planned.worker || "Non assigné",
+      harvestDate: planned.date || new Date().toISOString().split("T")[0],
+      notes: planned.notes || "Transféré depuis les vendanges planifiées",
+      createdAt: new Date().toISOString()
+    };
+
+    harvestWorks.unshift(newHarvest);
+    createdItems.push(newHarvest);
+  });
+
+  // Retirer des travaux planifiés
+  plannedWorks = plannedWorks.filter(w => w.id !== id);
+  savePlannedWorksLocally();
+  deletePlannedWorkFromSupabase(id);
+
+  saveHarvestWorks();
+  renderVendangesView();
+  renderVendangesTable();
+  renderServicesView();
+
+  showToast(`${createdItems.length} parcelle(s) ajoutée(s) au suivi actif des vendanges avec les 3 étapes configurées !`, "success");
 }
 
 let _vendangesFilterMsInitialized = false;
@@ -8816,17 +9285,24 @@ function updateHarvestParcelsSummary() {
   }
 }
 
-// Modal Vendanges (Ajout / Édition)
-function openHarvestModal(editId = null) {
+// Modal Vendanges (Ajout / Édition / Planification)
+function openHarvestModal(editId = null, isPlanning = false) {
   const modal = document.getElementById("harvest-modal");
   const title = document.getElementById("harvest-modal-title");
+  const subtitle = document.getElementById("harvest-modal-subtitle");
   const editInput = document.getElementById("harvest-edit-id");
+  const isPlanningInput = document.getElementById("harvest-is-planning");
+  const submitText = document.getElementById("harvest-modal-submit-text");
   const workerSelect = document.getElementById("input-harvest-worker");
   const banner = document.getElementById("harvest-parcel-info-banner");
   if (!modal) return;
 
   closeHarvestClientDropdown();
   closeHarvestParcelDropdown();
+
+  if (isPlanningInput) {
+    isPlanningInput.value = isPlanning ? "true" : "false";
+  }
 
   // Remplir les salariés / équipe
   if (workerSelect) {
@@ -8846,6 +9322,8 @@ function openHarvestModal(editId = null) {
     if (!item) return;
 
     if (title) title.textContent = "Modifier la vendange de parcelle";
+    if (subtitle) subtitle.textContent = "Enregistrement et mise à jour des étapes de vendange pour une parcelle";
+    if (submitText) submitText.textContent = "💾 Enregistrer les modifications";
     if (editInput) editInput.value = item.id;
 
     // Charger les listes avec le client et la parcelle de cet item
@@ -8926,8 +9404,16 @@ function openHarvestModal(editId = null) {
     if (notesInput) notesInput.value = item.notes || "";
 
   } else {
-    // Mode création
-    if (title) title.textContent = "Nouvelle parcelle à vendanger";
+    // Mode création ou Mode Planification
+    if (isPlanning) {
+      if (title) title.textContent = "Planification des Vendanges";
+      if (subtitle) subtitle.textContent = "Programmation prévisionnelle des parcelles à vendanger : Étape 1 (Effeuillage), Étape 2 (Coupe) et Étape 3 (Débardage)";
+      if (submitText) submitText.textContent = "📅 Enregistrer la planification des vendanges";
+    } else {
+      if (title) title.textContent = "Nouvelle parcelle à vendanger";
+      if (subtitle) subtitle.textContent = "Enregistrement et mise à jour des étapes de vendange pour une parcelle";
+      if (submitText) submitText.textContent = "🍇 Enregistrer la vendange";
+    }
     if (editInput) editInput.value = "";
     if (banner) banner.style.display = "none";
 
@@ -9055,6 +9541,51 @@ function handleHarvestFormSubmit(e) {
   const worker = document.getElementById("input-harvest-worker")?.value || "";
   const harvestDate = document.getElementById("input-harvest-date")?.value || "";
   const notes = document.getElementById("input-harvest-notes")?.value || "";
+
+  const isPlanning = document.getElementById("harvest-is-planning")?.value === "true";
+  if (isPlanning) {
+    let addedCount = 0;
+    checkedParcelCbs.forEach(cb => {
+      const cId = cb.dataset.clientId;
+      const clientName = cb.dataset.clientName || "Domaine inconnu";
+      const pName = cb.dataset.parcelName || cb.value;
+      const surface = parseFloat(cb.dataset.surface || 0);
+      const grapeVariety = cb.dataset.grape || "";
+
+      const newPlanned = {
+        id: generateUniqueId("PLN"),
+        clientId: cId,
+        clientName,
+        parcel: pName,
+        service: harvestServiceName || "Coupe vendange (au kilo)",
+        date: harvestDate || new Date().toISOString().split("T")[0],
+        worker: worker || "Non assigné",
+        quantity: surface,
+        notes: notes || "Vendange planifiée",
+        grapeVariety,
+        // Les 3 étapes exactes de la vendange programmée :
+        leafStatus,
+        leafServiceName,
+        leafPrice,
+        cutStatus,
+        yieldPricePerKg,
+        harvestServiceName,
+        haulStatus,
+        haulServiceName,
+        haulPrice
+      };
+
+      plannedWorks.unshift(newPlanned);
+      addedCount++;
+    });
+
+    savePlannedWorks();
+    closeHarvestModal();
+    renderVendangesView();
+    renderServicesView();
+    showToast(`${addedCount} parcelle(s) de vendange planifiée(s) pour plus tard avec les 3 étapes configurées !`, "success");
+    return;
+  }
 
   if (editId) {
     const idx = (harvestWorks || []).findIndex(h => h.id === editId);
@@ -10206,6 +10737,2004 @@ window.updateVendangesTeamFilterUI = updateVendangesTeamFilterUI;
 window.toggleVendangesTeam = toggleVendangesTeam;
 window.toggleAllVendangesTeams = toggleAllVendangesTeams;
 window.resetVendangesFilters = resetVendangesFilters;
+window.openVendangesPlanningModal = openVendangesPlanningModal;
+window.renderVendangesPlannedSection = renderVendangesPlannedSection;
+window.convertPlannedToHarvestWork = convertPlannedToHarvestWork;
+
+// ==================== PALISSAGE & RELEVAGE PAR PARCELLE ====================
+
+function renderPalissageView() {
+  updateSidebarPalissageCount();
+  populatePalissageClientFilter();
+  populatePalissageParcelFilter();
+  populatePalissageTeamFilter();
+  renderPalissageKPIs();
+  renderPalissageTable();
+}
+
+function updateSidebarPalissageCount() {
+  const badge = document.getElementById("sidebar-palissage-count");
+  if (badge) {
+    const count = (palissageWorks || []).length;
+    badge.textContent = count;
+    badge.style.display = count > 0 ? "inline-flex" : "none";
+  }
+}
+
+function getPalissagePassageStatus(p, passageNum) {
+  if (!p) return "a_faire";
+  if (passageNum === 1) {
+    if (p.passage1Status) return p.passage1Status;
+    if (p.liftingStatus === "releve") return "fait";
+    if (p.liftingStatus === "non_necessaire") return "ne_pas_faire";
+    return "a_faire";
+  }
+  if (passageNum === 2) {
+    if (p.passage2Status) return p.passage2Status;
+    return "a_faire";
+  }
+  if (passageNum === 3) {
+    if (p.passage3Status) return p.passage3Status;
+    if (p.trellisingStatus === "palisse") return "fait";
+    if (p.trellisingStatus === "non_necessaire") return "ne_pas_faire";
+    return "a_faire";
+  }
+  return "a_faire";
+}
+
+function getPalissageBadgeClass(status) {
+  if (status === "fait") return "badge-p-done";
+  if (status === "ne_pas_faire") return "badge-p-none";
+  return "badge-p-todo";
+}
+
+function renderPalissageKPIs() {
+  const list = palissageWorks || [];
+  const totalParcels = list.length;
+  const totalSurface = list.reduce((acc, p) => acc + (parseFloat(p.surface) || 0), 0);
+
+  // Parcelles au suivi
+  setElemText("kpi-trellising-parcels-count", totalParcels);
+  setElemText("kpi-trellising-surface-total", `${formatSurface(totalSurface)} ha`);
+
+  // 1er passage : Relevage
+  const p1Done = list.filter(p => getPalissagePassageStatus(p, 1) === "fait").length;
+  const p1Todo = list.filter(p => getPalissagePassageStatus(p, 1) === "a_faire").length;
+  const p1Applicable = list.filter(p => getPalissagePassageStatus(p, 1) !== "ne_pas_faire").length;
+  const p1Percent = p1Applicable > 0 ? Math.round((p1Done / p1Applicable) * 100) : (totalParcels > 0 ? 100 : 0);
+  setElemText("kpi-trellising-p1-progress", `${p1Percent}%`);
+  setElemText("kpi-trellising-p1-details", `${p1Done} fait(s) • ${p1Todo} à faire`);
+  const p1Bar = document.getElementById("kpi-trellising-p1-bar");
+  if (p1Bar) p1Bar.style.width = `${p1Percent}%`;
+
+  // 2ème passage
+  const p2Done = list.filter(p => getPalissagePassageStatus(p, 2) === "fait").length;
+  const p2Todo = list.filter(p => getPalissagePassageStatus(p, 2) === "a_faire").length;
+  const p2Applicable = list.filter(p => getPalissagePassageStatus(p, 2) !== "ne_pas_faire").length;
+  const p2Percent = p2Applicable > 0 ? Math.round((p2Done / p2Applicable) * 100) : (totalParcels > 0 ? 100 : 0);
+  setElemText("kpi-trellising-p2-progress", `${p2Percent}%`);
+  setElemText("kpi-trellising-p2-details", `${p2Done} fait(s) • ${p2Todo} à faire`);
+  const p2Bar = document.getElementById("kpi-trellising-p2-bar");
+  if (p2Bar) p2Bar.style.width = `${p2Percent}%`;
+
+  // 3ème passage : Agrafage
+  const p3Done = list.filter(p => getPalissagePassageStatus(p, 3) === "fait").length;
+  const p3Todo = list.filter(p => getPalissagePassageStatus(p, 3) === "a_faire").length;
+  const p3Applicable = list.filter(p => getPalissagePassageStatus(p, 3) !== "ne_pas_faire").length;
+  const p3Percent = p3Applicable > 0 ? Math.round((p3Done / p3Applicable) * 100) : (totalParcels > 0 ? 100 : 0);
+  setElemText("kpi-trellising-p3-progress", `${p3Percent}%`);
+  setElemText("kpi-trellising-p3-details", `${p3Done} fait(s) • ${p3Todo} à faire`);
+  const p3Bar = document.getElementById("kpi-trellising-p3-bar");
+  if (p3Bar) p3Bar.style.width = `${p3Percent}%`;
+
+  // Surfaces Réalisées & Valorisation HT
+  const finishedList = list.filter(p => getPalissagePassageStatus(p, 1) === "fait" || getPalissagePassageStatus(p, 2) === "fait" || getPalissagePassageStatus(p, 3) === "fait");
+  const realizedSurface = finishedList.reduce((acc, p) => acc + (parseFloat(p.surface) || 0), 0);
+  const totalRevenueHT = list.reduce((acc, p) => {
+    let rev = 0;
+    const surf = parseFloat(p.surface) || 0;
+    const price = parseFloat(p.price || p.liftingPrice || p.trellisingPrice) || 36;
+    if (getPalissagePassageStatus(p, 1) === "fait") rev += (surf > 0 ? surf * price : price);
+    if (getPalissagePassageStatus(p, 2) === "fait") rev += (surf > 0 ? surf * price : price);
+    if (getPalissagePassageStatus(p, 3) === "fait") rev += (surf > 0 ? surf * price : price);
+    return acc + rev;
+  }, 0);
+
+  setElemText("kpi-trellising-realized-surface", `${formatSurface(realizedSurface)} ha`);
+  setElemText("kpi-trellising-completed-badge", `${finishedList.length} réalisée(s)`);
+  setElemText("kpi-trellising-revenue-total", `${formatCurrency(totalRevenueHT)} valorisé`);
+
+  // Badges des filtres d'étapes
+  setElemText("count-palissage-p1-todo", p1Todo);
+  setElemText("count-palissage-p1-done", p1Done);
+  setElemText("count-palissage-p2-todo", p2Todo);
+  setElemText("count-palissage-p2-done", p2Done);
+  setElemText("count-palissage-p3-todo", p3Todo);
+  setElemText("count-palissage-p3-done", p3Done);
+
+  // Parcelles et chantiers de palissage planifiés pour plus tard
+  const plannedPalissages = (plannedWorks || []).filter(pw => {
+    const s = ((pw.task || pw.service || "") + " " + (pw.notes || "")).toLowerCase();
+    return s.includes("palissage") || s.includes("relevage") || s.includes("fil") || s.includes("agrafage");
+  });
+
+  const plannedCountBadge = document.getElementById("kpi-trellising-planned-count");
+  if (plannedCountBadge) {
+    if (plannedPalissages.length > 0) {
+      plannedCountBadge.textContent = `📅 ${plannedPalissages.length} planifiée(s) pour plus tard`;
+      plannedCountBadge.style.display = "inline-block";
+    } else {
+      plannedCountBadge.textContent = "📅 0 planifiée pour plus tard";
+      plannedCountBadge.style.display = "inline-block";
+    }
+  }
+
+  renderPalissagePlannedSection(plannedPalissages);
+}
+
+function renderPalissagePlannedSection(plannedPalissages) {
+  const card = document.getElementById("palissage-planned-card");
+  const tbody = document.getElementById("palissage-planned-tbody");
+  const subtitle = document.getElementById("palissage-planned-subtitle");
+  if (!card || !tbody) return;
+
+  if (!plannedPalissages || plannedPalissages.length === 0) {
+    card.style.display = "none";
+    tbody.innerHTML = "";
+    return;
+  }
+
+  card.style.display = "block";
+  if (subtitle) {
+    const totalSurface = plannedPalissages.reduce((acc, p) => acc + (parseFloat(p.quantity) || 0), 0);
+    subtitle.textContent = `${plannedPalissages.length} chantier(s) de palissage programmé(s) pour plus tard • Total : ${formatSurface(totalSurface)} ha`;
+  }
+
+  tbody.innerHTML = plannedPalissages.map(w => {
+    const formatted = formatDateDisplay(w.date);
+    return `
+      <tr>
+        <td>
+          <div class="cell-datetime">
+            <span class="date-main">📅 ${formatted.date}</span>
+          </div>
+        </td>
+        <td><strong>🏰 ${escapeHTML(w.clientName)}</strong></td>
+        <td><span class="cell-parcel-name">🌿 ${escapeHTML(w.parcel)}</span></td>
+        <td><span class="badge-tag">🌿 ${escapeHTML(w.service)}</span></td>
+        <td>👤 ${escapeHTML(w.worker || 'Non assigné')}</td>
+        <td><strong style="color: var(--primary-light);">${w.quantity ? formatSurface(w.quantity) + ' ha' : '—'}</strong></td>
+        <td><small style="color: var(--text-muted);">${w.notes ? escapeHTML(w.notes) : '—'}</small></td>
+        <td class="text-right">
+          <div style="display: flex; gap: 0.35rem; justify-content: flex-end; align-items: center;">
+            <button type="button" class="btn btn-primary btn-xs" onclick="convertPlannedToPalissageWork('${escapeHTML(w.id)}')" title="Lancer ces parcelles au suivi actif du palissage">
+              <span>🚀 Lancer au suivi</span>
+            </button>
+            <button type="button" class="btn-delete-parcel" onclick="deletePlannedWork('${escapeHTML(w.id)}')" title="Supprimer cette planification" style="padding: 0.25rem 0.4rem;">
+              🗑️
+            </button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join("");
+}
+
+function convertPlannedToPalissageWork(id) {
+  const planned = (plannedWorks || []).find(w => w.id === id);
+  if (!planned) return;
+
+  const client = (clients || []).find(c => c.id === planned.clientId || c.name === planned.clientName);
+  const parcelNames = (planned.parcel || "").split(",").map(s => s.trim()).filter(Boolean);
+
+  if (parcelNames.length === 0) {
+    parcelNames.push("Parcelle principale");
+  }
+
+  // Chercher le tarif correspondant dans le catalogue de prestations
+  let price = 36;
+  const foundService = (services || []).find(s => s.name === planned.service);
+  if (foundService && foundService.price) {
+    price = parseFloat(foundService.price) || 36;
+  }
+
+  const createdItems = [];
+  parcelNames.forEach(pName => {
+    let surface = 0;
+    let grape = "Vigne";
+    if (client && client.parcels && Array.isArray(client.parcels)) {
+      const pObj = client.parcels.find(p => p.name.toLowerCase() === pName.toLowerCase());
+      if (pObj) {
+        surface = parseFloat(pObj.surface) || 0;
+        grape = pObj.grapeVariety || pObj.variety || "Vigne";
+      }
+    }
+    if (surface === 0 && parcelNames.length === 1 && planned.quantity) {
+      surface = parseFloat(planned.quantity) || 0;
+    }
+
+    const newWork = {
+      id: `pali-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      clientId: planned.clientId || (client ? client.id : ""),
+      clientName: planned.clientName || (client ? client.name : "Client Inconnu"),
+      parcelId: `PAR-${Date.now()}`,
+      parcelName: pName,
+      surface: surface,
+      grapeVariety: grape,
+      passage1Status: "a_faire",
+      passage2Status: "a_faire",
+      passage3Status: "a_faire",
+      maintStatus: "repare",
+      liftingStatus: "a_relever",
+      trellisingStatus: "a_palisser",
+      serviceName: planned.service || "Palissage & Relevage",
+      price: price,
+      liftingServiceName: planned.service || "Palissage & Relevage",
+      liftingPrice: price,
+      trellisingServiceName: planned.service || "Palissage & Relevage",
+      trellisingPrice: price,
+      worker: planned.worker || "Non assigné",
+      interventionDate: planned.date || new Date().toISOString().split("T")[0],
+      billingStatus: "À facturer",
+      notes: planned.notes || "Transféré depuis les travaux de palissage planifiés",
+      createdAt: new Date().toISOString()
+    };
+
+    palissageWorks.unshift(newWork);
+    createdItems.push(newWork);
+  });
+
+  // Retirer des travaux planifiés
+  plannedWorks = plannedWorks.filter(w => w.id !== id);
+  savePlannedWorksLocally();
+  deletePlannedWorkFromSupabase(id);
+
+  savePalissageWorks();
+  renderPalissageView();
+  renderServicesView();
+
+  showToast(`${createdItems.length} parcelle(s) ajoutée(s) au suivi actif du palissage !`, "success");
+}
+
+function filterPalissageByStage(stage) {
+  if (stage === "p1_todo") {
+    palissageStageFilters = ["p1_todo"];
+  } else if (stage === "p2_todo") {
+    palissageStageFilters = ["p2_todo"];
+  } else if (stage === "p3_todo") {
+    palissageStageFilters = ["p3_todo"];
+  } else if (stage === "all_done") {
+    palissageStageFilters = ["p1_done", "p2_done", "p3_done"];
+  } else {
+    palissageStageFilters = ["p1_todo", "p1_done", "p2_todo", "p2_done", "p3_todo", "p3_done"];
+  }
+  updatePalissageStageFilterUI();
+  renderPalissageTable();
+}
+
+// ----------------- FILTRES PALISSAGE : CLIENTS -----------------
+let _palissageClientMsInitialized = false;
+
+function initPalissageClientFilterMultiSelect() {
+  if (_palissageClientMsInitialized) return;
+  const wrap = document.getElementById("wrap-palissage-filter-client");
+  const btn = document.getElementById("btn-palissage-filter-client");
+  const dropdown = document.getElementById("dropdown-palissage-filter-client");
+  const btnSelectAll = document.getElementById("btn-palissage-select-all-clients");
+  const btnClear = document.getElementById("btn-palissage-clear-clients");
+  const searchInput = document.getElementById("search-palissage-filter-client");
+
+  if (!wrap || !btn || !dropdown) return;
+  _palissageClientMsInitialized = true;
+
+  btn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const isOpen = wrap.classList.contains("is-open");
+    document.querySelectorAll(".filter-dropdown-btn-wrap.is-open").forEach(w => {
+      if (w !== wrap) {
+        w.classList.remove("is-open");
+        const dd = w.querySelector(".filter-multiselect-dropdown, .filter-stage-dropdown");
+        if (dd) dd.style.display = "none";
+      }
+    });
+    if (isOpen) {
+      wrap.classList.remove("is-open");
+      dropdown.style.display = "none";
+      btn.setAttribute("aria-expanded", "false");
+    } else {
+      wrap.classList.add("is-open");
+      dropdown.style.display = "block";
+      btn.setAttribute("aria-expanded", "true");
+      if (searchInput) {
+        searchInput.value = "";
+        searchInput.focus();
+        filterPalissageClientDropdownItems("");
+      }
+    }
+  });
+
+  dropdown.addEventListener("click", (e) => e.stopPropagation());
+
+  if (btnSelectAll) {
+    btnSelectAll.addEventListener("click", () => toggleAllPalissageClients(true));
+  }
+  if (btnClear) {
+    btnClear.addEventListener("click", () => toggleAllPalissageClients(false));
+  }
+  if (searchInput) {
+    searchInput.addEventListener("input", (e) => {
+      filterPalissageClientDropdownItems(e.target.value.toLowerCase().trim());
+    });
+  }
+
+  document.addEventListener("click", (e) => {
+    if (!wrap.contains(e.target)) {
+      wrap.classList.remove("is-open");
+      dropdown.style.display = "none";
+      btn.setAttribute("aria-expanded", "false");
+    }
+  });
+}
+
+function filterPalissageClientDropdownItems(query) {
+  const list = document.getElementById("list-palissage-filter-client");
+  if (!list) return;
+  list.querySelectorAll(".filter-ms-item").forEach(item => {
+    const text = item.textContent.toLowerCase();
+    item.style.display = text.includes(query) ? "flex" : "none";
+  });
+}
+
+function populatePalissageClientFilter() {
+  initPalissageClientFilterMultiSelect();
+  const list = document.getElementById("list-palissage-filter-client");
+  if (!list) return;
+
+  const clientMap = new Map();
+  (palissageWorks || []).forEach(p => {
+    if (p.clientName) {
+      const current = clientMap.get(p.clientName) || { name: p.clientName, count: 0, id: p.clientId };
+      current.count++;
+      clientMap.set(p.clientName, current);
+    }
+  });
+  (clients || []).forEach(c => {
+    if (c.name && !clientMap.has(c.name)) {
+      clientMap.set(c.name, { name: c.name, count: 0, id: c.id });
+    }
+  });
+
+  const sortedClients = Array.from(clientMap.values()).sort((a, b) => a.name.localeCompare(b.name));
+  list.innerHTML = "";
+
+  if (sortedClients.length === 0) {
+    list.innerHTML = '<div class="filter-ms-empty">Aucun domaine enregistré</div>';
+    return;
+  }
+
+  sortedClients.forEach(c => {
+    const isChecked = palissageClientFilters.length === 0 || palissageClientFilters.includes(c.name);
+    const label = document.createElement("label");
+    label.className = `filter-ms-item ${isChecked ? "is-checked" : ""}`;
+    label.innerHTML = `
+      <input type="checkbox" class="palissage-client-cb" value="${escapeHTML(c.name)}" ${isChecked ? "checked" : ""}>
+      <span class="filter-ms-checkbox-box"></span>
+      <span class="filter-ms-item-icon">🏰</span>
+      <div class="filter-ms-item-text">
+        <span class="filter-ms-item-title">${escapeHTML(c.name)}</span>
+      </div>
+      <span class="filter-ms-item-badge">${c.count}</span>
+    `;
+
+    const cb = label.querySelector("input");
+    cb.addEventListener("change", () => {
+      togglePalissageClient(c.name, cb.checked);
+    });
+
+    list.appendChild(label);
+  });
+
+  updatePalissageClientFilterUI();
+}
+
+function togglePalissageClient(clientName, checked) {
+  if (checked) {
+    if (!palissageClientFilters.includes(clientName)) {
+      palissageClientFilters.push(clientName);
+    }
+  } else {
+    palissageClientFilters = palissageClientFilters.filter(c => c !== clientName);
+  }
+  updatePalissageClientFilterUI();
+  populatePalissageParcelFilter();
+  renderPalissageTable();
+}
+
+function toggleAllPalissageClients(selectAll) {
+  const list = document.getElementById("list-palissage-filter-client");
+  if (!list) return;
+  const checkboxes = list.querySelectorAll(".palissage-client-cb");
+  if (selectAll) {
+    palissageClientFilters = [];
+    checkboxes.forEach(cb => {
+      cb.checked = true;
+      cb.closest(".filter-ms-item").classList.add("is-checked");
+    });
+  } else {
+    palissageClientFilters = ["__NONE__"];
+    checkboxes.forEach(cb => {
+      cb.checked = false;
+      cb.closest(".filter-ms-item").classList.remove("is-checked");
+    });
+  }
+  updatePalissageClientFilterUI();
+  populatePalissageParcelFilter();
+  renderPalissageTable();
+}
+
+function updatePalissageClientFilterUI() {
+  const textEl = document.getElementById("palissage-filter-client-text");
+  const badgeEl = document.getElementById("palissage-filter-client-badge");
+  const list = document.getElementById("list-palissage-filter-client");
+  if (!textEl) return;
+
+  const totalClients = list ? list.querySelectorAll(".palissage-client-cb").length : 0;
+  const selectedCount = palissageClientFilters.length === 0 ? totalClients : (palissageClientFilters.includes("__NONE__") ? 0 : palissageClientFilters.length);
+
+  if (selectedCount === 0) {
+    textEl.textContent = "Aucun domaine";
+    if (badgeEl) badgeEl.textContent = "0";
+  } else if (palissageClientFilters.length === 0 || selectedCount === totalClients) {
+    textEl.textContent = "Tous les domaines";
+    if (badgeEl) badgeEl.textContent = "Tous";
+  } else if (selectedCount === 1) {
+    textEl.textContent = palissageClientFilters[0];
+    if (badgeEl) badgeEl.textContent = "1";
+  } else {
+    textEl.textContent = `${selectedCount} domaines choisis`;
+    if (badgeEl) badgeEl.textContent = String(selectedCount);
+  }
+
+  updatePalissageResetFilterBtn();
+}
+
+// ----------------- FILTRES PALISSAGE : PARCELLES -----------------
+let _palissageParcelMsInitialized = false;
+
+function initPalissageParcelFilterMultiSelect() {
+  if (_palissageParcelMsInitialized) return;
+  const wrap = document.getElementById("wrap-palissage-filter-parcel");
+  const btn = document.getElementById("btn-palissage-filter-parcel");
+  const dropdown = document.getElementById("dropdown-palissage-filter-parcel");
+  const btnSelectAll = document.getElementById("btn-palissage-select-all-parcels");
+  const btnClear = document.getElementById("btn-palissage-clear-parcels");
+  const searchInput = document.getElementById("search-palissage-filter-parcel");
+
+  if (!wrap || !btn || !dropdown) return;
+  _palissageParcelMsInitialized = true;
+
+  btn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const isOpen = wrap.classList.contains("is-open");
+    document.querySelectorAll(".filter-dropdown-btn-wrap.is-open").forEach(w => {
+      if (w !== wrap) {
+        w.classList.remove("is-open");
+        const dd = w.querySelector(".filter-multiselect-dropdown, .filter-stage-dropdown");
+        if (dd) dd.style.display = "none";
+      }
+    });
+    if (isOpen) {
+      wrap.classList.remove("is-open");
+      dropdown.style.display = "none";
+      btn.setAttribute("aria-expanded", "false");
+    } else {
+      wrap.classList.add("is-open");
+      dropdown.style.display = "block";
+      btn.setAttribute("aria-expanded", "true");
+      if (searchInput) {
+        searchInput.value = "";
+        searchInput.focus();
+        filterPalissageParcelDropdownItems("");
+      }
+    }
+  });
+
+  dropdown.addEventListener("click", (e) => e.stopPropagation());
+
+  if (btnSelectAll) {
+    btnSelectAll.addEventListener("click", () => toggleAllPalissageParcels(true));
+  }
+  if (btnClear) {
+    btnClear.addEventListener("click", () => toggleAllPalissageParcels(false));
+  }
+  if (searchInput) {
+    searchInput.addEventListener("input", (e) => {
+      filterPalissageParcelDropdownItems(e.target.value.toLowerCase().trim());
+    });
+  }
+
+  document.addEventListener("click", (e) => {
+    if (!wrap.contains(e.target)) {
+      wrap.classList.remove("is-open");
+      dropdown.style.display = "none";
+      btn.setAttribute("aria-expanded", "false");
+    }
+  });
+}
+
+function filterPalissageParcelDropdownItems(query) {
+  const list = document.getElementById("list-palissage-filter-parcel");
+  if (!list) return;
+  list.querySelectorAll(".filter-ms-item").forEach(item => {
+    const text = item.textContent.toLowerCase();
+    item.style.display = text.includes(query) ? "flex" : "none";
+  });
+}
+
+function populatePalissageParcelFilter() {
+  initPalissageParcelFilterMultiSelect();
+  const list = document.getElementById("list-palissage-filter-parcel");
+  if (!list) return;
+
+  let availableWorks = [...(palissageWorks || [])];
+  if (palissageClientFilters.length > 0 && !palissageClientFilters.includes("__NONE__")) {
+    availableWorks = availableWorks.filter(p => palissageClientFilters.includes(p.clientName));
+  }
+
+  const parcelsMap = new Map();
+  availableWorks.forEach(p => {
+    if (p.parcelName) {
+      const key = `${p.clientName}___${p.parcelName}`;
+      parcelsMap.set(key, {
+        parcelName: p.parcelName,
+        clientName: p.clientName,
+        surface: p.surface,
+        grape: p.grapeVariety
+      });
+    }
+  });
+
+  const sorted = Array.from(parcelsMap.values()).sort((a, b) => a.parcelName.localeCompare(b.parcelName));
+  list.innerHTML = "";
+
+  if (sorted.length === 0) {
+    list.innerHTML = '<div class="filter-ms-empty">Aucune parcelle correspondante</div>';
+    updatePalissageParcelFilterUI();
+    return;
+  }
+
+  sorted.forEach(item => {
+    const isChecked = palissageParcelFilters.length === 0 || palissageParcelFilters.includes(item.parcelName);
+    const label = document.createElement("label");
+    label.className = `filter-ms-item ${isChecked ? "is-checked" : ""}`;
+    label.innerHTML = `
+      <input type="checkbox" class="palissage-parcel-cb" value="${escapeHTML(item.parcelName)}" ${isChecked ? "checked" : ""}>
+      <span class="filter-ms-checkbox-box"></span>
+      <span class="filter-ms-item-icon">📍</span>
+      <div class="filter-ms-item-text">
+        <span class="filter-ms-item-title">${escapeHTML(item.parcelName)}</span>
+        <span class="filter-ms-item-sub">${escapeHTML(item.clientName)} • ${formatSurface(item.surface)} ha</span>
+      </div>
+    `;
+
+    const cb = label.querySelector("input");
+    cb.addEventListener("change", () => {
+      togglePalissageParcel(item.parcelName, cb.checked);
+    });
+
+    list.appendChild(label);
+  });
+
+  updatePalissageParcelFilterUI();
+}
+
+function togglePalissageParcel(parcelName, checked) {
+  if (checked) {
+    if (!palissageParcelFilters.includes(parcelName)) {
+      palissageParcelFilters.push(parcelName);
+    }
+  } else {
+    palissageParcelFilters = palissageParcelFilters.filter(p => p !== parcelName);
+  }
+  updatePalissageParcelFilterUI();
+  renderPalissageTable();
+}
+
+function toggleAllPalissageParcels(selectAll) {
+  const list = document.getElementById("list-palissage-filter-parcel");
+  if (!list) return;
+  const checkboxes = list.querySelectorAll(".palissage-parcel-cb");
+  if (selectAll) {
+    palissageParcelFilters = [];
+    checkboxes.forEach(cb => {
+      cb.checked = true;
+      cb.closest(".filter-ms-item").classList.add("is-checked");
+    });
+  } else {
+    palissageParcelFilters = ["__NONE__"];
+    checkboxes.forEach(cb => {
+      cb.checked = false;
+      cb.closest(".filter-ms-item").classList.remove("is-checked");
+    });
+  }
+  updatePalissageParcelFilterUI();
+  renderPalissageTable();
+}
+
+function updatePalissageParcelFilterUI() {
+  const textEl = document.getElementById("palissage-filter-parcel-text");
+  const badgeEl = document.getElementById("palissage-filter-parcel-badge");
+  const list = document.getElementById("list-palissage-filter-parcel");
+  if (!textEl) return;
+
+  const total = list ? list.querySelectorAll(".palissage-parcel-cb").length : 0;
+  const selectedCount = palissageParcelFilters.length === 0 ? total : (palissageParcelFilters.includes("__NONE__") ? 0 : palissageParcelFilters.length);
+
+  if (selectedCount === 0) {
+    textEl.textContent = "Aucune parcelle";
+    if (badgeEl) badgeEl.textContent = "0";
+  } else if (palissageParcelFilters.length === 0 || selectedCount === total) {
+    textEl.textContent = "Toutes les parcelles";
+    if (badgeEl) badgeEl.textContent = "Toutes";
+  } else if (selectedCount === 1) {
+    textEl.textContent = palissageParcelFilters[0];
+    if (badgeEl) badgeEl.textContent = "1";
+  } else {
+    textEl.textContent = `${selectedCount} parcelles`;
+    if (badgeEl) badgeEl.textContent = String(selectedCount);
+  }
+
+  updatePalissageResetFilterBtn();
+}
+
+// ----------------- FILTRES PALISSAGE : ÉTAPES -----------------
+let _palissageStageDropdownInitialized = false;
+
+function initPalissageStageFilterDropdown() {
+  if (_palissageStageDropdownInitialized) return;
+  const wrap = document.getElementById("wrap-palissage-filter-stage");
+  const btn = document.getElementById("btn-palissage-filter-stage");
+  const dropdown = document.getElementById("dropdown-palissage-filter-stage");
+  const btnSelectAll = document.getElementById("btn-palissage-select-all-stages");
+  const btnClear = document.getElementById("btn-palissage-clear-stages");
+
+  if (!wrap || !btn || !dropdown) return;
+  _palissageStageDropdownInitialized = true;
+
+  btn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const isOpen = wrap.classList.contains("is-open");
+    document.querySelectorAll(".filter-dropdown-btn-wrap.is-open").forEach(w => {
+      if (w !== wrap) {
+        w.classList.remove("is-open");
+        const dd = w.querySelector(".filter-multiselect-dropdown, .filter-stage-dropdown");
+        if (dd) dd.style.display = "none";
+      }
+    });
+    if (isOpen) {
+      wrap.classList.remove("is-open");
+      dropdown.style.display = "none";
+      btn.setAttribute("aria-expanded", "false");
+    } else {
+      wrap.classList.add("is-open");
+      dropdown.style.display = "block";
+      btn.setAttribute("aria-expanded", "true");
+    }
+  });
+
+  dropdown.addEventListener("click", (e) => e.stopPropagation());
+
+  const checkboxes = dropdown.querySelectorAll(".palissage-stage-cb");
+  checkboxes.forEach(cb => {
+    cb.addEventListener("change", () => {
+      togglePalissageStage(cb.value, cb.checked);
+    });
+  });
+
+  if (btnSelectAll) {
+    btnSelectAll.addEventListener("click", () => toggleAllPalissageStages(true));
+  }
+  if (btnClear) {
+    btnClear.addEventListener("click", () => toggleAllPalissageStages(false));
+  }
+
+  document.addEventListener("click", (e) => {
+    if (!wrap.contains(e.target)) {
+      wrap.classList.remove("is-open");
+      dropdown.style.display = "none";
+      btn.setAttribute("aria-expanded", "false");
+    }
+  });
+
+  updatePalissageStageFilterUI();
+}
+
+function togglePalissageStage(stageValue, checked) {
+  if (checked) {
+    if (!palissageStageFilters.includes(stageValue)) {
+      palissageStageFilters.push(stageValue);
+    }
+  } else {
+    palissageStageFilters = palissageStageFilters.filter(s => s !== stageValue);
+  }
+  updatePalissageStageFilterUI();
+  renderPalissageTable();
+}
+
+function toggleAllPalissageStages(selectAll) {
+  const dropdown = document.getElementById("dropdown-palissage-filter-stage");
+  if (!dropdown) return;
+  const checkboxes = dropdown.querySelectorAll(".palissage-stage-cb");
+  if (selectAll) {
+    palissageStageFilters = ["p1_todo", "p1_done", "p2_todo", "p2_done", "p3_todo", "p3_done"];
+    checkboxes.forEach(cb => {
+      cb.checked = true;
+      cb.closest(".filter-ms-item").classList.add("is-checked");
+    });
+  } else {
+    palissageStageFilters = [];
+    checkboxes.forEach(cb => {
+      cb.checked = false;
+      cb.closest(".filter-ms-item").classList.remove("is-checked");
+    });
+  }
+  updatePalissageStageFilterUI();
+  renderPalissageTable();
+}
+
+function updatePalissageStageFilterUI() {
+  const textEl = document.getElementById("palissage-filter-stage-text");
+  const badgeEl = document.getElementById("palissage-stage-dropdown-badge");
+  const dropdown = document.getElementById("dropdown-palissage-filter-stage");
+  if (!textEl) return;
+
+  const allStages = ["p1_todo", "p1_done", "p2_todo", "p2_done", "p3_todo", "p3_done"];
+  if (dropdown) {
+    dropdown.querySelectorAll(".palissage-stage-cb").forEach(cb => {
+      const isChecked = palissageStageFilters.includes(cb.value);
+      cb.checked = isChecked;
+      cb.closest(".filter-ms-item").classList.toggle("is-checked", isChecked);
+    });
+  }
+
+  if (palissageStageFilters.length === 0) {
+    textEl.textContent = "Aucune étape";
+    if (badgeEl) badgeEl.textContent = "0";
+  } else if (palissageStageFilters.length === allStages.length) {
+    textEl.textContent = "Toutes les étapes";
+    if (badgeEl) badgeEl.textContent = "Toutes";
+  } else {
+    textEl.textContent = `${palissageStageFilters.length} étape(s)`;
+    if (badgeEl) badgeEl.textContent = String(palissageStageFilters.length);
+  }
+
+  updatePalissageResetFilterBtn();
+}
+
+// ----------------- FILTRES PALISSAGE : ÉQUIPE -----------------
+let _palissageTeamMsInitialized = false;
+
+function initPalissageTeamFilterMultiSelect() {
+  if (_palissageTeamMsInitialized) return;
+  const wrap = document.getElementById("wrap-palissage-filter-team");
+  const btn = document.getElementById("btn-palissage-filter-team");
+  const dropdown = document.getElementById("dropdown-palissage-filter-team");
+  const btnSelectAll = document.getElementById("btn-palissage-select-all-teams");
+  const btnClear = document.getElementById("btn-palissage-clear-teams");
+  const searchInput = document.getElementById("search-palissage-filter-team");
+
+  if (!wrap || !btn || !dropdown) return;
+  _palissageTeamMsInitialized = true;
+
+  btn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const isOpen = wrap.classList.contains("is-open");
+    document.querySelectorAll(".filter-dropdown-btn-wrap.is-open").forEach(w => {
+      if (w !== wrap) {
+        w.classList.remove("is-open");
+        const dd = w.querySelector(".filter-multiselect-dropdown");
+        if (dd) dd.style.display = "none";
+      }
+    });
+    if (isOpen) {
+      wrap.classList.remove("is-open");
+      dropdown.style.display = "none";
+      btn.setAttribute("aria-expanded", "false");
+    } else {
+      wrap.classList.add("is-open");
+      dropdown.style.display = "block";
+      btn.setAttribute("aria-expanded", "true");
+      if (searchInput) {
+        searchInput.value = "";
+        searchInput.focus();
+        filterPalissageTeamDropdownItems("");
+      }
+    }
+  });
+
+  dropdown.addEventListener("click", (e) => e.stopPropagation());
+
+  if (btnSelectAll) {
+    btnSelectAll.addEventListener("click", () => toggleAllPalissageTeams(true));
+  }
+  if (btnClear) {
+    btnClear.addEventListener("click", () => toggleAllPalissageTeams(false));
+  }
+  if (searchInput) {
+    searchInput.addEventListener("input", (e) => {
+      filterPalissageTeamDropdownItems(e.target.value.toLowerCase().trim());
+    });
+  }
+
+  document.addEventListener("click", (e) => {
+    if (!wrap.contains(e.target)) {
+      wrap.classList.remove("is-open");
+      dropdown.style.display = "none";
+      btn.setAttribute("aria-expanded", "false");
+    }
+  });
+}
+
+function filterPalissageTeamDropdownItems(query) {
+  const list = document.getElementById("list-palissage-filter-team");
+  if (!list) return;
+  list.querySelectorAll(".filter-ms-item").forEach(item => {
+    const text = item.textContent.toLowerCase();
+    item.style.display = text.includes(query) ? "flex" : "none";
+  });
+}
+
+function populatePalissageTeamFilter() {
+  initPalissageTeamFilterMultiSelect();
+  const list = document.getElementById("list-palissage-filter-team");
+  if (!list) return;
+
+  const teamSet = new Set();
+  (palissageWorks || []).forEach(p => {
+    if (p.worker) teamSet.add(p.worker);
+  });
+  (teamUsers || []).forEach(u => {
+    if (u.name) teamSet.add(u.name);
+  });
+
+  const sorted = Array.from(teamSet).sort((a, b) => a.localeCompare(b));
+  list.innerHTML = "";
+
+  if (sorted.length === 0) {
+    list.innerHTML = '<div class="filter-ms-empty">Aucun membre répertorié</div>';
+    return;
+  }
+
+  sorted.forEach(workerName => {
+    const isChecked = palissageTeamFilters.length === 0 || palissageTeamFilters.includes(workerName);
+    const label = document.createElement("label");
+    label.className = `filter-ms-item ${isChecked ? "is-checked" : ""}`;
+    label.innerHTML = `
+      <input type="checkbox" class="palissage-team-cb" value="${escapeHTML(workerName)}" ${isChecked ? "checked" : ""}>
+      <span class="filter-ms-checkbox-box"></span>
+      <span class="filter-ms-item-icon">👤</span>
+      <div class="filter-ms-item-text">
+        <span class="filter-ms-item-title">${escapeHTML(workerName)}</span>
+      </div>
+    `;
+
+    const cb = label.querySelector("input");
+    cb.addEventListener("change", () => {
+      togglePalissageTeam(workerName, cb.checked);
+    });
+
+    list.appendChild(label);
+  });
+
+  updatePalissageTeamFilterUI();
+}
+
+function togglePalissageTeam(workerName, checked) {
+  if (checked) {
+    if (!palissageTeamFilters.includes(workerName)) {
+      palissageTeamFilters.push(workerName);
+    }
+  } else {
+    palissageTeamFilters = palissageTeamFilters.filter(w => w !== workerName);
+  }
+  updatePalissageTeamFilterUI();
+  renderPalissageTable();
+}
+
+function toggleAllPalissageTeams(selectAll) {
+  const list = document.getElementById("list-palissage-filter-team");
+  if (!list) return;
+  const checkboxes = list.querySelectorAll(".palissage-team-cb");
+  if (selectAll) {
+    palissageTeamFilters = [];
+    checkboxes.forEach(cb => {
+      cb.checked = true;
+      cb.closest(".filter-ms-item").classList.add("is-checked");
+    });
+  } else {
+    palissageTeamFilters = ["__NONE__"];
+    checkboxes.forEach(cb => {
+      cb.checked = false;
+      cb.closest(".filter-ms-item").classList.remove("is-checked");
+    });
+  }
+  updatePalissageTeamFilterUI();
+  renderPalissageTable();
+}
+
+function updatePalissageTeamFilterUI() {
+  const textEl = document.getElementById("palissage-filter-team-text");
+  const badgeEl = document.getElementById("palissage-filter-team-badge");
+  const list = document.getElementById("list-palissage-filter-team");
+  if (!textEl) return;
+
+  const total = list ? list.querySelectorAll(".palissage-team-cb").length : 0;
+  const selectedCount = palissageTeamFilters.length === 0 ? total : (palissageTeamFilters.includes("__NONE__") ? 0 : palissageTeamFilters.length);
+
+  if (selectedCount === 0) {
+    textEl.textContent = "Aucun salarié";
+    if (badgeEl) badgeEl.textContent = "0";
+  } else if (palissageTeamFilters.length === 0 || selectedCount === total) {
+    textEl.textContent = "Tous les salariés";
+    if (badgeEl) badgeEl.textContent = "Tous";
+  } else if (selectedCount === 1) {
+    textEl.textContent = palissageTeamFilters[0];
+    if (badgeEl) badgeEl.textContent = "1";
+  } else {
+    textEl.textContent = `${selectedCount} salariés`;
+    if (badgeEl) badgeEl.textContent = String(selectedCount);
+  }
+
+  updatePalissageResetFilterBtn();
+}
+
+function updatePalissageResetFilterBtn() {
+  const btn = document.getElementById("btn-reset-palissage-filters");
+  if (!btn) return;
+  const hasClient = palissageClientFilters.length > 0;
+  const hasParcel = palissageParcelFilters.length > 0;
+  const hasTeam = palissageTeamFilters.length > 0;
+  const hasSearch = !!palissageSearchFilter;
+  const allStages = ["p1_todo", "p1_done", "p2_todo", "p2_done", "p3_todo", "p3_done"];
+  const hasStage = palissageStageFilters.length !== allStages.length;
+
+  btn.style.display = (hasClient || hasParcel || hasTeam || hasSearch || hasStage) ? "inline-flex" : "none";
+}
+
+function resetPalissageFilters() {
+  palissageSearchFilter = "";
+  palissageClientFilters = [];
+  palissageParcelFilters = [];
+  palissageStageFilters = ["p1_todo", "p1_done", "p2_todo", "p2_done", "p3_todo", "p3_done"];
+  palissageTeamFilters = [];
+
+  const searchInput = document.getElementById("palissage-search-input");
+  const searchClear = document.getElementById("palissage-search-clear");
+  if (searchInput) searchInput.value = "";
+  if (searchClear) searchClear.style.display = "none";
+
+  populatePalissageClientFilter();
+  populatePalissageParcelFilter();
+  updatePalissageStageFilterUI();
+  populatePalissageTeamFilter();
+  renderPalissageTable();
+}
+
+// ----------------- TABLEAU PALISSAGE -----------------
+function renderPalissageTable() {
+  const tbody = document.getElementById("palissage-table-tbody");
+  const countBadge = document.getElementById("palissage-table-count");
+  const footerCount = document.getElementById("palissage-footer-count");
+  const emptyState = document.getElementById("palissage-empty-state");
+  const tableEl = document.getElementById("palissage-table");
+  if (!tbody) return;
+
+  tbody.innerHTML = "";
+  let list = [...(palissageWorks || [])];
+
+  // 1. Filtre par recherche textuelle
+  if (palissageSearchFilter) {
+    const q = palissageSearchFilter.toLowerCase();
+    list = list.filter(p => {
+      const c = (p.clientName || "").toLowerCase();
+      const parc = (p.parcelName || "").toLowerCase();
+      const g = (p.grapeVariety || "").toLowerCase();
+      const w = (p.worker || "").toLowerCase();
+      const n = (p.notes || "").toLowerCase();
+      return c.includes(q) || parc.includes(q) || g.includes(q) || w.includes(q) || n.includes(q);
+    });
+  }
+
+  // 2. Filtre multi-sélection domaines
+  if (palissageClientFilters.length > 0) {
+    if (palissageClientFilters.includes("__NONE__")) {
+      list = [];
+    } else {
+      list = list.filter(p => palissageClientFilters.includes(p.clientName));
+    }
+  }
+
+  // 3. Filtre multi-sélection parcelles
+  if (palissageParcelFilters.length > 0) {
+    if (palissageParcelFilters.includes("__NONE__")) {
+      list = [];
+    } else {
+      list = list.filter(p => palissageParcelFilters.includes(p.parcelName));
+    }
+  }
+
+  // 4. Filtre multi-sélection équipes
+  if (palissageTeamFilters.length > 0) {
+    if (palissageTeamFilters.includes("__NONE__")) {
+      list = [];
+    } else {
+      list = list.filter(p => palissageTeamFilters.includes(p.worker));
+    }
+  }
+
+  // 5. Filtre par étapes (1er passage, 2ème passage, 3ème passage)
+  const allStages = ["p1_todo", "p1_done", "p2_todo", "p2_done", "p3_todo", "p3_done"];
+  if (palissageStageFilters.length < allStages.length) {
+    list = list.filter(p => {
+      let match = false;
+      const s1 = getPalissagePassageStatus(p, 1);
+      const s2 = getPalissagePassageStatus(p, 2);
+      const s3 = getPalissagePassageStatus(p, 3);
+      if (palissageStageFilters.includes("p1_todo") && s1 === "a_faire") match = true;
+      if (palissageStageFilters.includes("p1_done") && s1 === "fait") match = true;
+      if (palissageStageFilters.includes("p2_todo") && s2 === "a_faire") match = true;
+      if (palissageStageFilters.includes("p2_done") && s2 === "fait") match = true;
+      if (palissageStageFilters.includes("p3_todo") && s3 === "a_faire") match = true;
+      if (palissageStageFilters.includes("p3_done") && s3 === "fait") match = true;
+      return match;
+    });
+  }
+
+  const countStr = `${list.length} parcelle${list.length > 1 ? "s" : ""}`;
+  if (countBadge) countBadge.textContent = countStr;
+  if (footerCount) footerCount.textContent = countStr;
+
+  if (list.length === 0) {
+    if (emptyState) emptyState.style.display = "block";
+    if (tableEl) tableEl.style.display = "none";
+    return;
+  }
+
+  if (emptyState) emptyState.style.display = "none";
+  if (tableEl) tableEl.style.display = "table";
+
+  list.forEach(p => {
+    const tr = document.createElement("tr");
+
+    // Client
+    const client = (clients || []).find(c => c.name === p.clientName || c.id === p.clientId);
+    const commune = client ? (client.commune || client.city || "Vignoble") : "Domaine";
+
+    // Surface formatée à 4 décimales
+    const surfFormatted = formatSurface(p.surface);
+
+    // Statuts des 3 passages
+    const s1 = getPalissagePassageStatus(p, 1);
+    const s2 = getPalissagePassageStatus(p, 2);
+    const s3 = getPalissagePassageStatus(p, 3);
+
+    tr.innerHTML = `
+      <td>
+        <div class="table-client-cell">
+          <span class="table-client-icon">🏰</span>
+          <div>
+            <strong class="table-client-name">${escapeHTML(p.clientName || "Domaine")}</strong>
+            <span class="table-client-commune">📍 ${escapeHTML(commune)}</span>
+          </div>
+        </div>
+      </td>
+      <td>
+        <div class="table-parcel-cell">
+          <strong class="table-parcel-name">🌿 ${escapeHTML(p.parcelName || "Parcelle")}</strong>
+          <span class="table-parcel-sub">${p.parcelId ? escapeHTML(p.parcelId) : ""}</span>
+        </div>
+      </td>
+      <td>
+        <div class="table-surface-cell">
+          <span class="table-surface-badge">📐 ${surfFormatted} ha</span>
+          <span class="table-variety-badge">🍇 ${escapeHTML(p.grapeVariety || "Non précisé")}</span>
+        </div>
+      </td>
+      <td>
+        <select class="palissage-table-select ${getPalissageBadgeClass(s1)}" onchange="changePalissagePassageStatus('${p.id}', 1, this.value)">
+          <option value="a_faire" ${s1 === 'a_faire' ? 'selected' : ''}>⏳ À faire</option>
+          <option value="fait" ${s1 === 'fait' ? 'selected' : ''}>✅ Fait</option>
+          <option value="ne_pas_faire" ${s1 === 'ne_pas_faire' ? 'selected' : ''}>⚪ Ne pas faire</option>
+        </select>
+      </td>
+      <td>
+        <select class="palissage-table-select ${getPalissageBadgeClass(s2)}" onchange="changePalissagePassageStatus('${p.id}', 2, this.value)">
+          <option value="a_faire" ${s2 === 'a_faire' ? 'selected' : ''}>⏳ À faire</option>
+          <option value="fait" ${s2 === 'fait' ? 'selected' : ''}>✅ Fait</option>
+          <option value="ne_pas_faire" ${s2 === 'ne_pas_faire' ? 'selected' : ''}>⚪ Ne pas faire</option>
+        </select>
+      </td>
+      <td>
+        <select class="palissage-table-select ${getPalissageBadgeClass(s3)}" onchange="changePalissagePassageStatus('${p.id}', 3, this.value)">
+          <option value="a_faire" ${s3 === 'a_faire' ? 'selected' : ''}>⏳ À faire</option>
+          <option value="fait" ${s3 === 'fait' ? 'selected' : ''}>✅ Fait</option>
+          <option value="ne_pas_faire" ${s3 === 'ne_pas_faire' ? 'selected' : ''}>⚪ Ne pas faire</option>
+        </select>
+      </td>
+      <td>
+        <span class="badge-tag">👤 ${escapeHTML(p.worker || "Non assigné")}</span>
+      </td>
+      <td>
+        <button type="button" class="status-badge ${p.billingStatus === 'Facturée' ? 'status-billed' : 'status-unbilled'}" onclick="togglePalissageBillingStatus('${p.id}')" title="Cliquer pour basculer le statut">
+          <span class="status-circle-dot ${p.billingStatus === 'Facturée' ? 'billed-dot' : 'unbilled-dot'}">●</span>
+          <span>${escapeHTML(p.billingStatus || 'À facturer')}</span>
+        </button>
+      </td>
+      <td class="text-right">
+        <div class="table-actions">
+          <button type="button" class="btn btn-ghost btn-xs" onclick="openTrellisingModal('${p.id}')" title="Modifier le suivi de cette parcelle">✏️</button>
+          <button type="button" class="btn btn-ghost btn-xs btn-danger" onclick="deletePalissageWork('${p.id}')" title="Supprimer du suivi">🗑️</button>
+        </div>
+      </td>
+    `;
+
+    tbody.appendChild(tr);
+  });
+}
+
+// Synchronisation automatique du 3ème passage vers le Tableau de bord (Statut : À facturer)
+function syncPalissagePassage3ToDashboard(item, silent = false) {
+  if (!item) return null;
+
+  // Si l'intervention existe déjà dans le journal
+  if (item.passage3InterventionId) {
+    const existing = (interventions || []).find(i => i.id === item.passage3InterventionId);
+    if (existing) {
+      if (!silent) {
+        showToast(`🌿 Prestation palissage déjà présente au Tableau de Bord (#${existing.id})`, "info");
+      }
+      return existing;
+    }
+  }
+
+  const clientName = item.clientName || "Domaine";
+  const parcelName = item.parcelName || "Parcelle";
+  const surface = parseFloat(item.surface) || 0;
+
+  // Prestation et tarif
+  const matchedService = (services || []).find(s => s.name === item.serviceName) ||
+    (services || []).find(s => (s.name || "").toLowerCase().includes("palissage")) || {
+      name: "Palissage & Relevage des fils",
+      price: 36,
+      rateType: "hourly"
+    };
+
+  const serviceName = item.serviceName || matchedService.name || "Palissage & Relevage des fils";
+  const rateType = item.rateType || matchedService.rateType || "surface";
+  const unitPrice = parseFloat(item.price || item.trellisingPrice || matchedService.price) || 36;
+  const quantity = rateType === "hourly" ? (parseFloat(item.hours) || Math.max(1, Math.round(surface * 4 * 10) / 10)) : surface;
+  const unit = rateType === "hourly" ? "heures" : (rateType === "surface" ? "ha" : "forfait");
+  const totalHT = Math.round(quantity * unitPrice * 100) / 100;
+  const tvaRate = 20;
+  const totalTTC = Math.round(totalHT * (1 + tvaRate / 100) * 100) / 100;
+
+  const invDate = (item.passage3Date || new Date().toISOString().split("T")[0]) + "T08:00:00";
+  const year = item.passage3Date ? new Date(item.passage3Date).getFullYear() : new Date().getFullYear();
+  const newInvId = generateUniqueInterventionId(year);
+
+  const newInv = {
+    id: newInvId,
+    datetime: invDate,
+    worker: item.worker || "",
+    clientId: item.clientId || "",
+    client: clientName,
+    parcel: parcelName,
+    parcelId: item.parcelId || "",
+    task: serviceName,
+    category: "Palissage & Écimage",
+    rateType: rateType,
+    quantity: quantity,
+    unit: unit,
+    unitPrice: unitPrice,
+    total: totalHT,
+    tvaRate: tvaRate,
+    totalTTC: totalTTC,
+    status: "À facturer",
+    notes: item.notes ? `${item.notes} — 3ème passage (Agrafage) terminé` : `3ème passage (Agrafage) du palissage terminé sur ${parcelName} (${formatSurface(surface)} ha).`,
+    source: "palissage",
+    palissageWorkId: item.id,
+    palissagePassage: 3,
+    isNewlyCreated: true,
+    createdAt: new Date().toISOString()
+  };
+
+  interventions.unshift(newInv);
+  item.passage3InterventionId = newInvId;
+  item.billingStatus = "À facturer";
+
+  if (typeof saveInterventions === "function") {
+    saveInterventions(newInv);
+  } else {
+    saveInterventionsLocally();
+  }
+  if (typeof syncInterventionToSupabase === "function") {
+    syncInterventionToSupabase(newInv);
+  }
+
+  savePalissageWorks();
+  renderAll();
+
+  if (!silent) {
+    showToast(`🌿 3ème passage Fait : prestation envoyée au Tableau de Bord (${formatCurrency(totalHT)}) au statut « À facturer » !`, "success");
+  }
+  return newInv;
+}
+
+function changePalissagePassageStatus(id, passageNum, newStatus) {
+  const item = (palissageWorks || []).find(p => p.id === id);
+  if (!item) return;
+  const today = new Date().toISOString().split("T")[0];
+  if (passageNum === 1) {
+    item.passage1Status = newStatus;
+    item.liftingStatus = newStatus === "fait" ? "releve" : (newStatus === "ne_pas_faire" ? "non_necessaire" : "a_relever");
+    if (newStatus === "fait") item.passage1Date = today;
+  } else if (passageNum === 2) {
+    item.passage2Status = newStatus;
+    if (newStatus === "fait") item.passage2Date = today;
+  } else if (passageNum === 3) {
+    item.passage3Status = newStatus;
+    item.trellisingStatus = newStatus === "fait" ? "palisse" : (newStatus === "ne_pas_faire" ? "non_necessaire" : "a_palisser");
+    if (newStatus === "fait") {
+      item.passage3Date = today;
+      syncPalissagePassage3ToDashboard(item);
+    }
+  }
+  savePalissageWorks();
+  renderPalissageKPIs();
+  renderPalissageTable();
+  const names = { 1: "1er passage (Relevage)", 2: "2ème passage", 3: "3ème passage (Agrafage)" };
+  if (passageNum !== 3 || newStatus !== "fait") {
+    showToast(`${names[passageNum] || "Passage"} mis à jour pour ${item.parcelName}`);
+  }
+}
+
+function changePalissageMaintStatus(id, newStatus) {
+  changePalissagePassageStatus(id, 1, newStatus === "repare" ? "fait" : (newStatus === "non_necessaire" ? "ne_pas_faire" : "a_faire"));
+}
+
+function changePalissageLiftingStatus(id, newStatus) {
+  changePalissagePassageStatus(id, 1, newStatus === "releve" ? "fait" : (newStatus === "non_necessaire" ? "ne_pas_faire" : "a_faire"));
+}
+
+function changePalissageTrellisingStatus(id, newStatus) {
+  changePalissagePassageStatus(id, 3, newStatus === "palisse" ? "fait" : (newStatus === "non_necessaire" ? "ne_pas_faire" : "a_faire"));
+}
+
+function togglePalissageBillingStatus(id) {
+  const item = (palissageWorks || []).find(p => p.id === id);
+  if (!item) return;
+  item.billingStatus = item.billingStatus === "Facturée" ? "À facturer" : "Facturée";
+
+  // Synchroniser avec l'intervention liée dans le Tableau de bord si elle existe
+  if (item.passage3InterventionId) {
+    const inv = (interventions || []).find(i => i.id === item.passage3InterventionId);
+    if (inv) {
+      inv.status = item.billingStatus;
+      saveInterventionsLocally();
+      if (typeof syncInterventionStatusToSupabase === "function") {
+        syncInterventionStatusToSupabase(inv.id, inv.status);
+      }
+    }
+  }
+
+  savePalissageWorks();
+  renderPalissageTable();
+  renderPalissageKPIs();
+  renderInterventionsTable();
+  renderStats();
+  showToast(`Facturation : ${item.parcelName} passée à « ${item.billingStatus} »`);
+}
+
+function deletePalissageWork(id) {
+  const item = (palissageWorks || []).find(p => p.id === id);
+  const name = item ? item.parcelName : "cette parcelle";
+  if (!confirm(`Supprimer ${name} du suivi du palissage ?`)) return;
+  palissageWorks = (palissageWorks || []).filter(p => p.id !== id);
+  savePalissageWorks();
+  renderPalissageView();
+  showToast("Parcelle retirée du suivi du palissage");
+}
+
+function exportPalissageCSV() {
+  const list = palissageWorks || [];
+  if (list.length === 0) {
+    showToast("Aucune donnée de palissage à exporter", "warning");
+    return;
+  }
+  const headers = ["Domaine", "Parcelle", "Surface_ha", "Cépage", "1er_Passage_Relevage", "2eme_Passage", "3eme_Passage_Agrafage", "Salarié", "Statut_Facturation", "Notes"];
+  const rows = list.map(p => [
+    `"${(p.clientName || '').replace(/"/g, '""')}"`,
+    `"${(p.parcelName || '').replace(/"/g, '""')}"`,
+    formatSurface(p.surface),
+    `"${(p.grapeVariety || '').replace(/"/g, '""')}"`,
+    getPalissagePassageStatus(p, 1),
+    getPalissagePassageStatus(p, 2),
+    getPalissagePassageStatus(p, 3),
+    `"${(p.worker || '').replace(/"/g, '""')}"`,
+    p.billingStatus || "À facturer",
+    `"${(p.notes || '').replace(/"/g, '""')}"`
+  ]);
+  const csvContent = "data:text/csv;charset=utf-8,\uFEFF" + [headers.join(";"), ...rows.map(r => r.join(";"))].join("\n");
+  const encodedUri = encodeURI(csvContent);
+  const link = document.createElement("a");
+  link.setAttribute("href", encodedUri);
+  link.setAttribute("download", `vititrack_palissage_${new Date().toISOString().split("T")[0]}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  showToast("Export de la feuille de palissage téléchargé avec succès !");
+}
+
+// ----------------- MODALE SUIVI DU PALISSAGE -----------------
+let _trellisingModalDropdownsInitialized = false;
+
+function initTrellisingModalDropdowns() {
+  if (_trellisingModalDropdownsInitialized) return;
+  _trellisingModalDropdownsInitialized = true;
+
+  const clientTrigger = document.getElementById("btn-trellising-client-trigger");
+  const clientMenu = document.getElementById("menu-trellising-client-dropdown");
+  const parcelTrigger = document.getElementById("btn-trellising-parcel-trigger");
+  const parcelMenu = document.getElementById("menu-trellising-parcel-dropdown");
+  const searchInput = document.getElementById("search-trellising-clients");
+  const btnToggleClients = document.getElementById("btn-toggle-all-trellising-clients");
+  const btnToggleParcels = document.getElementById("btn-toggle-all-trellising-parcels");
+
+  if (clientTrigger && clientMenu) {
+    clientTrigger.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const isOpen = clientMenu.style.display === "block";
+      clientMenu.style.display = isOpen ? "none" : "block";
+      if (parcelMenu) parcelMenu.style.display = "none";
+      clientTrigger.setAttribute("aria-expanded", !isOpen ? "true" : "false");
+    });
+  }
+
+  if (parcelTrigger && parcelMenu) {
+    parcelTrigger.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (parcelTrigger.disabled) return;
+      const isOpen = parcelMenu.style.display === "block";
+      parcelMenu.style.display = isOpen ? "none" : "block";
+      if (clientMenu) clientMenu.style.display = "none";
+      parcelTrigger.setAttribute("aria-expanded", !isOpen ? "true" : "false");
+    });
+  }
+
+  if (searchInput) {
+    searchInput.addEventListener("input", (e) => {
+      const val = e.target.value.toLowerCase().trim();
+      const items = document.querySelectorAll("#trellising-client-checkbox-list .trellising-client-item, #trellising-client-checkbox-list .modal-dropdown-item");
+      items.forEach(item => {
+        const text = item.textContent.toLowerCase();
+        item.style.display = !val || text.includes(val) ? "flex" : "none";
+      });
+    });
+  }
+
+  if (btnToggleClients) {
+    btnToggleClients.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const allCbs = Array.from(document.querySelectorAll("#trellising-client-checkbox-list .trellising-modal-client-cb"));
+      if (allCbs.length === 0) return;
+      const allChecked = allCbs.every(cb => cb.checked);
+      allCbs.forEach(cb => {
+        cb.checked = !allChecked;
+        const item = cb.closest(".trellising-client-item, .modal-dropdown-item");
+        if (item) {
+          if (!allChecked) item.classList.add("selected");
+          else item.classList.remove("selected");
+        }
+      });
+      onTrellisingModalClientSelectionChange();
+    });
+  }
+
+  if (btnToggleParcels) {
+    btnToggleParcels.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const allCbs = Array.from(document.querySelectorAll("#trellising-parcel-checkbox-list .trellising-modal-parcel-cb"));
+      if (allCbs.length === 0) return;
+      const allChecked = allCbs.every(cb => cb.checked);
+      allCbs.forEach(cb => {
+        cb.checked = !allChecked;
+        const item = cb.closest(".trellising-parcel-item, .modal-dropdown-item");
+        if (item) {
+          if (!allChecked) item.classList.add("selected");
+          else item.classList.remove("selected");
+        }
+      });
+      updateTrellisingRecap();
+    });
+  }
+
+  document.addEventListener("click", (e) => {
+    if (clientMenu && !clientMenu.contains(e.target) && e.target !== clientTrigger) {
+      clientMenu.style.display = "none";
+      if (clientTrigger) clientTrigger.setAttribute("aria-expanded", "false");
+    }
+    if (parcelMenu && !parcelMenu.contains(e.target) && e.target !== parcelTrigger) {
+      parcelMenu.style.display = "none";
+      if (parcelTrigger) parcelTrigger.setAttribute("aria-expanded", "false");
+    }
+  });
+
+  const form = document.getElementById("trellising-form");
+  if (form) {
+    form.addEventListener("submit", saveTrellisingModal);
+  }
+}
+
+function openTrellisingModal(editId = null) {
+  initTrellisingModalDropdowns();
+  const modal = document.getElementById("trellising-modal");
+  const form = document.getElementById("trellising-form");
+  if (!modal || !form) return;
+
+  form.reset();
+  document.getElementById("trellising-edit-id").value = editId || "";
+  document.getElementById("trellising-modal-title").textContent = editId ? "Modifier le Palissage de la Parcelle" : "Suivi Palissage par Parcelle";
+  document.getElementById("trellising-modal-submit-text").textContent = editId ? "💾 Enregistrer les modifications" : "🌿 Enregistrer le palissage";
+
+  // Fermer les dropdowns ouverts
+  const clientMenu = document.getElementById("menu-trellising-client-dropdown");
+  const parcelMenu = document.getElementById("menu-trellising-parcel-dropdown");
+  if (clientMenu) clientMenu.style.display = "none";
+  if (parcelMenu) parcelMenu.style.display = "none";
+
+  populateTrellisingModalServices();
+  populateTrellisingModalWorkers();
+  populateTrellisingClientDropdown();
+
+  const banner = document.getElementById("trellising-parcel-info-banner");
+  if (banner) banner.style.display = "none";
+
+  const editItem = editId ? (palissageWorks || []).find(p => p.id === editId) : null;
+  if (editItem) {
+    const s1 = getPalissagePassageStatus(editItem, 1);
+    const s2 = getPalissagePassageStatus(editItem, 2);
+    const s3 = getPalissagePassageStatus(editItem, 3);
+    const p1El = document.getElementById("input-trellising-passage1");
+    const p2El = document.getElementById("input-trellising-passage2");
+    const p3El = document.getElementById("input-trellising-passage3");
+    if (p1El) p1El.value = s1;
+    if (p2El) p2El.value = s2;
+    if (p3El) p3El.value = s3;
+    document.getElementById("input-trellising-worker").value = editItem.worker || "";
+    document.getElementById("input-trellising-date").value = editItem.interventionDate || "";
+    document.getElementById("input-trellising-notes").value = editItem.notes || "";
+    if (editItem.price || editItem.liftingPrice) {
+      document.getElementById("input-trellising-price").value = editItem.price || editItem.liftingPrice;
+    }
+
+    if (banner) {
+      banner.style.display = "flex";
+      const surfEl = document.getElementById("trellising-parcel-surface-badge");
+      const varEl = document.getElementById("trellising-parcel-variety-badge");
+      if (surfEl) surfEl.textContent = `📐 ${formatSurface(editItem.surface)} ha`;
+      if (varEl) varEl.textContent = `🍇 ${escapeHTML(editItem.grapeVariety || "Vigne")}`;
+    }
+
+    // Sélection du client
+    setTimeout(() => {
+      const clientCb = document.querySelector(`.trellising-modal-client-cb[value="${editItem.clientId || editItem.clientName}"]`);
+      if (clientCb) {
+        clientCb.checked = true;
+        const item = clientCb.closest(".trellising-client-item, .modal-dropdown-item");
+        if (item) item.classList.add("selected");
+        onTrellisingModalClientSelectionChange();
+        setTimeout(() => {
+          const parcelCb = document.querySelector(`.trellising-modal-parcel-cb[value="${editItem.parcelName}"]`);
+          if (parcelCb) {
+            parcelCb.checked = true;
+            const pItem = parcelCb.closest(".trellising-parcel-item, .modal-dropdown-item");
+            if (pItem) pItem.classList.add("selected");
+            updateTrellisingRecap();
+          }
+        }, 50);
+      }
+    }, 50);
+  } else {
+    document.getElementById("input-trellising-date").value = new Date().toISOString().split("T")[0];
+    const p1El = document.getElementById("input-trellising-passage1");
+    const p2El = document.getElementById("input-trellising-passage2");
+    const p3El = document.getElementById("input-trellising-passage3");
+    if (p1El) p1El.value = "a_faire";
+    if (p2El) p2El.value = "a_faire";
+    if (p3El) p3El.value = "a_faire";
+
+    // Si des clients existent et qu'il n'y en a qu'un, ou pour faciliter la saisie, pré-cocher
+    if (clients && clients.length === 1) {
+      const firstCb = document.querySelector(".trellising-modal-client-cb");
+      if (firstCb) {
+        firstCb.checked = true;
+        const item = firstCb.closest(".trellising-client-item, .modal-dropdown-item");
+        if (item) item.classList.add("selected");
+      }
+    }
+    onTrellisingModalClientSelectionChange();
+  }
+
+  // Ouvrir avec la classe .open pour affichage plein écran immédiat
+  modal.classList.add("open");
+  modal.classList.add("active");
+  modal.setAttribute("aria-hidden", "false");
+  if (typeof lockBodyScroll === "function") lockBodyScroll();
+  const modalBody = modal.querySelector(".modal-body");
+  if (modalBody) modalBody.scrollTop = 0;
+}
+
+function closeTrellisingModal() {
+  const modal = document.getElementById("trellising-modal");
+  if (!modal) return;
+  modal.classList.remove("open");
+  modal.classList.remove("active");
+  modal.setAttribute("aria-hidden", "true");
+  if (typeof unlockBodyScroll === "function") unlockBodyScroll();
+}
+
+function populateTrellisingModalServices() {
+  const select = document.getElementById("input-trellising-service");
+  if (!select) return;
+  select.innerHTML = "";
+
+  // Uniquement les prestations de palissage (exclusion stricte de l'écimage, rognage, effeuillage)
+  const palissageServices = (services || []).filter(s => {
+    const name = (s.name || "").toLowerCase();
+    return name.includes("palissage") && !name.includes("rognage") && !name.includes("effeuillage") && !name.includes("écimage");
+  });
+
+  const allList = palissageServices.length > 0 ? palissageServices : [
+    {
+      id: "srv-05",
+      name: "Palissage & Relevage des fils",
+      price: 36,
+      rateType: "hourly"
+    }
+  ];
+
+  allList.forEach(s => {
+    const opt = document.createElement("option");
+    opt.value = s.id;
+    opt.dataset.price = s.price;
+    opt.dataset.rateType = s.rateType;
+    const unit = s.rateType === 'surface' ? '/ha' : (s.rateType === 'hourly' ? '/h' : '');
+    opt.textContent = `${s.name} (${s.price} €${unit})`;
+    select.appendChild(opt);
+  });
+
+  onTrellisingModalServiceChange();
+}
+
+function onTrellisingModalServiceChange() {
+  const select = document.getElementById("input-trellising-service");
+  const priceInput = document.getElementById("input-trellising-price");
+  if (!select || !priceInput) return;
+  const opt = select.selectedOptions[0];
+  if (opt && opt.dataset.price) {
+    priceInput.value = opt.dataset.price;
+  }
+}
+
+function populateTrellisingModalWorkers() {
+  const select = document.getElementById("input-trellising-worker");
+  if (!select) return;
+  select.innerHTML = '<option value="">-- Choisir un salarié --</option>';
+
+  const workers = new Set();
+  (teamUsers || []).forEach(u => { if (u.name) workers.add(u.name); });
+  (interventions || []).forEach(i => { if (i.worker) workers.add(i.worker); });
+
+  Array.from(workers).sort().forEach(w => {
+    const opt = document.createElement("option");
+    opt.value = w;
+    opt.textContent = w;
+    select.appendChild(opt);
+  });
+}
+
+function populateTrellisingClientDropdown() {
+  const list = document.getElementById("trellising-client-checkbox-list");
+  const searchWrap = document.getElementById("trellising-clients-search-wrap");
+  const toggleBtn = document.getElementById("btn-toggle-all-trellising-clients");
+  if (!list) return;
+  list.innerHTML = "";
+
+  if (!clients || clients.length === 0) {
+    list.innerHTML = '<div class="parcel-list-empty">Aucun domaine enregistré. Créez d\'abord un client.</div>';
+    if (searchWrap) searchWrap.style.display = "none";
+    if (toggleBtn) toggleBtn.style.display = "none";
+    return;
+  }
+
+  if (searchWrap) {
+    searchWrap.style.display = clients.length > 3 ? "block" : "none";
+  }
+  if (toggleBtn) {
+    toggleBtn.style.display = "inline-block";
+    toggleBtn.textContent = "Tout cocher";
+  }
+
+  clients.forEach(c => {
+    const pCount = (c.parcels || []).length;
+    const pCountText = pCount === 0 ? "0 parcelle" : (pCount === 1 ? "1 parcelle" : `${pCount} parcelles`);
+    const loc = c.location || c.commune || "";
+
+    const label = document.createElement("label");
+    label.className = "parcel-checkbox-item harvest-client-item trellising-client-item modal-dropdown-item";
+    label.dataset.clientName = (c.name || "").toLowerCase();
+    label.innerHTML = `
+      <input type="checkbox" class="trellising-modal-client-cb harvest-client-cb" value="${escapeHTML(c.id || c.name)}" data-name="${escapeHTML(c.name)}">
+      <div class="parcel-item-info">
+        <div class="parcel-item-text">
+          <span class="parcel-item-name">🏰 ${escapeHTML(c.name)}</span>
+          ${loc ? `<span class="parcel-item-sub">📍 ${escapeHTML(loc)}</span>` : ''}
+        </div>
+        <span class="parcel-item-surface-badge">${pCountText}</span>
+      </div>
+    `;
+    const cb = label.querySelector("input");
+    cb.addEventListener("change", () => {
+      if (cb.checked) label.classList.add("selected");
+      else label.classList.remove("selected");
+      onTrellisingModalClientSelectionChange();
+    });
+    list.appendChild(label);
+  });
+}
+
+function onTrellisingModalClientSelectionChange() {
+  const allClientCbs = Array.from(document.querySelectorAll("#trellising-client-checkbox-list .trellising-modal-client-cb"));
+  const checkedClients = allClientCbs.filter(cb => cb.checked);
+  const parcelTrigger = document.getElementById("btn-trellising-parcel-trigger");
+  const triggerText = document.getElementById("trellising-client-trigger-text");
+  const triggerBadge = document.getElementById("trellising-client-trigger-badge");
+  const parcelList = document.getElementById("trellising-parcel-checkbox-list");
+  const toggleBtn = document.getElementById("btn-toggle-all-trellising-clients");
+  const toggleAllParcelsBtn = document.getElementById("btn-toggle-all-trellising-parcels");
+  const hiddenClientInput = document.getElementById("input-trellising-client");
+
+  if (toggleBtn) {
+    const allChecked = allClientCbs.length > 0 && checkedClients.length === allClientCbs.length;
+    toggleBtn.textContent = allChecked ? "Tout décocher" : "Tout cocher";
+  }
+
+  const selectedClientIds = checkedClients.map(cb => cb.value);
+  if (hiddenClientInput) {
+    hiddenClientInput.value = selectedClientIds.join(",");
+  }
+
+  if (checkedClients.length === 0) {
+    if (triggerText) triggerText.textContent = "Sélectionner les domaines...";
+    if (triggerBadge) triggerBadge.style.display = "none";
+    if (parcelTrigger) {
+      parcelTrigger.disabled = true;
+      const ptText = document.getElementById("trellising-parcel-trigger-text");
+      if (ptText) ptText.textContent = "Sélectionnez d'abord un domaine...";
+      const ptBadge = document.getElementById("trellising-parcel-trigger-badge");
+      if (ptBadge) ptBadge.style.display = "none";
+    }
+    if (parcelList) parcelList.innerHTML = '<div class="parcel-list-empty">Sélectionnez d\'abord au moins un client pour afficher ses parcelles.</div>';
+    if (toggleAllParcelsBtn) toggleAllParcelsBtn.style.display = "none";
+    updateTrellisingRecap();
+    return;
+  }
+
+  if (triggerText) {
+    if (checkedClients.length === 1) {
+      triggerText.textContent = checkedClients[0].dataset.name;
+    } else if (checkedClients.length === 2) {
+      triggerText.textContent = `${checkedClients[0].dataset.name}, ${checkedClients[1].dataset.name}`;
+    } else {
+      triggerText.textContent = `${checkedClients.length} domaines sélectionnés`;
+    }
+  }
+  if (triggerBadge) {
+    triggerBadge.style.display = "inline-flex";
+    triggerBadge.textContent = String(checkedClients.length);
+  }
+
+  if (parcelTrigger) {
+    parcelTrigger.disabled = false;
+    const ptText = document.getElementById("trellising-parcel-trigger-text");
+    if (ptText && ptText.textContent.includes("Sélectionnez d'abord")) {
+      ptText.textContent = "Sélectionner les parcelles...";
+    }
+  }
+
+  if (toggleAllParcelsBtn) {
+    toggleAllParcelsBtn.style.display = "inline-block";
+  }
+
+  // Alimenter la liste des parcelles
+  if (parcelList) {
+    parcelList.innerHTML = "";
+    let totalParcelsCount = 0;
+
+    selectedClientIds.forEach(cId => {
+      const client = (clients || []).find(c => c.id === cId || c.name === cId);
+      if (!client) return;
+
+      const pList = client.parcels || [];
+      const groupDiv = document.createElement("div");
+      groupDiv.className = "modal-dropdown-group";
+      groupDiv.innerHTML = `
+        <div class="modal-dropdown-group-header" style="display: flex; justify-content: space-between; align-items: center; padding: 0.35rem 0.5rem; background: rgba(82, 183, 136, 0.08); border-radius: var(--radius-sm); margin-bottom: 0.25rem;">
+          <strong style="font-size: 0.82rem; color: #52b788;">🏰 ${escapeHTML(client.name)}</strong>
+          ${pList.length > 1 ? `<button type="button" class="btn-link-action btn-group-toggle" data-client-id="${escapeHTML(client.id)}" style="font-size: 0.72rem; color: var(--color-primary-light); background: none; border: none; cursor: pointer;">Tout</button>` : ''}
+        </div>
+      `;
+
+      if (pList.length === 0) {
+        groupDiv.innerHTML += '<div class="filter-ms-empty" style="font-size: 0.75rem; padding: 0.4rem;">Aucune parcelle répertoriée pour ce domaine</div>';
+      } else {
+        totalParcelsCount += pList.length;
+        pList.forEach(p => {
+          const surfFormatted = formatSurface(p.surface);
+          const pLabel = document.createElement("label");
+          pLabel.className = "parcel-checkbox-item harvest-parcel-item trellising-parcel-item modal-dropdown-item";
+          pLabel.innerHTML = `
+            <input type="checkbox" class="trellising-modal-parcel-cb harvest-parcel-cb" value="${escapeHTML(p.name)}" data-client-id="${escapeHTML(client.id)}" data-client-name="${escapeHTML(client.name)}" data-surface="${parseFloat(p.surface) || 0}" data-grape="${escapeHTML(p.grapeVariety || '')}">
+            <div class="parcel-item-info">
+              <div class="parcel-item-text">
+                <span class="parcel-item-name">🌿 ${escapeHTML(p.name)}</span>
+                <span class="parcel-item-sub">🍇 ${escapeHTML(p.grapeVariety || 'Vigne')}</span>
+              </div>
+              <span class="parcel-item-surface-badge">📐 ${surfFormatted} ha</span>
+            </div>
+          `;
+          const pCb = pLabel.querySelector("input");
+          pCb.addEventListener("change", () => {
+            if (pCb.checked) pLabel.classList.add("selected");
+            else pLabel.classList.remove("selected");
+            updateTrellisingRecap();
+          });
+          groupDiv.appendChild(pLabel);
+        });
+      }
+      parcelList.appendChild(groupDiv);
+    });
+
+    // Boutons de groupe "Tout" / "Aucun"
+    parcelList.querySelectorAll(".btn-group-toggle").forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const cId = btn.dataset.clientId;
+        const cbs = Array.from(parcelList.querySelectorAll(`.trellising-modal-parcel-cb[data-client-id="${cId}"]`));
+        if (cbs.length === 0) return;
+        const allChecked = cbs.every(cb => cb.checked);
+        cbs.forEach(cb => {
+          cb.checked = !allChecked;
+          const item = cb.closest(".trellising-parcel-item, .modal-dropdown-item");
+          if (item) {
+            if (!allChecked) item.classList.add("selected");
+            else item.classList.remove("selected");
+          }
+        });
+        btn.textContent = allChecked ? "Tout" : "Aucun";
+        updateTrellisingRecap();
+      });
+    });
+
+    if (totalParcelsCount === 0 && selectedClientIds.length > 0) {
+      if (toggleAllParcelsBtn) toggleAllParcelsBtn.style.display = "none";
+    }
+  }
+
+  updateTrellisingRecap();
+}
+
+function updateTrellisingRecap() {
+  const recapBar = document.getElementById("trellising-selection-recap-bar");
+  const clientsCountPill = document.getElementById("trellising-recap-clients-count");
+  const parcelsCountPill = document.getElementById("trellising-recap-parcels-count");
+  const surfacePill = document.getElementById("trellising-recap-surface-total");
+  const parcelTriggerText = document.getElementById("trellising-parcel-trigger-text");
+  const parcelTriggerBadge = document.getElementById("trellising-parcel-trigger-badge");
+  const toggleAllParcelsBtn = document.getElementById("btn-toggle-all-trellising-parcels");
+  const hiddenParcelInput = document.getElementById("input-trellising-parcel");
+
+  const checkedClients = document.querySelectorAll(".trellising-modal-client-cb:checked");
+  const allParcelCbs = Array.from(document.querySelectorAll("#trellising-parcel-checkbox-list .trellising-modal-parcel-cb"));
+  const checkedParcels = allParcelCbs.filter(cb => cb.checked);
+
+  if (toggleAllParcelsBtn && allParcelCbs.length > 0) {
+    const allChecked = checkedParcels.length === allParcelCbs.length;
+    toggleAllParcelsBtn.textContent = allChecked ? "Tout décocher" : "Tout cocher";
+  }
+
+  if (hiddenParcelInput) {
+    hiddenParcelInput.value = checkedParcels.map(cb => cb.value).join(",");
+  }
+
+  if (checkedParcels.length === 0) {
+    if (recapBar) recapBar.style.display = "none";
+    if (parcelTriggerText) parcelTriggerText.textContent = "Sélectionner les parcelles...";
+    if (parcelTriggerBadge) parcelTriggerBadge.style.display = "none";
+    return;
+  }
+
+  if (recapBar) recapBar.style.display = "flex";
+  const totalSurf = checkedParcels.reduce((acc, cb) => acc + (parseFloat(cb.dataset.surface) || 0), 0);
+
+  if (clientsCountPill) clientsCountPill.textContent = `🏰 ${checkedClients.length} domaine${checkedClients.length > 1 ? "s" : ""}`;
+  if (parcelsCountPill) parcelsCountPill.textContent = `📍 ${checkedParcels.length} parcelle${checkedParcels.length > 1 ? "s" : ""}`;
+  if (surfacePill) surfacePill.textContent = `📐 ${formatSurface(totalSurf)} ha cumulés`;
+
+  if (parcelTriggerText) {
+    if (checkedParcels.length === 1) {
+      parcelTriggerText.textContent = checkedParcels[0].value;
+    } else if (checkedParcels.length === 2) {
+      parcelTriggerText.textContent = `${checkedParcels[0].value}, ${checkedParcels[1].value}`;
+    } else {
+      parcelTriggerText.textContent = `${checkedParcels.length} parcelles sélectionnées`;
+    }
+  }
+  if (parcelTriggerBadge) {
+    parcelTriggerBadge.style.display = "inline-flex";
+    parcelTriggerBadge.textContent = String(checkedParcels.length);
+  }
+}
+
+function saveTrellisingModal(e) {
+  if (e) e.preventDefault();
+  const editId = document.getElementById("trellising-edit-id").value;
+  const p1Val = document.getElementById("input-trellising-passage1") ? document.getElementById("input-trellising-passage1").value : "a_faire";
+  const p2Val = document.getElementById("input-trellising-passage2") ? document.getElementById("input-trellising-passage2").value : "a_faire";
+  const p3Val = document.getElementById("input-trellising-passage3") ? document.getElementById("input-trellising-passage3").value : "a_faire";
+  const worker = document.getElementById("input-trellising-worker").value;
+  const dateVal = document.getElementById("input-trellising-date").value || new Date().toISOString().split("T")[0];
+  const notes = document.getElementById("input-trellising-notes").value;
+  const price = parseFloat(document.getElementById("input-trellising-price").value) || 36;
+  const serviceSelect = document.getElementById("input-trellising-service");
+  const serviceName = serviceSelect && serviceSelect.selectedOptions[0] ? serviceSelect.selectedOptions[0].textContent.split(" (")[0] : "Palissage & Relevage des fils";
+  const autoBill = document.getElementById("input-trellising-auto-bill") ? document.getElementById("input-trellising-auto-bill").checked : true;
+
+  const checkedParcels = Array.from(document.querySelectorAll(".trellising-modal-parcel-cb:checked"));
+
+  if (editId) {
+    // Mode édition d'une parcelle
+    const item = (palissageWorks || []).find(p => p.id === editId);
+    if (item) {
+      const oldP3 = item.passage3Status;
+      item.passage1Status = p1Val;
+      item.passage2Status = p2Val;
+      item.passage3Status = p3Val;
+      item.maintStatus = "repare";
+      item.liftingStatus = p1Val === "fait" ? "releve" : (p1Val === "ne_pas_faire" ? "non_necessaire" : "a_relever");
+      item.trellisingStatus = p3Val === "fait" ? "palisse" : (p3Val === "ne_pas_faire" ? "non_necessaire" : "a_palisser");
+      item.worker = worker;
+      item.interventionDate = dateVal;
+      item.notes = notes;
+      item.price = price;
+      item.liftingPrice = price;
+      item.trellisingPrice = price;
+      item.serviceName = serviceName;
+      item.liftingServiceName = serviceName;
+      item.trellisingServiceName = serviceName;
+
+      // Si le 3ème passage passe à Fait
+      if (p3Val === "fait" && oldP3 !== "fait") {
+        item.passage3Date = dateVal;
+        syncPalissagePassage3ToDashboard(item);
+      }
+    }
+  } else {
+    // Mode création
+    if (checkedParcels.length === 0) {
+      alert("Veuillez cocher au moins une parcelle à inscrire au suivi du palissage.");
+      return;
+    }
+
+    checkedParcels.forEach(pCb => {
+      const newWork = {
+        id: `pali-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        clientId: pCb.dataset.clientId || "",
+        clientName: pCb.dataset.clientName || "",
+        parcelId: `PAR-${Date.now()}`,
+        parcelName: pCb.value,
+        surface: parseFloat(pCb.dataset.surface) || 0,
+        grapeVariety: pCb.dataset.grape || "Vigne",
+        passage1Status: p1Val,
+        passage2Status: p2Val,
+        passage3Status: p3Val,
+        maintStatus: "repare",
+        liftingStatus: p1Val === "fait" ? "releve" : (p1Val === "ne_pas_faire" ? "non_necessaire" : "a_relever"),
+        trellisingStatus: p3Val === "fait" ? "palisse" : (p3Val === "ne_pas_faire" ? "non_necessaire" : "a_palisser"),
+        serviceName: serviceName,
+        price: price,
+        liftingServiceName: serviceName,
+        liftingPrice: price,
+        trellisingServiceName: serviceName,
+        trellisingPrice: price,
+        worker: worker,
+        interventionDate: dateVal,
+        billingStatus: "À facturer",
+        notes: notes,
+        createdAt: new Date().toISOString()
+      };
+
+      palissageWorks.unshift(newWork);
+
+      // Si le 3ème passage est fait dès la création, synchroniser dans le Tableau de bord
+      if (p3Val === "fait") {
+        newWork.passage3Date = dateVal;
+        syncPalissagePassage3ToDashboard(newWork, true);
+      } else if (autoBill && (p1Val === "fait" || p2Val === "fait")) {
+        const invId = generateUniqueInterventionId();
+        const newInv = {
+          id: invId,
+          clientId: newWork.clientId,
+          client: newWork.clientName,
+          parcel: newWork.parcelName,
+          task: serviceName,
+          category: "Palissage & Écimage",
+          rateType: "surface",
+          unit: "ha",
+          unitPrice: price,
+          quantity: newWork.surface,
+          total: Math.round(newWork.surface * price * 100) / 100,
+          status: "À facturer",
+          datetime: dateVal + "T08:00:00",
+          worker: worker,
+          notes: notes,
+          createdAt: new Date().toISOString()
+        };
+        interventions.unshift(newInv);
+        saveInterventionsLocally();
+      }
+    });
+  }
+
+  savePalissageWorks();
+  closeTrellisingModal();
+  renderPalissageView();
+  showToast("Suivi du palissage enregistré avec succès !");
+}
+
+// Window Exports for Palissage
+window.syncPalissagePassage3ToDashboard = syncPalissagePassage3ToDashboard;
+window.renderPalissageView = renderPalissageView;
+window.updateSidebarPalissageCount = updateSidebarPalissageCount;
+window.renderPalissageKPIs = renderPalissageKPIs;
+window.renderPalissageTable = renderPalissageTable;
+window.filterPalissageByStage = filterPalissageByStage;
+window.resetPalissageFilters = resetPalissageFilters;
+window.exportPalissageCSV = exportPalissageCSV;
+window.openTrellisingModal = openTrellisingModal;
+window.closeTrellisingModal = closeTrellisingModal;
+window.saveTrellisingModal = saveTrellisingModal;
+window.changePalissagePassageStatus = changePalissagePassageStatus;
+window.changePalissageMaintStatus = changePalissageMaintStatus;
+window.changePalissageLiftingStatus = changePalissageLiftingStatus;
+window.changePalissageTrellisingStatus = changePalissageTrellisingStatus;
+window.togglePalissageBillingStatus = togglePalissageBillingStatus;
+window.deletePalissageWork = deletePalissageWork;
+window.onTrellisingModalServiceChange = onTrellisingModalServiceChange;
+window.togglePalissageClient = togglePalissageClient;
+window.toggleAllPalissageClients = toggleAllPalissageClients;
+window.togglePalissageParcel = togglePalissageParcel;
+window.toggleAllPalissageParcels = toggleAllPalissageParcels;
+window.togglePalissageStage = togglePalissageStage;
+window.toggleAllPalissageStages = toggleAllPalissageStages;
+window.togglePalissageTeam = togglePalissageTeam;
+window.toggleAllPalissageTeams = toggleAllPalissageTeams;
+window.openPalissagePlanningModal = openPalissagePlanningModal;
+window.renderPalissagePlannedSection = renderPalissagePlannedSection;
+window.convertPlannedToPalissageWork = convertPlannedToPalissageWork;
 
 // ==================== HISTORIQUE & SUIVI PAR CLIENT ====================
 let clientHistorySelectedClientIds = [];
@@ -11330,6 +13859,31 @@ function getAllCalendarEvents() {
     });
   });
 
+  // 4. Suivi du palissage
+  (palissageWorks || []).forEach(pw => {
+    if (!pw) return;
+    const dateStr = (pw.interventionDate || pw.date || "").split("T")[0];
+    if (!dateStr || dateStr.length < 10) return;
+    events.push({
+      id: pw.id || ("PW-" + Math.random().toString(36).slice(2, 7)),
+      type: "trellising",
+      date: dateStr,
+      time: "",
+      title: `Palissage • ${pw.grapeVariety || "Vigne"}`,
+      client: pw.clientName || "Domaine",
+      clientId: pw.clientId || "",
+      parcel: pw.parcelName || "",
+      worker: pw.worker || "",
+      quantity: parseFloat(pw.surface || 0),
+      rateType: "ha",
+      unit: "ha",
+      amount: 0,
+      status: pw.trellisingStatus === "palisse" ? "Palissé" : "À palisser",
+      notes: pw.notes || "",
+      raw: pw
+    });
+  });
+
   return events;
 }
 
@@ -11609,6 +14163,9 @@ function createCalendarMonthDayCell(dayNum, dateStr, events, isOtherMonth, isTod
     } else if (evt.type === "harvest") {
       pillTypeClass = "cal-pill-harvest";
       icon = "🍇";
+    } else if (evt.type === "trellising") {
+      pillTypeClass = "cal-pill-trellising";
+      icon = "🌿";
     } else if (evt.type === "intervention" && evt.status === "À facturer") {
       pillTypeClass = "cal-pill-unbilled";
       icon = "⏳";
@@ -11716,6 +14273,10 @@ function renderCalendarWeekGrid(events, mondayStr) {
           cardTypeClass = "card-harvest";
           icon = "🍇";
           badgeContent = '<span>Vendange</span>';
+        } else if (evt.type === "trellising") {
+          cardTypeClass = "card-trellising";
+          icon = "🌿";
+          badgeContent = '<span>Palissage</span>';
         } else if (evt.type === "intervention") {
           if (evt.status === "Facturée") {
             badgeContent = '<span class="cal-status-tag-billed"><span class="status-circle-dot billed-dot">●</span> Facturée</span>';
@@ -11913,6 +14474,7 @@ function createCalendarFullEventCard(evt) {
   let cardClass = "card-done";
   if (evt.type === "planned") cardClass = "card-planned";
   if (evt.type === "harvest") cardClass = "card-harvest";
+  if (evt.type === "trellising") cardClass = "card-trellising";
   card.className = `cal-full-card ${cardClass}`;
 
   if (evt.type === "intervention") {
@@ -12049,6 +14611,46 @@ function createCalendarFullEventCard(evt) {
         </div>
       </div>
     `;
+  } else if (evt.type === "trellising") {
+    card.innerHTML = `
+      <div class="cal-full-card-header">
+        <div>
+          <div class="cal-full-card-task">${escapeHTML(evt.title)}</div>
+          <div class="cal-full-card-client-row">
+            <span>🏰 ${escapeHTML(evt.client)}</span>
+          </div>
+        </div>
+        <span class="status-badge" style="background: rgba(82, 183, 136, 0.2); color: #74c69d; border: 1px solid rgba(82, 183, 136, 0.5);">
+          <span>🌿 ${escapeHTML(evt.status)}</span>
+        </span>
+      </div>
+
+      <div>
+        <span class="cal-full-card-parcel-tag">🌿 Parcelle : ${escapeHTML(evt.parcel || "Vignoble")}</span>
+      </div>
+
+      <div class="cal-full-card-metrics-grid">
+        <div class="cal-metric-box">
+          <span class="cal-metric-label">Superficie</span>
+          <span class="cal-metric-val">${formatSurface(evt.quantity)} ha</span>
+        </div>
+        <div class="cal-metric-box">
+          <span class="cal-metric-label">Intervenant</span>
+          <span class="cal-metric-val">${escapeHTML(evt.worker || "Équipe")}</span>
+        </div>
+      </div>
+
+      <div class="cal-full-card-footer">
+        <div class="cal-full-card-worker">
+          <span>🌿 Suivi palissage</span>
+        </div>
+        <div class="cal-full-card-actions">
+          <button type="button" class="btn btn-outline btn-xs" onclick="switchView('palissage')" title="Consulter la feuille de route palissage">
+            <span>🌿 Suivi palissage</span>
+          </button>
+        </div>
+      </div>
+    `;
   }
 
   return card;
@@ -12108,6 +14710,9 @@ function renderCalendarSelectedDayAgenda(dateStr, events) {
     } else if (evt.type === "harvest") {
       rowTypeClass = "item-harvest";
       icon = "🍇";
+    } else if (evt.type === "trellising") {
+      rowTypeClass = "item-trellising";
+      icon = "🌿";
     }
     row.className = `cal-agenda-item-row ${rowTypeClass}`;
 
@@ -12134,7 +14739,10 @@ function renderCalendarSelectedDayAgenda(dateStr, events) {
              </button>`
           : (evt.type === "planned"
               ? `<button type="button" class="btn btn-primary btn-xs" onclick="window.convertPlannedWork('${evt.id}')" title="Marquer comme fait / enregistrer intervention">🚜 Fait</button>`
-              : `<span class="badge-tag" style="background: rgba(168, 85, 247, 0.2); color: #e9d5ff;">🍇 ${escapeHTML(evt.status)}</span>`
+              : (evt.type === "trellising"
+                  ? `<span class="badge-tag" style="background: rgba(82, 183, 136, 0.2); color: #74c69d;">🌿 ${escapeHTML(evt.status)}</span>`
+                  : `<span class="badge-tag" style="background: rgba(168, 85, 247, 0.2); color: #e9d5ff;">🍇 ${escapeHTML(evt.status)}</span>`
+                )
             )
         }
       </div>
