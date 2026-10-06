@@ -42,6 +42,31 @@ function getUserStorageKey(baseKey) {
   return `${baseKey}_${getAuthUserId()}`;
 }
 
+// Vérifie si l'utilisateur actuellement connecté a l'autorisation d'accéder au tableau de bord & finances
+function canCurrentUserViewDashboard() {
+  const user = getAuthUser();
+  if (!user) return true;
+  if (user.isTeamMember) {
+    if (user.canViewDashboard === false) return false;
+    if (user.canViewDashboard === true) return true;
+    const role = (user.role || "").toLowerCase();
+    if (role.includes("gérant") || role.includes("gerant")) return true;
+    return false;
+  }
+  return true;
+}
+
+function applyDashboardPermissions() {
+  const hasDashboardAccess = canCurrentUserViewDashboard();
+  if (!hasDashboardAccess) {
+    document.body.classList.add("restricted-operator-mode");
+  } else {
+    document.body.classList.remove("restricted-operator-mode");
+  }
+}
+window.canCurrentUserViewDashboard = canCurrentUserViewDashboard;
+window.applyDashboardPermissions = applyDashboardPermissions;
+
 // ==================== RÈGLES FISCALES VITICOLES (TVA) ====================
 // Charrue mécanique ou charrue hydraulique : 5%
 // Tous les autres travaux : 20%
@@ -543,6 +568,15 @@ function initDashboard() {
     renderAll();
   } catch (e) {
     console.error("Erreur renderAll :", e);
+  }
+
+  try {
+    applyDashboardPermissions();
+    if (!canCurrentUserViewDashboard()) {
+      switchView("interventions");
+    }
+  } catch (e) {
+    console.warn("Erreur applyDashboardPermissions :", e);
   }
 
   // Vérification d'authentification asynchrone sans bloquer l'interactivité
@@ -2472,6 +2506,11 @@ function setupModalCloser(overlayId, closeBtnId, cancelBtnId, closeFn) {
 
 // ==================== VIEW SWITCHING ====================
 function switchView(viewName, preselectedClientId = null) {
+  // Restriction : les utilisateurs sans accès au tableau de bord sont limités aux interventions
+  if (!canCurrentUserViewDashboard()) {
+    viewName = "interventions";
+  }
+
   const viewOverview = document.getElementById("view-overview");
   const viewClients = document.getElementById("view-clients");
   const viewServices = document.getElementById("view-services");
@@ -4187,11 +4226,21 @@ function handleCreateInterventionSubmit(e) {
   const worker = workerInput ? workerInput.value.trim() : defaultWorker;
   const datetime = document.getElementById("input-datetime")?.value;
   const task = document.getElementById("input-task")?.value;
-  const rateType = document.getElementById("input-rate-type")?.value || "surface";
+  let rateType = document.getElementById("input-rate-type")?.value || "surface";
   const quantity = parseFloat(document.getElementById("input-quantity")?.value || 0);
-  const unitPrice = parseFloat(document.getElementById("input-unit-price")?.value || 0);
+  let unitPrice = parseFloat(document.getElementById("input-unit-price")?.value || 0);
   const notes = document.getElementById("input-notes")?.value || "";
   const status = document.getElementById("input-status")?.value || "À facturer";
+
+  // Récupération automatique et confidentielle du tarif catalogue si l'utilisateur est restreint ou si le prix est nul
+  if (unitPrice <= 0 || !canCurrentUserViewDashboard()) {
+    const availableServices = (services && services.length > 0) ? services : (typeof DEFAULT_SERVICES !== "undefined" ? DEFAULT_SERVICES : []);
+    const foundSrv = availableServices.find(s => s.name === task);
+    if (foundSrv) {
+      unitPrice = foundSrv.price || 0;
+      rateType = foundSrv.rateType || rateType;
+    }
+  }
 
   if (!datetime) {
     showToast("Veuillez renseigner la date et l'heure.", "error");
@@ -4642,19 +4691,19 @@ function renderTable() {
           </div>
         </td>
         <td>
-          <span class="task-tag">✂️ ${escapeHTML(item.task)}</span>
+          <span class="task-tag">✂️ ${escapeHTML(!canCurrentUserViewDashboard() ? (item.task || '').replace(/\s*\([^)]*€[^)]*\)/g, '').trim() : (item.task || ''))}</span>
         </td>
         <td>
           <span class="volume-value">${item.unit === 'ha' ? formatSurface(item.quantity) : (item.unit === 'kg' ? Number(item.quantity).toLocaleString('fr-FR') : item.quantity)} ${(item.unit === 'hourly' || item.unit === 'heures' || item.rateType === 'hourly') ? 'h' : item.unit}</span>
         </td>
-        <td>
+        <td class="col-financial">
           <span class="amount-value">${item.total.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € HT</span>
         </td>
-        <td>
+        <td class="col-financial">
           <span class="amount-value amount-ttc" style="color: var(--color-accent-light, #74c69d); font-weight: 700;">${((item.total || 0) * (1 + getTvaRate(item))).toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € TTC</span>
           <span style="font-size: 0.70rem; display: block; opacity: 0.78; color: var(--color-text-muted);">TVA ${Math.round(getTvaRate(item) * 100)}%</span>
         </td>
-        <td>
+        <td class="col-financial">
           <button class="status-pill-toggle ${statusClass}" onclick="toggleInterventionStatus('${item.id}')" title="Cliquer pour basculer le statut">
             <span class="status-circle-dot ${isUnbilled ? 'unbilled-dot' : 'billed-dot'}">●</span>
             <span>${item.status}</span>
@@ -5179,6 +5228,13 @@ window.openDetailModal = function(id) {
 
   const formattedDate = formatDateDisplay(item.datetime);
 
+  const canViewFinancials = canCurrentUserViewDashboard();
+  const taskText = canViewFinancials ? (item.task || '') : (item.task || '').replace(/\s*\([^)]*€[^)]*\)/g, '').trim();
+  const volumeTarifLabel = canViewFinancials ? "Volume / Tarif" : "Volume / Durée";
+  const volumeTarifValue = canViewFinancials 
+    ? `${item.unit === 'ha' ? formatSurface(item.quantity) : (item.unit === 'kg' ? Number(item.quantity).toLocaleString('fr-FR') : item.quantity)} ${item.unit} (@ ${item.unitPrice} €)`
+    : `${item.unit === 'ha' ? formatSurface(item.quantity) : (item.unit === 'kg' ? Number(item.quantity).toLocaleString('fr-FR') : item.quantity)} ${item.unit}`;
+
   if (detailBody) {
     detailBody.innerHTML = `
       <div class="detail-grid">
@@ -5201,12 +5257,13 @@ window.openDetailModal = function(id) {
         </div>
         <div class="detail-item">
           <span class="detail-label">Prestation</span>
-          <span class="detail-value">${escapeHTML(item.task)}</span>
+          <span class="detail-value">${escapeHTML(taskText)}</span>
         </div>
         <div class="detail-item">
-          <span class="detail-label">Volume / Tarif</span>
-          <span class="detail-value">${item.unit === 'ha' ? formatSurface(item.quantity) : (item.unit === 'kg' ? Number(item.quantity).toLocaleString('fr-FR') : item.quantity)} ${item.unit} (@ ${item.unitPrice} €)</span>
+          <span class="detail-label">${volumeTarifLabel}</span>
+          <span class="detail-value">${volumeTarifValue}</span>
         </div>
+        ${canViewFinancials ? `
         <div class="detail-item">
           <span class="detail-label">Total estimé HT</span>
           <span class="detail-value text-gradient" style="font-size: 1.2rem;">${item.total.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} € HT</span>
@@ -5218,7 +5275,7 @@ window.openDetailModal = function(id) {
         <div class="detail-item">
           <span class="detail-label">Statut facturation</span>
           <span class="detail-value">${item.status === 'À facturer' ? '⏳ À facturer' : '✅ Facturée'}</span>
-        </div>
+        </div>` : ''}
         <div class="detail-notes-box">
           <strong>Notes & Observations :</strong><br>
           ${item.notes ? escapeHTML(item.notes) : '<em>Aucune note enregistrée.</em>'}
@@ -5235,11 +5292,16 @@ window.openDetailModal = function(id) {
   }
 
   if (toggleBtn) {
-    toggleBtn.textContent = item.status === "À facturer" ? "Marquer comme Facturée" : "Remettre en À facturer";
-    toggleBtn.onclick = () => {
-      toggleInterventionStatus(item.id);
-      closeDetailModal();
-    };
+    if (!canViewFinancials) {
+      toggleBtn.style.display = "none";
+    } else {
+      toggleBtn.style.display = "inline-flex";
+      toggleBtn.textContent = item.status === "À facturer" ? "Marquer comme Facturée" : "Remettre en À facturer";
+      toggleBtn.onclick = () => {
+        toggleInterventionStatus(item.id);
+        closeDetailModal();
+      };
+    }
   }
 
   if (modal) {
@@ -5268,10 +5330,30 @@ function exportCSV() {
   }
 
   const BOM = "\uFEFF";
-  const headers = ["ID", "Date", "Heure", "Salarié", "Client", "Parcelle", "Prestation", "Quantité", "Unité", "Tarif Unitaire HT", "Total HT", "Taux TVA", "Total TTC", "Statut", "Observations"];
+  const canViewFinancials = canCurrentUserViewDashboard();
+  const headers = canViewFinancials 
+    ? ["ID", "Date", "Heure", "Salarié", "Client", "Parcelle", "Prestation", "Quantité", "Unité", "Tarif Unitaire HT", "Total HT", "Taux TVA", "Total TTC", "Statut", "Observations"]
+    : ["ID", "Date", "Heure", "Salarié", "Client", "Parcelle", "Prestation", "Quantité", "Unité", "Observations"];
 
   const rows = interventions.map(item => {
     const formatted = formatDateDisplay(item.datetime);
+    const taskText = canViewFinancials ? (item.task || '') : (item.task || '').replace(/\s*\([^)]*€[^)]*\)/g, '').trim();
+
+    if (!canViewFinancials) {
+      return [
+        `"${item.id || ''}"`,
+        `"${formatted.date}"`,
+        `"${formatted.time}"`,
+        `"${(item.worker || '').replace(/"/g, '""')}"`,
+        `"${(item.client || '').replace(/"/g, '""')}"`,
+        `"${item.parcel.replace(/"/g, '""')}"`,
+        `"${taskText.replace(/"/g, '""')}"`,
+        `"${item.quantity}"`,
+        `"${item.unit}"`,
+        `"${(item.notes || '').replace(/"/g, '""')}"`
+      ].join(";");
+    }
+
     const rate = getTvaRate(item);
     const ratePercent = `${Math.round(rate * 100)}%`;
     const itemTTC = ((item.total || 0) * (1 + rate)).toFixed(2);
@@ -5336,8 +5418,9 @@ function populateTaskSelects() {
       categories[cat].forEach(s => {
         const opt = document.createElement("option");
         opt.value = s.name;
+        const showPrice = canCurrentUserViewDashboard();
         const rateLabel = s.rateType === "hourly" ? `${s.price} €/h` : (s.rateType === "surface" ? `${s.price} €/ha` : (s.rateType === "kilo" ? `${s.price} €/kg` : `${s.price} € forfait`));
-        opt.textContent = `${s.name} (${rateLabel})`;
+        opt.textContent = showPrice ? `${s.name} (${rateLabel})` : s.name;
         optgroup.appendChild(opt);
       });
       inputTask.appendChild(optgroup);
@@ -6627,15 +6710,23 @@ async function checkAuthUser() {
 
       if (session && session.user) {
         const meta = session.user.user_metadata || {};
+        const isTeamMember = meta.is_team_member || !!meta.owner_user_id;
         user = {
-          id: session.user.id,
+          id: meta.member_id || session.user.id,
+          authUserId: session.user.id,
           email: session.user.email,
-          domainName: meta.domain_name || meta.domain || session.user.email.split("@")[0],
-          fullName: meta.full_name || "Exploitant",
-          role: meta.role || "Gérant Exploitant",
+          domainName: meta.owner_domain || meta.domain_name || meta.domain || session.user.email.split("@")[0],
+          fullName: meta.full_name || (isTeamMember ? "Collaborateur" : "Exploitant"),
+          role: meta.role || (isTeamMember ? "Tractoriste / Chauffeur d'engins" : "Gérant Exploitant"),
+          isTeamMember: isTeamMember,
+          canViewDashboard: isTeamMember ? (meta.can_view_dashboard !== undefined ? (meta.can_view_dashboard === true || meta.can_view_dashboard === "true") : false) : true,
+          ownerUserId: meta.owner_user_id || undefined,
+          ownerDomain: meta.owner_domain || undefined,
+          ownerEmail: meta.owner_email || undefined,
           loggedInAt: new Date().toISOString()
         };
         localStorage.setItem("vititrack_auth_user", JSON.stringify(user));
+        currentAuthUser = user;
         updateUserInterface(user);
       }
     } catch (err) {
@@ -6652,6 +6743,8 @@ async function checkAuthUser() {
 
 function updateUserInterface(user) {
   if (!user) return;
+  applyDashboardPermissions();
+
   const topbarUserName = document.getElementById("user-topbar-name");
   const sidebarUserName = document.getElementById("sidebar-user-name");
   const sidebarUserRole = document.getElementById("sidebar-user-role");
@@ -7106,6 +7199,12 @@ function renderTeamList() {
               </span>
               <span style="font-size: 0.72rem; color: var(--color-text-secondary);">${escapeHTML(user.status || 'Actif')}</span>
             </div>
+            <div style="margin-top: 0.35rem;">
+              ${user.canViewDashboard !== false
+                ? `<span style="font-size: 0.70rem; padding: 2px 7px; border-radius: 4px; background: rgba(82, 183, 136, 0.15); color: #52b788; border: 1px solid rgba(82, 183, 136, 0.3); font-weight: 500;">📊 Tableau de bord : Autorisé</span>`
+                : `<span style="font-size: 0.70rem; padding: 2px 7px; border-radius: 4px; background: rgba(239, 68, 68, 0.12); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.25); font-weight: 500;">🔒 Interventions seules (sans prix)</span>`
+              }
+            </div>
           </div>
         </div>
 
@@ -7261,6 +7360,7 @@ function syncGlobalTeamDirectory() {
           roleCategory: member.roleCategory || getRoleCategory(member.role),
           email: member.email.trim().toLowerCase(),
           password: member.password || "viti2026",
+          canViewDashboard: member.canViewDashboard !== false,
           ownerUserId: ownerUserId,
           ownerDomain: ownerDomain,
           ownerEmail: ownerEmail
@@ -7299,6 +7399,7 @@ async function syncTeamUserToSupabaseAuth(member) {
         role: member.role || "Tractoriste / Chauffeur d'engins",
         role_category: member.roleCategory || getRoleCategory(member.role),
         is_team_member: true,
+        can_view_dashboard: member.canViewDashboard !== false,
         owner_user_id: ownerUserId,
         owner_domain: ownerDomain,
         owner_email: ownerEmail,
@@ -7328,6 +7429,18 @@ function openAddTeamMemberModal() {
     pwdInput.value = Math.floor(100000 + Math.random() * 900000).toString();
   }
 
+  const accessSelect = document.getElementById("input-member-can-view-dashboard");
+  if (accessSelect) accessSelect.value = "false";
+
+  const roleSelect = document.getElementById("input-member-role");
+  if (roleSelect && accessSelect) {
+    roleSelect.onchange = () => {
+      if (roleSelect.value === "Gérant Exploitant") {
+        accessSelect.value = "true";
+      }
+    };
+  }
+
   const titleEl = document.getElementById("team-member-modal-title");
   if (titleEl) titleEl.textContent = "Ajouter un utilisateur";
 
@@ -7355,6 +7468,7 @@ function openEditTeamMemberModal(userId) {
   const nameInput = document.getElementById("input-member-name");
   const roleSelect = document.getElementById("input-member-role");
   const statusSelect = document.getElementById("input-member-status");
+  const accessSelect = document.getElementById("input-member-can-view-dashboard");
   const emailInput = document.getElementById("input-member-email");
   const pwdInput = document.getElementById("input-member-password");
   const phoneInput = document.getElementById("input-member-phone");
@@ -7365,6 +7479,7 @@ function openEditTeamMemberModal(userId) {
   if (nameInput) nameInput.value = user.name || "";
   if (roleSelect) roleSelect.value = user.role || "Tractoriste / Chauffeur d'engins";
   if (statusSelect) statusSelect.value = user.status || "Actif";
+  if (accessSelect) accessSelect.value = user.canViewDashboard !== false ? "true" : "false";
   if (emailInput) emailInput.value = user.email || "";
   if (pwdInput) pwdInput.value = user.password || "viti2026";
   if (phoneInput) phoneInput.value = user.phone || "";
@@ -7403,6 +7518,7 @@ function handleTeamMemberFormSubmit(e) {
   const name = document.getElementById("input-member-name")?.value?.trim();
   const role = document.getElementById("input-member-role")?.value || "Tractoriste / Chauffeur d'engins";
   const status = document.getElementById("input-member-status")?.value || "Actif";
+  const canViewDashboard = document.getElementById("input-member-can-view-dashboard")?.value === "true";
   const email = document.getElementById("input-member-email")?.value?.trim() || "";
   const password = document.getElementById("input-member-password")?.value?.trim() || "viti2026";
   const phone = document.getElementById("input-member-phone")?.value?.trim() || "";
@@ -7436,6 +7552,7 @@ function handleTeamMemberFormSubmit(e) {
         role,
         roleCategory,
         status,
+        canViewDashboard,
         email,
         password,
         phone,
@@ -7452,6 +7569,7 @@ function handleTeamMemberFormSubmit(e) {
       role,
       roleCategory,
       status,
+      canViewDashboard,
       email,
       password,
       phone,

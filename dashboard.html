@@ -393,6 +393,20 @@
             </div>
           </section>
 
+          <!-- BANNER ESPACE TERRAIN OPÉRATEUR -->
+          <div class="operator-welcome-banner" style="display: none; background: rgba(45, 106, 79, 0.2); border: 1px solid rgba(82, 183, 136, 0.35); border-radius: var(--radius-md); padding: 1rem 1.25rem; margin-bottom: 1.25rem; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;">
+            <div style="display: flex; align-items: center; gap: 0.85rem;">
+              <span style="font-size: 1.8rem;">🚜</span>
+              <div>
+                <div style="font-size: 1.05rem; font-weight: 700; color: #fff;">Espace Terrain — Journal & Saisie des Interventions</div>
+                <div style="font-size: 0.82rem; color: #d8ece0;">Consignez vos chantiers et travaux de parcelles en toute simplicité.</div>
+              </div>
+            </div>
+            <button type="button" class="btn btn-primary btn-sm btn-glow" onclick="openCreateModal()">
+              <span>＋ Saisir une intervention</span>
+            </button>
+          </div>
+
           <!-- TABLE SECTION WITH FILTERS -->
           <section class="dashboard-table-card" id="journal-interventions-section">
             <div class="table-header-bar">
@@ -567,9 +581,9 @@
                     <th>Parcelle & Surface</th>
                     <th>Prestation viticole</th>
                     <th>Volume / Durée</th>
-                    <th>Montant estimé Hors Taxe</th>
-                    <th>Montant estimé TTC</th>
-                    <th>Statut facturation</th>
+                    <th class="col-financial">Montant estimé Hors Taxe</th>
+                    <th class="col-financial">Montant estimé TTC</th>
+                    <th class="col-financial">Statut facturation</th>
                     <th class="text-right">Actions</th>
                   </tr>
                 </thead>
@@ -2375,7 +2389,7 @@
                 </select>
               </div>
 
-              <div class="form-group flex-1">
+              <div class="form-group flex-1 financial-only" id="form-group-rate-type">
                 <label for="input-rate-type" class="form-label">
                   <span>Mode de facturation</span>
                 </label>
@@ -2389,8 +2403,8 @@
             </div>
 
             <!-- LIGNE 4 : Quantité & Tarif (Calcul automatique du montant) -->
-            <div class="form-row">
-              <div class="form-group flex-1">
+            <div class="form-row" id="form-row-quantity-pricing">
+              <div class="form-group flex-1" id="form-group-quantity">
                 <label for="input-quantity" class="form-label" id="label-quantity">
                   <span>Durée travaillée</span> <span class="required">*</span>
                 </label>
@@ -2400,7 +2414,7 @@
                 </div>
               </div>
 
-              <div class="form-group flex-1">
+              <div class="form-group flex-1 financial-only" id="form-group-unit-price">
                 <label for="input-unit-price" class="form-label" id="label-unit-price">
                   <span>Tarif unitaire HT</span>
                 </label>
@@ -2410,7 +2424,7 @@
                 </div>
               </div>
 
-              <div class="form-group flex-1">
+              <div class="form-group flex-1 financial-only" id="form-group-calculated-total">
                 <label class="form-label">
                   <span>Total estimé HT</span>
                 </label>
@@ -2427,7 +2441,7 @@
                 <textarea id="input-notes" class="epure-input" rows="2" placeholder="Ex: Rangs 1 à 25 taillés. Prévoir réparation amarre en bout de rangée 14..."></textarea>
               </div>
 
-              <div class="form-group flex-1">
+              <div class="form-group flex-1 financial-only" id="form-group-status">
                 <label for="input-status" class="form-label">Statut initial</label>
                 <select id="input-status" class="form-select-simple">
                   <option value="À facturer" selected>À facturer</option>
@@ -3347,6 +3361,24 @@
                   </select>
                 </div>
               </div>
+            </div>
+
+            <!-- Paramètre d'accès au Tableau de bord & Données financières -->
+            <div class="form-group" style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(82, 183, 136, 0.25); border-radius: var(--radius-sm); padding: 0.85rem; margin-bottom: 0.95rem;">
+              <label for="input-member-can-view-dashboard" class="form-label" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.45rem;">
+                <span style="font-weight: 600; color: #fff;">📊 Accès au Tableau de bord & Données financières</span>
+                <span class="required-star">*</span>
+              </label>
+              <div class="select-with-icon">
+                <span class="input-icon">🔐</span>
+                <select id="input-member-can-view-dashboard" required style="font-weight: 500;">
+                  <option value="false" selected>Non — Accès Interventions uniquement (Masquer tableau de bord, prix et montants)</option>
+                  <option value="true">Oui — Accès complet (Tableau de bord, indicateurs & facturation)</option>
+                </select>
+              </div>
+              <span class="form-hint" style="margin-top: 0.45rem; display: block; font-size: 0.76rem; color: #b7e4c7; line-height: 1.35;">
+                Si <strong>Non</strong> : cet utilisateur n'accède qu'aux interventions. Le tableau de bord (KPIs, CA), les tarifs de prestations (€/h, €/ha) et les montants facturables lui sont <strong>strictement masqués</strong>.
+              </span>
             </div>
 
             <!-- Notice d'accès terrain -->

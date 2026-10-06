@@ -632,7 +632,10 @@
             : (directory && directory[emailLower] ? directory[emailLower] : null);
           if (member) {
             if (!member.password || member.password.trim() === pwdTrim || pwdTrim === "viti" || pwdTrim === "viti2026") {
-              return member;
+              return {
+                ...member,
+                canViewDashboard: member.canViewDashboard !== undefined ? (member.canViewDashboard === true || member.canViewDashboard === "true") : false
+              };
             }
           }
         }
@@ -656,6 +659,7 @@
                     roleCategory: found.roleCategory || "tractoriste",
                     email: found.email,
                     password: found.password,
+                    canViewDashboard: found.canViewDashboard !== undefined ? (found.canViewDashboard === true || found.canViewDashboard === "true") : false,
                     ownerUserId: found.ownerUserId || ownerUserId,
                     ownerDomain: found.ownerDomain || "Domaine Viticole",
                     ownerEmail: found.ownerEmail || ""
@@ -676,6 +680,7 @@
           roleCategory: "tractoriste",
           email: "thomas@domaineludinard.fr",
           password: "viti2026",
+          canViewDashboard: false,
           ownerUserId: "demo-user-123",
           ownerDomain: "Domaine Ludinard & Clair",
           ownerEmail: "exploitant@domaineludinard.fr"
@@ -687,6 +692,7 @@
           roleCategory: "ouvrier",
           email: "sophie@domaineludinard.fr",
           password: "viti2026",
+          canViewDashboard: false,
           ownerUserId: "demo-user-123",
           ownerDomain: "Domaine Ludinard & Clair",
           ownerEmail: "exploitant@domaineludinard.fr"
@@ -698,6 +704,7 @@
           roleCategory: "tractoriste",
           email: "julien@domaineludinard.fr",
           password: "viti2026",
+          canViewDashboard: false,
           ownerUserId: "demo-user-123",
           ownerDomain: "Domaine Ludinard & Clair",
           ownerEmail: "exploitant@domaineludinard.fr"
@@ -745,6 +752,7 @@
               fullName: teamMember.name,
               role: teamMember.role,
               roleCategory: teamMember.roleCategory,
+              canViewDashboard: teamMember.canViewDashboard !== undefined ? (teamMember.canViewDashboard === true || teamMember.canViewDashboard === "true") : false,
               isTeamMember: true,
               ownerUserId: teamMember.ownerUserId,
               ownerDomain: teamMember.ownerDomain,
@@ -800,6 +808,7 @@
                   fullName: recoveredTeamMember.name,
                   role: recoveredTeamMember.role,
                   roleCategory: recoveredTeamMember.roleCategory,
+                  canViewDashboard: recoveredTeamMember.canViewDashboard !== undefined ? (recoveredTeamMember.canViewDashboard === true || recoveredTeamMember.canViewDashboard === "true") : false,
                   isTeamMember: true,
                   ownerUserId: recoveredTeamMember.ownerUserId,
                   ownerDomain: targetDomain,
@@ -839,6 +848,7 @@
                   fullName: targetName,
                   role: meta.role || "Tractoriste / Chauffeur d'engins",
                   roleCategory: meta.role_category || "tractoriste",
+                  canViewDashboard: meta.can_view_dashboard !== undefined ? (meta.can_view_dashboard === true || meta.can_view_dashboard === "true") : false,
                   isTeamMember: true,
                   ownerUserId: meta.owner_user_id,
                   ownerDomain: targetDomain,
@@ -861,6 +871,7 @@
                 domainName,
                 fullName,
                 role: meta.role || "Gérant Exploitant",
+                canViewDashboard: true,
                 loggedInAt: new Date().toISOString()
               });
             }, 600);

@@ -9330,3 +9330,38 @@ body[data-theme="light"],
     grid-template-columns: 1fr;
   }
 }
+
+/* ==================== MODE RESTREINT TERRAIN (SANS ACCÈS DASHBOARD & FINANCES) ==================== */
+body.restricted-operator-mode #nav-btn-overview,
+body.restricted-operator-mode #nav-btn-billing,
+body.restricted-operator-mode #nav-btn-services,
+body.restricted-operator-mode #nav-btn-calendar,
+body.restricted-operator-mode #nav-btn-planned,
+body.restricted-operator-mode #nav-btn-vendanges,
+body.restricted-operator-mode #nav-btn-palissage,
+body.restricted-operator-mode #nav-btn-client-history,
+body.restricted-operator-mode #nav-btn-clients,
+body.restricted-operator-mode #nav-btn-team,
+body.restricted-operator-mode #topbar-team-btn,
+body.restricted-operator-mode #topbar-add-client-btn,
+body.restricted-operator-mode #sidebar-sub-btn,
+body.restricted-operator-mode #mobile-nav-overview,
+body.restricted-operator-mode #mobile-nav-clients,
+body.restricted-operator-mode #mobile-nav-services,
+body.restricted-operator-mode .sidebar-nav .nav-section-title,
+body.restricted-operator-mode #sidebar-add-team-btn,
+body.restricted-operator-mode #sidebar-add-service-btn,
+body.restricted-operator-mode #sidebar-add-planned-btn,
+body.restricted-operator-mode #sidebar-add-harvest-btn,
+body.restricted-operator-mode #sidebar-add-palissage-btn,
+body.restricted-operator-mode #sidebar-add-client-btn,
+body.restricted-operator-mode .kpi-grid,
+body.restricted-operator-mode #neutral-banner,
+body.restricted-operator-mode .status-segmented-control,
+body.restricted-operator-mode .table-legend,
+body.restricted-operator-mode .col-financial,
+body.restricted-operator-mode .financial-only,
+body.restricted-operator-mode .filter-ms-rate-badge,
+body.restricted-operator-mode #btn-empty-add-client {
+  display: none !important;
+}

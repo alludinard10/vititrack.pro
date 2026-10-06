@@ -177,7 +177,16 @@ Vititrack pro/
   - Synthèse en 4 indicateurs : Utilisateurs au total, Gérant(s), Salariés & Tractoristes, Membres actifs sur le terrain.
   - Recherche instantanée et filtrage par rôle (Gérants, Tractoristes, Ouvriers viticoles, Saisonniers).
   - Cartes profil complètes : avatar avec initiales colorées, rôle avec pastille de couleur, statut (Actif, En mission, En congé), coordonnées (email et téléphone cliquables), habilitations (Certiphyto, CACES) et notes internes.
-- **Formulaire Utilisateur (Modal 10)** : Ajout et édition rapide d'un membre avec assignation du rôle viticole et compétences terrain.
+- **Formulaire Utilisateur (Modal 10)** : Ajout et édition rapide d'un membre avec assignation du rôle viticole, compétences terrain et **contrôle d'accès au Tableau de bord & Finances** (`canViewDashboard`).
+- **Contrôle d'Accès & Mode Restreint Terrain (Salariés sans accès Tableau de bord)** :
+  - **Option d'autorisation** : Lors de la création ou modification d'un collaborateur, choix entre *« Non — Accès Interventions uniquement (Masquer tableau de bord, prix et montants) »* et *« Oui — Accès complet »*.
+  - **Restriction de vue** : Si l'accès est refusé (`canViewDashboard: false`), l'utilisateur est restreint au journal des interventions. Le Tableau de bord (grille des KPIs, chiffre d'affaires, montants facturés/à facturer, bannières financières) et les autres sections de pilotage sont masqués.
+  - **Confidentialité financière absolue (Masquage des prix)** :
+    - Dans le Journal des interventions : les colonnes *Montant estimé HT*, *Montant estimé TTC* et *Statut facturation* sont masquées.
+    - Dans la liste des prestations : les mentions tarifaires (ex. `38 €/h`, `95 €/ha`) sont automatiquement retirées.
+    - Dans la modale de saisie/modification d'intervention : les champs *Mode de facturation*, *Tarif unitaire HT*, *Total estimé HT* et *Statut initial* sont masqués. Le calcul financier se fait automatiquement en arrière-plan avec les tarifs du catalogue afin que le gérant conserve l'intégralité de ses métriques financières.
+    - Dans la modale de détails et l'export CSV : les données financières (tarifs, totaux HT/TTC, statut de facturation) sont exclues.
+  - **Badges de statut dans l'équipe** : Chaque fiche utilisateur affiche visuellement son niveau d'accès (*« 📊 Tableau de bord : Autorisé »* vs *« 🔒 Interventions seules (sans prix) »*).
 - **Provisionnement & Synchronisation Cloud Supabase Auth automatique** : Dès qu'un collaborateur est créé ou modifié avec un email et un mot de passe dans l'équipe, son compte Supabase Auth est instantanément provisionné et confirmé en arrière-plan (`upsertConfirmedUser`). Il peut ainsi se connecter depuis n'importe quel smartphone, tablette ou ordinateur.
 - **Connexion multi-appareils & Accès direct au compte gérant** : À la connexion (`login.html`), le profil d'équipe est reconnu (via Supabase Auth ou répertoire partagé) et rattaché au compte de l'administrateur gérant (`ownerUserId`), donnant accès direct en temps réel à l'ensemble des parcelles, chantiers et outils du domaine.
 - **Alimentation dynamique du planning des travaux** : Les travaux prévisionnels proposent automatiquement la liste des membres réels de l'équipe dans le champ « Salarié pressenti ».
