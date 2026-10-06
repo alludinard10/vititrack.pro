@@ -2286,18 +2286,47 @@
               </div>
             </div>
 
-            <!-- LIGNE 2 : Client & Parcelles travaillées (Multi-sélection & Calcul auto de la surface) -->
+            <!-- BANDEAU MULTI-DOMAINES (SI PLUSIEURS CLIENTS SÉLECTIONNÉS) -->
+            <div id="intervention-multi-client-notice" style="display: none; align-items: center; gap: 0.55rem; background: rgba(82, 183, 136, 0.12); border: 1px solid rgba(82, 183, 136, 0.35); border-radius: var(--radius-sm); padding: 0.5rem 0.8rem; margin-bottom: 0.85rem; font-size: 0.82rem; color: var(--color-primary-lighter);">
+              <span style="font-size: 1.05rem;">✨</span>
+              <div id="intervention-multi-client-notice-text">
+                Multi-domaines actif : une intervention distincte sera automatiquement générée pour chaque domaine sélectionné avec ses parcelles et sa surface respective.
+              </div>
+            </div>
+
+            <!-- LIGNE 2 : Client & Parcelles travaillées (Multi-sélection Domaines & Parcelles avec calcul auto de la surface) -->
             <div class="form-row">
+              <!-- MENU DÉROULANT CLIENT(S) / DOMAINE(S) -->
               <div class="form-group flex-1">
                 <div class="form-label-row">
-                  <label for="input-client" class="form-label">
-                    <span>Client / Domaine</span> <span class="required">*</span>
+                  <label class="form-label" for="btn-intervention-client-trigger">
+                    <span>Domaine(s) / Client(s)</span> <span class="required">*</span>
                   </label>
                   <button type="button" class="btn-link-action" id="btn-quick-add-client">＋ Nouveau client</button>
                 </div>
-                <select id="input-client" class="form-select-simple" required>
-                  <option value="">Sélectionner un client...</option>
-                </select>
+
+                <div class="modal-dropdown-wrap" id="wrap-intervention-client-dropdown">
+                  <button type="button" class="modal-dropdown-trigger" id="btn-intervention-client-trigger" aria-haspopup="true" aria-expanded="false">
+                    <span class="modal-dropdown-icon">🏰</span>
+                    <span class="modal-dropdown-text" id="intervention-client-trigger-text">Sélectionner les domaines...</span>
+                    <span class="modal-dropdown-badge" id="intervention-client-trigger-badge" style="display: none;">0</span>
+                    <span class="modal-dropdown-arrow">▼</span>
+                  </button>
+
+                  <div class="modal-dropdown-menu" id="menu-intervention-client-dropdown" style="display: none;">
+                    <div class="modal-dropdown-header">
+                      <span class="modal-dropdown-header-title">Domaines viticoles</span>
+                      <button type="button" class="btn-link-action" id="btn-toggle-all-intervention-clients">Tout cocher</button>
+                    </div>
+                    <div class="modal-dropdown-search-wrap" id="intervention-clients-search-wrap" style="display: none;">
+                      <input type="text" id="search-intervention-clients" class="planned-quick-search-input" placeholder="🔍 Rechercher un domaine..." autocomplete="off">
+                    </div>
+                    <div id="intervention-client-checkbox-list" class="modal-dropdown-list">
+                      <!-- Rempli dynamiquement -->
+                    </div>
+                  </div>
+                </div>
+                <input type="hidden" id="input-client" name="client" required>
               </div>
 
               <div class="form-group flex-1">
@@ -2312,7 +2341,7 @@
                 </div>
                 
                 <div id="parcel-checkbox-list" class="parcel-checkbox-list">
-                  <div class="parcel-list-empty">Sélectionnez d'abord un client pour charger ses parcelles.</div>
+                  <div class="parcel-list-empty">Sélectionnez d'abord un ou plusieurs domaines pour afficher leurs parcelles.</div>
                 </div>
                 <input type="hidden" id="input-parcel" name="parcel" required>
 

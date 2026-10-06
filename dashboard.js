@@ -2086,24 +2086,11 @@ function setupEventListeners() {
     });
   }
 
-  // Client Selection in Intervention Modal -> Updates Parcelles Dropdown
-  const modalClientSelect = document.getElementById("input-client");
-  const modalParcelSelect = document.getElementById("input-parcel");
-  const parcelHint = document.getElementById("parcel-hint");
+  // Multi-sélection Clients & Parcelles dans le Modal Intervention
+  setupInterventionClientDropdownEvents();
+
   const quickAddParcelBtn = document.getElementById("btn-quick-add-parcel");
   const toggleAllParcelsBtn = document.getElementById("btn-toggle-all-parcels");
-
-  if (modalClientSelect) {
-    modalClientSelect.addEventListener("change", (e) => {
-      const clientId = e.target.value;
-      if (clientId === "__create_client__") {
-        modalClientSelect.value = "";
-        openClientModal();
-        return;
-      }
-      populateParcelSelectForClient(clientId);
-    });
-  }
 
   if (toggleAllParcelsBtn) {
     toggleAllParcelsBtn.addEventListener("click", () => {
@@ -2115,20 +2102,23 @@ function setupEventListeners() {
       checkboxes.forEach(cb => {
         cb.checked = !allChecked;
         const item = cb.closest(".parcel-checkbox-item");
-        if (!allChecked) item?.classList.add("selected");
-        else item?.classList.remove("selected");
+        if (item) {
+          if (!allChecked) item.classList.add("selected");
+          else item.classList.remove("selected");
+        }
       });
-      const clientId = modalClientSelect ? modalClientSelect.value : "";
-      const client = clients.find(c => c.id === clientId);
-      updateParcelSelectionSummary(client);
+      updateParcelSelectionSummary(true);
     });
   }
 
   if (quickAddParcelBtn) {
     quickAddParcelBtn.addEventListener("click", () => {
-      const clientId = modalClientSelect.value;
+      const checkedCbs = Array.from(document.querySelectorAll("#intervention-client-checkbox-list .intervention-client-cb:checked"));
+      const clientId = checkedCbs.length > 0 ? checkedCbs[0].value : (document.getElementById("input-client")?.value || "");
       if (clientId) {
         openParcelModal(clientId);
+      } else {
+        showToast("Veuillez d'abord sélectionner un domaine viticole.", "warning");
       }
     });
   }
@@ -2865,12 +2855,13 @@ function handleCreateClientSubmit(e) {
   // If intervention modal is open, auto-select this new client!
   const createModal = document.getElementById("create-modal");
   if (createModal && createModal.classList.contains("open")) {
-    const modalClientSelect = document.getElementById("input-client");
-    if (modalClientSelect) {
-      populateClientSelect();
-      modalClientSelect.value = clientId;
-      populateParcelSelectForClient(clientId);
+    renderInterventionClientsList();
+    const cb = document.querySelector(`#intervention-client-checkbox-list .intervention-client-cb[value="${clientId}"]`);
+    if (cb) {
+      cb.checked = true;
+      cb.closest(".intervention-client-item")?.classList.add("selected");
     }
+    onInterventionClientsChanged(clientId, true);
   }
 
   showToast(`Domaine « ${name} » enregistré dans la base !`, "success");
@@ -2960,13 +2951,16 @@ function handleCreateParcelSubmit(e) {
     openClientDossier(clientId);
   }
 
-  // If intervention modal is open, refresh parcel dropdown and auto-select
-  const modalClientSelect = document.getElementById("input-client");
-  if (modalClientSelect && modalClientSelect.value === clientId) {
-    populateParcelSelectForClient(clientId);
-    const parcelSelect = document.getElementById("input-parcel");
-    if (parcelSelect) {
-      parcelSelect.value = `${newParcel.name} (${formatSurface(newParcel.surface)} ha - ${newParcel.grape})`;
+  // If intervention modal is open, refresh parcel list and auto-select
+  const createModal = document.getElementById("create-modal");
+  if (createModal && createModal.classList.contains("open")) {
+    const cb = document.querySelector(`#intervention-client-checkbox-list .intervention-client-cb[value="${clientId}"]`);
+    if (cb && !cb.checked) {
+      cb.checked = true;
+      cb.closest(".intervention-client-item")?.classList.add("selected");
+      onInterventionClientsChanged(clientId, true);
+    } else {
+      updateInterventionParcelsList(clientId, true, newParcel.name);
     }
   }
 
@@ -2986,8 +2980,209 @@ window.deleteParcel = function(clientId, parcelId) {
   }
 };
 
-// ==================== MULTI-PARCEL SELECTION & SURFACE CALCULATION ====================
-function populateParcelSelectForClient(clientId, selectedParcelsStr = null) {
+// ==================== MENUS DÉROULANTS MULTI-SÉLECTION INTERVENTION ====================
+function openInterventionClientDropdown() {
+  const wrap = document.getElementById("wrap-intervention-client-dropdown");
+  const menu = document.getElementById("menu-intervention-client-dropdown");
+  const trigger = document.getElementById("btn-intervention-client-trigger");
+  if (wrap && menu) {
+    wrap.classList.add("is-open");
+    menu.style.display = "flex";
+    if (trigger) trigger.setAttribute("aria-expanded", "true");
+    const searchInput = document.getElementById("search-intervention-clients");
+    if (searchInput && searchInput.offsetParent !== null) {
+      setTimeout(() => searchInput.focus(), 60);
+    }
+  }
+}
+
+function closeInterventionClientDropdown() {
+  const wrap = document.getElementById("wrap-intervention-client-dropdown");
+  const menu = document.getElementById("menu-intervention-client-dropdown");
+  const trigger = document.getElementById("btn-intervention-client-trigger");
+  if (wrap && menu) {
+    wrap.classList.remove("is-open");
+    menu.style.display = "none";
+    if (trigger) trigger.setAttribute("aria-expanded", "false");
+  }
+}
+
+function toggleInterventionClientDropdown() {
+  const wrap = document.getElementById("wrap-intervention-client-dropdown");
+  if (wrap && wrap.classList.contains("is-open")) {
+    closeInterventionClientDropdown();
+  } else {
+    openInterventionClientDropdown();
+  }
+}
+
+let _interventionClientDropdownEventsInitialized = false;
+function setupInterventionClientDropdownEvents() {
+  if (_interventionClientDropdownEventsInitialized) return;
+  _interventionClientDropdownEventsInitialized = true;
+
+  const clientTrigger = document.getElementById("btn-intervention-client-trigger");
+  if (clientTrigger) {
+    clientTrigger.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      toggleInterventionClientDropdown();
+    });
+  }
+
+  const clientMenu = document.getElementById("menu-intervention-client-dropdown");
+  if (clientMenu) {
+    clientMenu.addEventListener("click", (e) => {
+      e.stopPropagation();
+    });
+  }
+
+  document.addEventListener("click", (e) => {
+    if (!e.target.closest("#wrap-intervention-client-dropdown")) {
+      closeInterventionClientDropdown();
+    }
+  });
+
+  const searchInput = document.getElementById("search-intervention-clients");
+  if (searchInput) {
+    searchInput.addEventListener("input", (e) => {
+      const val = e.target.value.toLowerCase().trim();
+      const items = document.querySelectorAll("#intervention-client-checkbox-list .intervention-client-item");
+      items.forEach(item => {
+        const name = item.dataset.clientName || "";
+        const commune = item.dataset.commune || "";
+        const match = !val || name.includes(val) || commune.includes(val);
+        item.style.display = match ? "flex" : "none";
+      });
+    });
+  }
+
+  const btnToggleClients = document.getElementById("btn-toggle-all-intervention-clients");
+  if (btnToggleClients) {
+    btnToggleClients.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const allCbs = Array.from(document.querySelectorAll("#intervention-client-checkbox-list .intervention-client-cb"));
+      if (allCbs.length === 0) return;
+      const allChecked = allCbs.every(cb => cb.checked);
+      allCbs.forEach(cb => {
+        cb.checked = !allChecked;
+        const item = cb.closest(".intervention-client-item");
+        if (item) {
+          if (!allChecked) item.classList.add("selected");
+          else item.classList.remove("selected");
+        }
+      });
+      onInterventionClientsChanged();
+    });
+  }
+}
+
+function renderInterventionClientsList() {
+  const listEl = document.getElementById("intervention-client-checkbox-list");
+  const searchWrap = document.getElementById("intervention-clients-search-wrap");
+  const toggleBtn = document.getElementById("btn-toggle-all-intervention-clients");
+
+  if (!listEl) return;
+
+  if (!clients || clients.length === 0) {
+    listEl.innerHTML = '<div class="parcel-list-empty">Aucun domaine enregistré. Créez d\'abord un client.</div>';
+    if (searchWrap) searchWrap.style.display = "none";
+    if (toggleBtn) toggleBtn.style.display = "none";
+    return;
+  }
+
+  if (searchWrap) {
+    searchWrap.style.display = clients.length > 4 ? "block" : "none";
+  }
+  if (toggleBtn) {
+    toggleBtn.style.display = "inline-block";
+    toggleBtn.textContent = "Tout cocher";
+  }
+
+  listEl.innerHTML = clients.map(c => {
+    const pCount = (c.parcels || []).length;
+    const pCountText = pCount === 0 ? "0 parcelle" : (pCount === 1 ? "1 parcelle" : `${pCount} parcelles`);
+    return `
+      <label class="parcel-checkbox-item intervention-client-item" data-client-id="${c.id}" data-client-name="${escapeHTML(c.name.toLowerCase())}" data-commune="${escapeHTML((c.commune || '').toLowerCase())}">
+        <input type="checkbox" class="intervention-client-cb" value="${c.id}" id="cb-int-cli-${c.id}">
+        <div class="parcel-item-info">
+          <div class="parcel-item-text">
+            <span class="parcel-item-name">🏰 ${escapeHTML(c.name)}</span>
+            ${c.commune ? `<span class="parcel-item-sub">📍 ${escapeHTML(c.commune)}</span>` : ''}
+          </div>
+          <span class="parcel-item-surface-badge">${pCountText}</span>
+        </div>
+      </label>
+    `;
+  }).join("");
+
+  const clientCbs = listEl.querySelectorAll(".intervention-client-cb");
+  clientCbs.forEach(cb => {
+    cb.addEventListener("change", () => {
+      const item = cb.closest(".intervention-client-item");
+      if (item) {
+        if (cb.checked) item.classList.add("selected");
+        else item.classList.remove("selected");
+      }
+      onInterventionClientsChanged(cb.value, cb.checked);
+    });
+  });
+}
+
+function onInterventionClientsChanged(changedClientId = null, isChecked = false) {
+  const allClientCbs = Array.from(document.querySelectorAll("#intervention-client-checkbox-list .intervention-client-cb"));
+  const checkedClientCbs = allClientCbs.filter(cb => cb.checked);
+  const checkedClientIds = checkedClientCbs.map(cb => cb.value);
+
+  const clientTriggerText = document.getElementById("intervention-client-trigger-text");
+  const clientTriggerBadge = document.getElementById("intervention-client-trigger-badge");
+  const hiddenClientInput = document.getElementById("input-client");
+  const multiNotice = document.getElementById("intervention-multi-client-notice");
+
+  const count = checkedClientIds.length;
+  if (clientTriggerText) {
+    if (count === 0) {
+      clientTriggerText.textContent = "Sélectionner les domaines...";
+    } else if (count === 1) {
+      const c = clients.find(item => item.id === checkedClientIds[0]);
+      clientTriggerText.textContent = c ? c.name : "1 domaine sélectionné";
+    } else if (count === 2) {
+      const c1 = clients.find(item => item.id === checkedClientIds[0]);
+      const c2 = clients.find(item => item.id === checkedClientIds[1]);
+      clientTriggerText.textContent = `${c1 ? c1.name : ''}, ${c2 ? c2.name : ''}`;
+    } else {
+      clientTriggerText.textContent = `${count} domaines sélectionnés`;
+    }
+  }
+
+  if (clientTriggerBadge) {
+    if (count > 0) {
+      clientTriggerBadge.textContent = count;
+      clientTriggerBadge.style.display = "inline-block";
+    } else {
+      clientTriggerBadge.style.display = "none";
+    }
+  }
+
+  if (hiddenClientInput) {
+    hiddenClientInput.value = checkedClientIds.join(",");
+  }
+
+  if (multiNotice) {
+    multiNotice.style.display = count > 1 ? "flex" : "none";
+  }
+
+  const toggleBtn = document.getElementById("btn-toggle-all-intervention-clients");
+  if (toggleBtn) {
+    const allChecked = allClientCbs.length > 0 && checkedClientCbs.length === allClientCbs.length;
+    toggleBtn.textContent = allChecked ? "Tout décocher" : "Tout cocher";
+  }
+
+  updateInterventionParcelsList(changedClientId, isChecked);
+}
+
+function updateInterventionParcelsList(changedClientId = null, isClientChecked = false, selectedParcelsStr = null) {
   const parcelContainer = document.getElementById("parcel-checkbox-list");
   const hiddenParcelInput = document.getElementById("input-parcel");
   const parcelHint = document.getElementById("parcel-hint");
@@ -2997,113 +3192,164 @@ function populateParcelSelectForClient(clientId, selectedParcelsStr = null) {
 
   if (!parcelContainer) return;
 
-  if (!clientId) {
-    parcelContainer.innerHTML = '<div class="parcel-list-empty">Sélectionnez d\'abord un client pour charger ses parcelles.</div>';
+  const checkedClientCbs = Array.from(document.querySelectorAll("#intervention-client-checkbox-list .intervention-client-cb:checked"));
+  const checkedClientIds = checkedClientCbs.map(cb => cb.value);
+
+  if (checkedClientIds.length === 0) {
+    parcelContainer.innerHTML = '<div class="parcel-list-empty">Sélectionnez d\'abord un ou plusieurs domaines pour afficher leurs parcelles.</div>';
     if (hiddenParcelInput) hiddenParcelInput.value = selectedParcelsStr || "";
-    if (parcelHint) parcelHint.textContent = "Sélectionnez un client pour charger ses parcelles.";
+    if (parcelHint) parcelHint.textContent = "Sélectionnez au moins un domaine pour charger ses parcelles.";
     if (quickAddParcelBtn) quickAddParcelBtn.style.display = "none";
     if (toggleAllParcelsBtn) toggleAllParcelsBtn.style.display = "none";
     if (summaryBar) summaryBar.style.display = "none";
+    updateParcelSelectionSummary(true);
     return;
   }
-
-  const client = clients.find(c => c.id === clientId);
-  if (!client) return;
 
   if (quickAddParcelBtn) quickAddParcelBtn.style.display = "inline-block";
-
-  if (!client.parcels || client.parcels.length === 0) {
-    parcelContainer.innerHTML = `<div class="parcel-list-empty">⚠️ Ce client n'a pas encore de parcelle.<br><a href="#" onclick="openParcelModal('${client.id}'); return false;" style="color:var(--color-primary-lighter); text-decoration:underline; font-weight:600; display:inline-block; margin-top:0.35rem;">＋ Ajouter une première parcelle</a></div>`;
-    if (hiddenParcelInput) hiddenParcelInput.value = selectedParcelsStr || "";
-    if (parcelHint) parcelHint.textContent = "Aucune parcelle répertoriée pour ce domaine.";
-    if (toggleAllParcelsBtn) toggleAllParcelsBtn.style.display = "none";
-    if (summaryBar) summaryBar.style.display = "none";
-    return;
-  }
-
-  // Populate parcels with custom checkboxes
-  parcelContainer.innerHTML = "";
   if (toggleAllParcelsBtn) {
-    toggleAllParcelsBtn.style.display = client.parcels.length > 1 ? "inline-block" : "none";
+    toggleAllParcelsBtn.style.display = "inline-block";
     toggleAllParcelsBtn.textContent = "Tout cocher";
   }
 
-  client.parcels.forEach((p, idx) => {
-    const itemLabel = document.createElement("label");
-    itemLabel.className = "parcel-checkbox-item";
-    itemLabel.setAttribute("for", `chk-parcel-${idx}`);
+  // Mémoriser les parcelles précédemment cochées
+  const previouslyCheckedKeys = new Set();
+  const currentParcelCbs = parcelContainer.querySelectorAll(".parcel-checkbox-input:checked");
+  currentParcelCbs.forEach(cb => {
+    previouslyCheckedKeys.add(`${cb.dataset.clientId}:::${cb.value}`);
+  });
 
-    const cb = document.createElement("input");
-    cb.type = "checkbox";
-    cb.id = `chk-parcel-${idx}`;
-    cb.className = "parcel-checkbox-input";
-    cb.value = p.name;
-    cb.dataset.surface = p.surface || 0;
-    cb.dataset.grape = p.grape || "";
+  const isMultiClients = checkedClientIds.length > 1;
+  let html = "";
+  let totalAvailableParcels = 0;
 
-    const infoDiv = document.createElement("div");
-    infoDiv.className = "parcel-item-info";
+  checkedClientIds.forEach(cId => {
+    const client = clients.find(c => c.id === cId);
+    if (!client) return;
 
-    const textDiv = document.createElement("div");
-    textDiv.className = "parcel-item-text";
-    textDiv.innerHTML = `<span class="parcel-item-name">${escapeHTML(p.name)}</span>` +
-      `<span class="parcel-item-sub">${escapeHTML(p.grape || 'Cépage non spécifié')}${p.soil ? ' • ' + escapeHTML(p.soil) : ''}</span>`;
+    if (isMultiClients) {
+      html += `
+        <div class="planned-parcel-domain-header" data-domain-id="${client.id}">
+          <span>🏰 ${escapeHTML(client.name)}</span>
+          <button type="button" class="btn-group-toggle-domain-parcels" data-client-id="${client.id}">Tout cocher</button>
+        </div>
+      `;
+    }
 
-    const badgeSpan = document.createElement("span");
-    badgeSpan.className = "parcel-item-surface-badge";
-    badgeSpan.textContent = `${formatSurface(p.surface)} ha`;
+    if (client.parcels && client.parcels.length > 0) {
+      totalAvailableParcels += client.parcels.length;
+      client.parcels.forEach((p, idx) => {
+        const key = `${client.id}:::${p.name}`;
+        let shouldBeChecked = false;
+        if (selectedParcelsStr) {
+          shouldBeChecked = selectedParcelsStr.includes(p.name);
+        } else if (changedClientId === client.id && isClientChecked) {
+          shouldBeChecked = true;
+        } else if (previouslyCheckedKeys.has(key)) {
+          shouldBeChecked = true;
+        } else if (changedClientId === null && checkedClientIds.length === 1 && idx === 0) {
+          shouldBeChecked = true;
+        }
 
-    infoDiv.appendChild(textDiv);
-    infoDiv.appendChild(badgeSpan);
-
-    itemLabel.appendChild(cb);
-    itemLabel.appendChild(infoDiv);
-
-    cb.addEventListener("change", () => {
-      if (cb.checked) {
-        itemLabel.classList.add("selected");
-      } else {
-        itemLabel.classList.remove("selected");
+        html += `
+          <label class="parcel-checkbox-item ${shouldBeChecked ? 'selected' : ''}" data-client-id="${client.id}">
+            <input type="checkbox" class="parcel-checkbox-input" 
+                   data-client-id="${client.id}" 
+                   data-surface="${p.surface || 0}" 
+                   data-grape="${escapeHTML(p.grape || '')}"
+                   value="${escapeHTML(p.name)}" 
+                   ${shouldBeChecked ? 'checked' : ''}>
+            <div class="parcel-item-info">
+              <div class="parcel-item-text">
+                <span class="parcel-item-name">📍 ${escapeHTML(p.name)}</span>
+                ${p.grape ? `<span class="parcel-item-sub">🍇 ${escapeHTML(p.grape)}${p.soil ? ' • ' + escapeHTML(p.soil) : ''}</span>` : ''}
+              </div>
+              <span class="parcel-item-surface-badge">${formatSurface(p.surface)} ha</span>
+            </div>
+          </label>
+        `;
+      });
+    } else {
+      totalAvailableParcels += 1;
+      const key = `${client.id}:::Toutes parcelles`;
+      let shouldBeChecked = false;
+      if (selectedParcelsStr) {
+        shouldBeChecked = true;
+      } else if (changedClientId === client.id && isClientChecked) {
+        shouldBeChecked = true;
+      } else if (previouslyCheckedKeys.has(key)) {
+        shouldBeChecked = true;
+      } else if (changedClientId === null && checkedClientIds.length === 1) {
+        shouldBeChecked = true;
       }
-      updateParcelSelectionSummary(client);
-    });
 
-    parcelContainer.appendChild(itemLabel);
+      html += `
+        <label class="parcel-checkbox-item ${shouldBeChecked ? 'selected' : ''}" data-client-id="${client.id}">
+          <input type="checkbox" class="parcel-checkbox-input fallback-domain-cb" 
+                 data-client-id="${client.id}" 
+                 data-surface="0" 
+                 value="Toutes parcelles" 
+                 ${shouldBeChecked ? 'checked' : ''}>
+          <div class="parcel-item-info">
+            <div class="parcel-item-text">
+              <span class="parcel-item-name">📍 Tout le domaine</span>
+              <span class="parcel-item-sub">Toutes parcelles / Général</span>
+            </div>
+            <span class="parcel-item-surface-badge">Ensemble</span>
+          </div>
+        </label>
+      `;
+    }
+  });
+
+  parcelContainer.innerHTML = html;
+
+  const parcelCbs = parcelContainer.querySelectorAll(".parcel-checkbox-input");
+  parcelCbs.forEach(cb => {
+    cb.addEventListener("change", () => {
+      const item = cb.closest(".parcel-checkbox-item");
+      if (item) {
+        if (cb.checked) item.classList.add("selected");
+        else item.classList.remove("selected");
+      }
+      updateParcelSelectionSummary(true);
+    });
+  });
+
+  const domainToggleBtns = parcelContainer.querySelectorAll(".btn-group-toggle-domain-parcels");
+  domainToggleBtns.forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const domainId = btn.dataset.clientId;
+      const domainCbs = Array.from(parcelContainer.querySelectorAll(`.parcel-checkbox-input[data-client-id="${domainId}"]`));
+      const allChecked = domainCbs.length > 0 && domainCbs.every(cb => cb.checked);
+      domainCbs.forEach(cb => {
+        cb.checked = !allChecked;
+        const item = cb.closest(".parcel-checkbox-item");
+        if (item) {
+          if (!allChecked) item.classList.add("selected");
+          else item.classList.remove("selected");
+        }
+      });
+      btn.textContent = allChecked ? "Tout cocher" : "Tout décocher";
+      updateParcelSelectionSummary(true);
+    });
   });
 
   if (parcelHint) {
-    parcelHint.textContent = `${client.parcels.length} parcelle(s) disponible(s) pour ${client.name}. Cochez celle(s) travaillée(s).`;
-  }
-
-  if (selectedParcelsStr) {
-    // Mode ÉDITION ou présélection spécifique
-    let matchedAny = false;
-    const checkboxes = Array.from(parcelContainer.querySelectorAll(".parcel-checkbox-input"));
-    checkboxes.forEach(cb => {
-      if (selectedParcelsStr.includes(cb.value)) {
-        cb.checked = true;
-        cb.closest(".parcel-checkbox-item")?.classList.add("selected");
-        matchedAny = true;
-      }
-    });
-
-    if (matchedAny) {
-      updateParcelSelectionSummary(client, false);
+    if (checkedClientIds.length === 1) {
+      const c = clients.find(item => item.id === checkedClientIds[0]);
+      parcelHint.textContent = `${totalAvailableParcels} parcelle(s) répertoriée(s) pour ${c ? c.name : 'le domaine'}. Cochez celle(s) travaillée(s).`;
     } else {
-      if (hiddenParcelInput) hiddenParcelInput.value = selectedParcelsStr;
-    }
-  } else {
-    // Preselect the first parcel by default so user has immediate visual confirmation & calculated total
-    const firstCb = parcelContainer.querySelector(".parcel-checkbox-input");
-    if (firstCb) {
-      firstCb.checked = true;
-      firstCb.closest(".parcel-checkbox-item")?.classList.add("selected");
-      updateParcelSelectionSummary(client, true);
+      parcelHint.textContent = `${checkedClientIds.length} domaines sélectionnés. Cochez les parcelles travaillées pour chaque domaine.`;
     }
   }
+
+  updateParcelSelectionSummary(true);
 }
 
-function updateParcelSelectionSummary(client, autoUpdateQuantity = true) {
+function updateParcelSelectionSummary(autoUpdateQuantity = true) {
   const parcelContainer = document.getElementById("parcel-checkbox-list");
   const hiddenParcelInput = document.getElementById("input-parcel");
   const summaryBar = document.getElementById("parcel-summary-bar");
@@ -3123,8 +3369,12 @@ function updateParcelSelectionSummary(client, autoUpdateQuantity = true) {
 
   checked.forEach(cb => {
     const s = parseFloat(cb.dataset.surface || 0);
-    totalSurface += s;
-    names.push(`${cb.value} (${formatSurface(s)} ha)`);
+    totalSurface += isNaN(s) ? 0 : s;
+    const cId = cb.dataset.clientId;
+    const client = clients.find(c => c.id === cId);
+    const domainPrefix = (client && document.querySelectorAll("#intervention-client-checkbox-list .intervention-client-cb:checked").length > 1) 
+      ? `[${client.name}] ` : "";
+    names.push(`${domainPrefix}${cb.value} (${formatSurface(s)} ha)`);
   });
 
   if (hiddenParcelInput) {
@@ -3139,12 +3389,18 @@ function updateParcelSelectionSummary(client, autoUpdateQuantity = true) {
     }
   }
 
+  const checkedClientsCount = document.querySelectorAll("#intervention-client-checkbox-list .intervention-client-cb:checked").length;
+
   if (checked.length > 0) {
     if (summaryBar) summaryBar.style.display = "flex";
-    if (summaryCount) summaryCount.textContent = `${checked.length} parcelle${checked.length > 1 ? 's' : ''} cochée${checked.length > 1 ? 's' : ''}`;
-    if (summarySurface) summarySurface.textContent = `Surface cumulée : ${formatSurface(totalSurface)} ha`;
+    if (summaryCount) {
+      const pText = `${checked.length} parcelle${checked.length > 1 ? 's' : ''} cochée${checked.length > 1 ? 's' : ''}`;
+      summaryCount.textContent = checkedClientsCount > 1 ? `${pText} (${checkedClientsCount} domaines)` : pText;
+    }
+    if (summarySurface) {
+      summarySurface.textContent = `Surface cumulée : ${formatSurface(totalSurface)} ha`;
+    }
 
-    // If mode is surface (or default), automatically report the cumulative surface!
     const mode = rateTypeSelect?.value || "surface";
     if (mode === "surface" && inputQuantity && autoUpdateQuantity) {
       inputQuantity.value = parseFloat(totalSurface.toFixed(4));
@@ -3159,6 +3415,40 @@ function updateParcelSelectionSummary(client, autoUpdateQuantity = true) {
   }
 }
 
+// Fonction de rétro-compatibilité
+function populateParcelSelectForClient(clientId, selectedParcelsStr = null) {
+  renderInterventionClientsList();
+  if (clientId) {
+    const cb = document.querySelector(`#intervention-client-checkbox-list .intervention-client-cb[value="${clientId}"]`);
+    if (cb) {
+      cb.checked = true;
+      cb.closest(".intervention-client-item")?.classList.add("selected");
+    }
+    onInterventionClientsChanged(clientId, true);
+    if (selectedParcelsStr) {
+      updateInterventionParcelsList(clientId, true, selectedParcelsStr);
+    }
+  } else {
+    const allCbs = document.querySelectorAll("#intervention-client-checkbox-list .intervention-client-cb");
+    allCbs.forEach(c => { c.checked = false; c.closest(".intervention-client-item")?.classList.remove("selected"); });
+    onInterventionClientsChanged();
+  }
+}
+
+function populateClientSelect() {
+  renderInterventionClientsList();
+  const filterClientSelect = document.getElementById("filter-client");
+  if (filterClientSelect) {
+    filterClientSelect.innerHTML = '<option value="">Tous les clients</option>';
+    clients.forEach(c => {
+      const opt = document.createElement("option");
+      opt.value = c.id;
+      opt.textContent = c.name + (c.commune ? ` (${c.commune})` : '');
+      filterClientSelect.appendChild(opt);
+    });
+  }
+}
+
 // ==================== INTERVENTION CREATION & MODIFICATION ====================
 function openCreateModal(interventionId = null, prefillDate = null) {
   convertingPlannedWorkId = null;
@@ -3169,7 +3459,6 @@ function openCreateModal(interventionId = null, prefillDate = null) {
   const modalSubtitle = document.getElementById("intervention-modal-subtitle");
   const submitText = document.getElementById("intervention-modal-submit-text");
   const datetimeInput = document.getElementById("input-datetime");
-  const clientSelect = document.getElementById("input-client");
   const taskSelect = document.getElementById("input-task");
   const rateTypeSelect = document.getElementById("input-rate-type");
   const quantityInput = document.getElementById("input-quantity");
@@ -3177,7 +3466,9 @@ function openCreateModal(interventionId = null, prefillDate = null) {
   const notesInput = document.getElementById("input-notes");
   const statusSelect = document.getElementById("input-status");
 
-  populateClientSelect();
+  closeInterventionClientDropdown();
+  setupInterventionClientDropdownEvents();
+  renderInterventionClientsList();
   populateWorkerSelect(interventionId ? (interventions.find(i => i.id === interventionId)?.worker || null) : null);
 
   // Affichage du bandeau collaborateur terrain si connecté avec son compte
@@ -3217,19 +3508,25 @@ function openCreateModal(interventionId = null, prefillDate = null) {
     }
 
     // Client & Parcelles
-    if (clientSelect) {
-      let targetClientId = item.clientId;
-      if (!targetClientId) {
-        const found = clients.find(c => c.name === item.client);
-        if (found) targetClientId = found.id;
-      }
-      if (targetClientId) {
-        clientSelect.value = targetClientId;
-        populateParcelSelectForClient(targetClientId, item.parcel);
-      } else {
-        populateParcelSelectForClient("", item.parcel);
-      }
+    let targetClientId = item.clientId;
+    if (!targetClientId) {
+      const found = clients.find(c => c.name === item.client);
+      if (found) targetClientId = found.id;
     }
+
+    const allCbs = document.querySelectorAll("#intervention-client-checkbox-list .intervention-client-cb");
+    allCbs.forEach(cb => {
+      const isMatch = cb.value === targetClientId;
+      cb.checked = isMatch;
+      const itm = cb.closest(".intervention-client-item");
+      if (itm) {
+        if (isMatch) itm.classList.add("selected");
+        else itm.classList.remove("selected");
+      }
+    });
+
+    onInterventionClientsChanged(targetClientId, true);
+    updateInterventionParcelsList(targetClientId, true, item.parcel);
 
     // Prestation viticole
     if (taskSelect) {
@@ -3332,7 +3629,7 @@ function openCreateModal(interventionId = null, prefillDate = null) {
       if (quantityInput) {
         quantityInput.step = "0.0001";
         quantityInput.min = "0.0001";
-        quantityInput.value = "1.0000";
+        quantityInput.value = "0.0000";
       }
       if (labelUnitPrice) labelUnitPrice.innerHTML = '<span>Forfait par hectare HT (€/ha)</span>';
       if (unitPriceInput) {
@@ -3341,8 +3638,13 @@ function openCreateModal(interventionId = null, prefillDate = null) {
       }
     }
 
-    if (clientSelect) clientSelect.value = "";
-    populateParcelSelectForClient("");
+    const allCbs = document.querySelectorAll("#intervention-client-checkbox-list .intervention-client-cb");
+    allCbs.forEach(cb => {
+      cb.checked = false;
+      cb.closest(".intervention-client-item")?.classList.remove("selected");
+    });
+    onInterventionClientsChanged();
+    updateInterventionParcelsList();
     updateCalculatedPrice();
   }
 
@@ -3360,6 +3662,7 @@ window.openEditInterventionModal = function(id) {
 };
 
 function closeCreateModal() {
+  closeInterventionClientDropdown();
   const modal = document.getElementById("create-modal");
   const editIdInput = document.getElementById("intervention-edit-id");
   if (editIdInput) editIdInput.value = "";
@@ -3841,26 +4144,8 @@ function updateTaskFilterUI() {
 }
 
 function populateClientSelect() {
-  const modalClientSelect = document.getElementById("input-client");
+  renderInterventionClientsList();
   const filterClientSelect = document.getElementById("filter-client");
-
-  if (modalClientSelect) {
-    if (clients.length === 0) {
-      modalClientSelect.innerHTML = '<option value="">⚠️ Aucun client enregistré</option><option value="__create_client__">🍇 ＋ Créer mon premier client...</option>';
-    } else {
-      modalClientSelect.innerHTML = '<option value="">Sélectionner un domaine client...</option>';
-      clients.forEach(c => {
-        const opt = document.createElement("option");
-        opt.value = c.id;
-        opt.textContent = c.name + (c.commune ? ` (${c.commune})` : '');
-        modalClientSelect.appendChild(opt);
-      });
-      const addOpt = document.createElement("option");
-      addOpt.value = "__create_client__";
-      addOpt.textContent = "🍇 ＋ Ajouter un nouveau client...";
-      modalClientSelect.appendChild(addOpt);
-    }
-  }
 
   if (filterClientSelect) {
     filterClientSelect.innerHTML = '<option value="all">Tous les clients</option>';
@@ -3901,8 +4186,6 @@ function handleCreateInterventionSubmit(e) {
   const workerInput = document.getElementById("input-worker");
   const worker = workerInput ? workerInput.value.trim() : defaultWorker;
   const datetime = document.getElementById("input-datetime")?.value;
-  const clientId = document.getElementById("input-client")?.value;
-  const parcel = document.getElementById("input-parcel")?.value?.trim();
   const task = document.getElementById("input-task")?.value;
   const rateType = document.getElementById("input-rate-type")?.value || "surface";
   const quantity = parseFloat(document.getElementById("input-quantity")?.value || 0);
@@ -3914,14 +4197,6 @@ function handleCreateInterventionSubmit(e) {
     showToast("Veuillez renseigner la date et l'heure.", "error");
     return;
   }
-  if (!clientId) {
-    showToast("Veuillez sélectionner un domaine viticole client.", "error");
-    return;
-  }
-  if (!parcel) {
-    showToast("Veuillez renseigner le nom de la parcelle travaillée.", "error");
-    return;
-  }
   if (!task) {
     showToast("Veuillez sélectionner une prestation viticole.", "error");
     return;
@@ -3931,22 +4206,30 @@ function handleCreateInterventionSubmit(e) {
     return;
   }
 
-  const clientObj = clients.find(c => c.id === clientId);
-  const clientName = clientObj ? clientObj.name : "Client Inconnu";
   const unit = rateType === "hourly" ? "heures" : (rateType === "surface" ? "ha" : (rateType === "kilo" ? "kg" : "forfait"));
-  const total = quantity * unitPrice;
   const tvaRate = getTvaRate(task);
-  const totalTTC = total * (1 + tvaRate);
 
   if (editId) {
     // Mode MODIFICATION
     const existingIndex = interventions.findIndex(i => i.id === editId);
     if (existingIndex !== -1) {
       const existing = interventions[existingIndex];
+      const selectedClientCb = document.querySelector("#intervention-client-checkbox-list .intervention-client-cb:checked");
+      const selectedClientId = selectedClientCb ? selectedClientCb.value : existing.clientId;
+      const clientObj = clients.find(c => c.id === selectedClientId);
+      const clientName = clientObj ? clientObj.name : existing.client;
+
+      const checkedParcels = Array.from(document.querySelectorAll("#parcel-checkbox-list .parcel-checkbox-input:checked"));
+      const parcelNames = checkedParcels.map(cb => `${cb.value}${cb.dataset.surface && parseFloat(cb.dataset.surface) > 0 ? ` (${formatSurface(cb.dataset.surface)} ha)` : ''}`);
+      const parcelText = parcelNames.length > 0 ? parcelNames.join(", ") : (document.getElementById("input-parcel")?.value?.trim() || existing.parcel);
+
+      const total = quantity * unitPrice;
+      const totalTTC = total * (1 + tvaRate);
+
       existing.datetime = datetime;
-      existing.clientId = clientId;
+      existing.clientId = selectedClientId;
       existing.client = clientName;
-      existing.parcel = parcel;
+      existing.parcel = parcelText;
       existing.task = task;
       existing.rateType = rateType;
       existing.quantity = quantity;
@@ -3977,42 +4260,101 @@ function handleCreateInterventionSubmit(e) {
     }
   }
 
-  // Mode NOUVELLE INTERVENTION
-  const id = generateUniqueInterventionId(datetime ? new Date(datetime).getFullYear() : new Date().getFullYear());
+  // Mode NOUVELLE INTERVENTION (Multi-domaines ou mono-domaine)
+  const selectedClientCbs = Array.from(document.querySelectorAll("#intervention-client-checkbox-list .intervention-client-cb:checked"));
+  let selectedClientIds = selectedClientCbs.map(cb => cb.value);
+
+  if (selectedClientIds.length === 0) {
+    const fallbackVal = document.getElementById("input-client")?.value;
+    if (fallbackVal) {
+      selectedClientIds = fallbackVal.split(",").filter(Boolean);
+    }
+  }
+
+  if (selectedClientIds.length === 0) {
+    showToast("Veuillez sélectionner au moins un domaine viticole client.", "error");
+    return;
+  }
+
+  const checkedParcelCbs = Array.from(document.querySelectorAll("#parcel-checkbox-list .parcel-checkbox-input:checked"));
+  if (checkedParcelCbs.length === 0) {
+    showToast("Veuillez sélectionner au moins une parcelle travaillée.", "error");
+    return;
+  }
+
+  // Regrouper les parcelles cochées par domaine client
+  const clientParcelMap = {};
+  checkedParcelCbs.forEach(cb => {
+    const cId = cb.dataset.clientId || selectedClientIds[0];
+    const pName = cb.value;
+    const pSurface = parseFloat(cb.dataset.surface || 0);
+    if (!clientParcelMap[cId]) {
+      clientParcelMap[cId] = { names: [], surface: 0 };
+    }
+    clientParcelMap[cId].names.push(`${pName}${cb.dataset.surface && parseFloat(cb.dataset.surface) > 0 ? ` (${formatSurface(cb.dataset.surface)} ha)` : ''}`);
+    clientParcelMap[cId].surface += isNaN(pSurface) ? 0 : pSurface;
+  });
+
+  const clientEntries = Object.entries(clientParcelMap);
+  if (clientEntries.length === 0) {
+    showToast("Veuillez sélectionner au moins une parcelle travaillée pour un domaine sélectionné.", "error");
+    return;
+  }
 
   if (services.length === 0 && typeof DEFAULT_SERVICES !== "undefined") {
     services = JSON.parse(JSON.stringify(DEFAULT_SERVICES));
     saveServices();
   }
 
-  const newIntervention = {
-    id,
-    datetime,
-    worker,
-    clientId,
-    client: clientName,
-    parcel,
-    task,
-    rateType,
-    quantity,
-    unit,
-    unitPrice,
-    total,
-    tvaRate,
-    totalTTC,
-    status,
-    notes,
-    isNewlyCreated: true
-  };
+  const createdInterventions = [];
 
-  interventions.unshift(newIntervention);
-  saveInterventions(newIntervention);
+  clientEntries.forEach(([cId, pData]) => {
+    const clientObj = clients.find(c => c.id === cId);
+    const clientName = clientObj ? clientObj.name : "Client Inconnu";
+    const parcelText = pData.names.join(", ");
 
-  // Synchronisation Cloud Supabase si session active
-  syncInterventionToSupabase(newIntervention);
+    let clientQty = 0;
+    if (rateType === "surface") {
+      if (clientEntries.length === 1) {
+        clientQty = quantity > 0 ? quantity : (pData.surface > 0 ? parseFloat(pData.surface.toFixed(4)) : 1);
+      } else {
+        clientQty = pData.surface > 0 ? parseFloat(pData.surface.toFixed(4)) : (quantity > 0 ? quantity : 1);
+      }
+    } else {
+      clientQty = quantity;
+    }
+
+    const clientTotal = clientQty * unitPrice;
+    const clientTotalTTC = clientTotal * (1 + tvaRate);
+    const id = generateUniqueInterventionId(datetime ? new Date(datetime).getFullYear() : new Date().getFullYear());
+
+    const newIntervention = {
+      id,
+      datetime,
+      worker,
+      clientId: cId,
+      client: clientName,
+      parcel: parcelText,
+      task,
+      rateType,
+      quantity: clientQty,
+      unit,
+      unitPrice,
+      total: clientTotal,
+      tvaRate,
+      totalTTC: clientTotalTTC,
+      status,
+      notes,
+      isNewlyCreated: true
+    };
+
+    interventions.unshift(newIntervention);
+    saveInterventions(newIntervention);
+    syncInterventionToSupabase(newIntervention);
+    createdInterventions.push(newIntervention);
+  });
 
   // Si cette intervention provient de la validation d'un travail planifié
-  const wasPlannedWork = !!convertingPlannedWorkId;
   if (convertingPlannedWorkId) {
     const pId = convertingPlannedWorkId;
     convertingPlannedWorkId = null;
@@ -4031,11 +4373,10 @@ function handleCreateInterventionSubmit(e) {
     }
   }
 
-  if (wasPlannedWork) {
-    switchView("overview");
-    showToast(`✅ Intervention #${id} enregistrée et ajoutée au Tableau de Bord (${clientName}) !`, "success");
+  if (createdInterventions.length === 1) {
+    showToast(`🚜 Intervention #${createdInterventions[0].id} enregistrée pour ${createdInterventions[0].client} !`, "success");
   } else {
-    showToast(`✅ Intervention #${id} enregistrée avec succès (${clientName}) !`, "success");
+    showToast(`🚜 ${createdInterventions.length} interventions enregistrées pour ${createdInterventions.length} domaines viticoles !`, "success");
   }
 }
 
@@ -4765,10 +5106,13 @@ window.deleteInterventionFromDossier = function(interventionId, clientId) {
 
 window.quickCreateForClient = function(clientId) {
   openCreateModal();
-  const select = document.getElementById("input-client");
-  if (select) {
-    select.value = clientId;
-    populateParcelSelectForClient(clientId);
+  if (clientId) {
+    const cb = document.querySelector(`#intervention-client-checkbox-list .intervention-client-cb[value="${clientId}"]`);
+    if (cb) {
+      cb.checked = true;
+      cb.closest(".intervention-client-item")?.classList.add("selected");
+      onInterventionClientsChanged(clientId, true);
+    }
   }
 };
 
@@ -6120,9 +6464,13 @@ window.convertPlannedWork = function(id) {
   const quantityInput = document.getElementById("input-quantity");
   const notesInput = document.getElementById("input-notes");
 
-  if (clientSelect) {
-    clientSelect.value = planned.clientId;
-    populateParcelSelectForClient(planned.clientId);
+  if (planned.clientId) {
+    const cb = document.querySelector(`#intervention-client-checkbox-list .intervention-client-cb[value="${planned.clientId}"]`);
+    if (cb) {
+      cb.checked = true;
+      cb.closest(".intervention-client-item")?.classList.add("selected");
+      onInterventionClientsChanged(planned.clientId, true);
+    }
     const parcelContainer = document.getElementById("parcel-checkbox-list");
     if (parcelContainer && planned.parcel) {
       const plannedNames = planned.parcel.split(",").map(s => s.trim().toLowerCase());
@@ -6139,8 +6487,7 @@ window.convertPlannedWork = function(id) {
           cb.closest(".parcel-checkbox-item")?.classList.remove("selected");
         }
       });
-      const client = clients.find(c => c.id === planned.clientId);
-      if (found && client) updateParcelSelectionSummary(client);
+      if (found) updateParcelSelectionSummary(true);
     }
   }
 
@@ -6456,6 +6803,12 @@ window.openParcelModal = openParcelModal;
 window.closeParcelModal = closeParcelModal;
 window.openDetailModal = openDetailModal;
 window.closeDetailModal = closeDetailModal;
+window.openInterventionClientDropdown = openInterventionClientDropdown;
+window.closeInterventionClientDropdown = closeInterventionClientDropdown;
+window.toggleInterventionClientDropdown = toggleInterventionClientDropdown;
+window.renderInterventionClientsList = renderInterventionClientsList;
+window.onInterventionClientsChanged = onInterventionClientsChanged;
+window.updateInterventionParcelsList = updateInterventionParcelsList;
 window.toggleSidebar = function() {
   const sidebar = document.getElementById("sidebar");
   const backdrop = document.getElementById("sidebar-backdrop");
@@ -13547,6 +13900,16 @@ function resetClientHistoryFilters() {
 function openCreateModalForCurrentHistoryClient() {
   if (clientHistorySelectedClientIds.length === 1) {
     quickCreateForClient(clientHistorySelectedClientIds[0]);
+  } else if (clientHistorySelectedClientIds.length > 1) {
+    openCreateModal();
+    clientHistorySelectedClientIds.forEach(cId => {
+      const cb = document.querySelector(`#intervention-client-checkbox-list .intervention-client-cb[value="${cId}"]`);
+      if (cb) {
+        cb.checked = true;
+        cb.closest(".intervention-client-item")?.classList.add("selected");
+      }
+    });
+    onInterventionClientsChanged();
   } else {
     openCreateModal();
   }

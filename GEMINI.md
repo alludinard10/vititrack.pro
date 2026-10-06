@@ -107,9 +107,11 @@ Vititrack pro/
   - **Filtre multi-sélection Domaine / Client à encoches (cases à cocher)** : menu déroulant avec recherche en direct, boutons « Tout cocher » / « Tout décocher », sélection multiple simultanée et bouton d'ajout direct de nouveau client.
   - **Filtre multi-sélection Prestation viticole à encoches (cases à cocher)** : regroupé par catégories viticoles avec tarifs indicatifs, recherche intégrée et sélection multiple simultanée.
   - Filtre par plage de dates interactif (*Toutes les dates*, *Aujourd'hui*, *Cette semaine*, *Ce mois-ci*, *30 derniers jours*, *Année en cours*, ou sélecteurs personnalisés *Du ... Au ...*).
-- **Création d'Intervention Ergonomique & Intelligente** :
+- **Création d'Intervention Ergonomique & Intelligente (Support Multi-Domaines)** :
   - **Formulaire épuré** : saisie directe de la date & heure, de l'utilisateur / salarié (sélection dynamique de l'équipe), du client et des parcelles travaillées.
-  - **Multi-sélection de parcelles** : Possibilité de cocher une ou plusieurs parcelles travaillées pour le client avec bouton « Tout cocher / Tout décocher ».
+  - **Menu déroulant multi-sélection Domaine(s) / Client(s)** : sélecteur compact à encoches (`#wrap-intervention-client-dropdown`) avec recherche instantanée, boutons « Tout cocher / Tout décocher », pastilles et badge du nombre de domaines choisis.
+  - **Sélection multi-parcelles groupée par domaine viticole** : liste dynamique affichant les parcelles avec en-têtes sticky par domaine (`.planned-parcel-domain-header`) et boutons rapides « Tout cocher » par domaine.
+  - **Génération automatique des interventions distinctes par domaine** : Si plusieurs domaines sont sélectionnés, une intervention distincte est automatiquement générée et enregistrée pour chaque domaine viticole avec ses parcelles et sa surface respective, assurant une facturation indépendante irréprochable.
   - **Sommation et report automatique de la surface** : La somme exacte des surfaces parcellaires (à 4 décimales) est immédiatement calculée et pré-remplit le champ « Surface travaillée ».
   - **Calcul en direct du total HT** : Dès le choix de la prestation (ex: *Traitement anti-mildiou*, travail du sol...) ou de la surface, le montant total HT estimé est calculé et affiché en temps réel exclusivement en hors taxe (`Surface (ha) × Prix (€/ha)`), sans mention de TVA.
   - Possibilité pour l'utilisateur d'ajuster manuellement la surface travaillée si le chantier n'a couvert qu'une fraction de la parcelle.
