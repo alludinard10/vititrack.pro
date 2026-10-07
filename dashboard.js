@@ -6723,6 +6723,8 @@ async function checkAuthUser() {
           ownerUserId: meta.owner_user_id || undefined,
           ownerDomain: meta.owner_domain || undefined,
           ownerEmail: meta.owner_email || undefined,
+          activity_type: meta.activity_type || meta.activityType || (user ? (user.activity_type || user.activityType) : undefined),
+          active_mode: meta.active_mode || meta.activeMode || (user ? (user.active_mode || user.activeMode) : undefined),
           loggedInAt: new Date().toISOString()
         };
         localStorage.setItem("vititrack_auth_user", JSON.stringify(user));

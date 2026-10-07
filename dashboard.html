@@ -10,6 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css?v=2.2">
   <link rel="stylesheet" href="dashboard.css?v=2.2">
+  <link rel="stylesheet" href="exploitation.css?v=1.0">
   <!-- Bulletproof Immediate Theme Initializer & Controller -->
   <script>
     window.applyTheme = function(theme, save) {
@@ -105,110 +106,189 @@
         </div>
       </div>
 
+      <!-- Commutateur de Mode Rapide dans la Sidebar (visible si profil 'both') -->
+      <div class="sidebar-mode-switcher-wrap">
+        <div class="viti-mode-switcher" id="sidebar-mode-switcher">
+          <button type="button" class="mode-btn mode-prestation" data-mode="prestation">
+            <span class="mode-icon">🚜</span>
+            <span class="mode-label">Prestation</span>
+          </button>
+          <button type="button" class="mode-btn mode-exploitation" data-mode="exploitation">
+            <span class="mode-icon">🍇</span>
+            <span class="mode-label">Exploitation</span>
+          </button>
+        </div>
+      </div>
+
       <nav class="sidebar-nav">
-        <div class="nav-section-title">PILOTAGE</div>
-        <a href="javascript:void(0)" class="nav-item active" id="nav-btn-overview" data-view="overview">
-          <span class="nav-icon">📊</span>
-          <span class="nav-label">Tableau de bord</span>
-        </a>
-        <a href="javascript:void(0)" class="nav-item" id="nav-btn-client-history" data-view="client-history" title="Historique des travaux par client et parcelles">
-          <span class="nav-icon">📋</span>
-          <span class="nav-label">Historique Client</span>
-        </a>
-        <a href="javascript:void(0)" class="nav-item" id="nav-btn-clients" data-view="clients">
-          <span class="nav-icon">🍇</span>
-          <span class="nav-label">Clients & Parcelles</span>
-          <span class="nav-badge" id="sidebar-clients-count">0</span>
-        </a>
-        <a href="javascript:void(0)" class="nav-item" id="nav-btn-services" data-view="services" title="Catalogue des prestations viticoles">
-          <span class="nav-icon">✂️</span>
-          <span class="nav-label">Prestations</span>
-          <span class="nav-badge" id="sidebar-services-count">0</span>
-        </a>
-        <a href="javascript:void(0)" class="nav-item" id="nav-btn-planned" data-view="planned" title="Travaux à faire et planification">
-          <span class="nav-icon">📌</span>
-          <span class="nav-label">Travaux à faire & Planification</span>
-          <span class="nav-badge badge-warning" id="sidebar-planned-count">0</span>
-        </a>
-        <a href="javascript:void(0)" class="nav-item" id="nav-btn-interventions" data-view="interventions">
-          <span class="nav-icon">🚜</span>
-          <span class="nav-label">Interventions</span>
-          <span class="nav-badge" id="sidebar-interventions-count">0</span>
-        </a>
-        <a href="javascript:void(0)" class="nav-item" id="nav-btn-billing" data-view="billing">
-          <span class="nav-icon">💶</span>
-          <span class="nav-label">À Facturer</span>
-          <span class="nav-badge badge-warning" id="sidebar-unbilled-count">0</span>
-        </a>
-        <a href="javascript:void(0)" class="nav-item" id="nav-btn-calendar" data-view="calendar" title="Calendrier et planning au jour le jour">
-          <span class="nav-icon">📅</span>
-          <span class="nav-label">Calendrier</span>
-          <span class="nav-badge badge-info" id="sidebar-calendar-count">0</span>
-        </a>
-        <a href="javascript:void(0)" class="nav-item" id="nav-btn-team" onclick="openTeamModal()" title="Gérer l'équipe et les utilisateurs">
-          <span class="nav-icon">👥</span>
-          <span class="nav-label">Équipe & Utilisateurs</span>
-          <span class="nav-badge badge-info" id="sidebar-team-count">0</span>
-        </a>
-        <a href="javascript:void(0)" class="nav-item" id="nav-btn-vendanges" data-view="vendanges" title="Suivi des vendanges et récoltes">
-          <span class="nav-icon">🧺</span>
-          <span class="nav-label">Vendanges</span>
-          <span class="nav-badge" id="sidebar-vendanges-count">0</span>
-        </a>
-        <a href="javascript:void(0)" class="nav-item" id="nav-btn-palissage" data-view="palissage" title="Suivi du palissage et relevage de la vigne">
-          <span class="nav-icon">🌿</span>
-          <span class="nav-label">Palissage</span>
-          <span class="nav-badge" id="sidebar-palissage-count">0</span>
-        </a>
+        <!-- NAVIGATION 1 : MODE PRESTATION (Clients & Facturation) -->
+        <div id="sidebar-nav-prestation">
+          <div class="nav-section-title">PILOTAGE</div>
+          <a href="javascript:void(0)" class="nav-item active" id="nav-btn-overview" data-view="overview">
+            <span class="nav-icon">📊</span>
+            <span class="nav-label">Tableau de bord</span>
+          </a>
+          <a href="javascript:void(0)" class="nav-item" id="nav-btn-client-history" data-view="client-history" title="Historique des travaux par client et parcelles">
+            <span class="nav-icon">📋</span>
+            <span class="nav-label">Historique Client</span>
+          </a>
+          <a href="javascript:void(0)" class="nav-item" id="nav-btn-clients" data-view="clients">
+            <span class="nav-icon">🍇</span>
+            <span class="nav-label">Clients & Parcelles</span>
+            <span class="nav-badge" id="sidebar-clients-count">0</span>
+          </a>
+          <a href="javascript:void(0)" class="nav-item" id="nav-btn-services" data-view="services" title="Catalogue des prestations viticoles">
+            <span class="nav-icon">✂️</span>
+            <span class="nav-label">Prestations</span>
+            <span class="nav-badge" id="sidebar-services-count">0</span>
+          </a>
+          <a href="javascript:void(0)" class="nav-item" id="nav-btn-planned" data-view="planned" title="Travaux à faire et planification">
+            <span class="nav-icon">📌</span>
+            <span class="nav-label">Travaux à faire & Planification</span>
+            <span class="nav-badge badge-warning" id="sidebar-planned-count">0</span>
+          </a>
+          <a href="javascript:void(0)" class="nav-item" id="nav-btn-interventions" data-view="interventions">
+            <span class="nav-icon">🚜</span>
+            <span class="nav-label">Interventions</span>
+            <span class="nav-badge" id="sidebar-interventions-count">0</span>
+          </a>
+          <a href="javascript:void(0)" class="nav-item" id="nav-btn-billing" data-view="billing">
+            <span class="nav-icon">💶</span>
+            <span class="nav-label">À Facturer</span>
+            <span class="nav-badge badge-warning" id="sidebar-unbilled-count">0</span>
+          </a>
+          <a href="javascript:void(0)" class="nav-item" id="nav-btn-calendar" data-view="calendar" title="Calendrier et planning au jour le jour">
+            <span class="nav-icon">📅</span>
+            <span class="nav-label">Calendrier</span>
+            <span class="nav-badge badge-info" id="sidebar-calendar-count">0</span>
+          </a>
+          <a href="javascript:void(0)" class="nav-item" id="nav-btn-team" onclick="openTeamModal()" title="Gérer l'équipe et les utilisateurs">
+            <span class="nav-icon">👥</span>
+            <span class="nav-label">Équipe & Utilisateurs</span>
+            <span class="nav-badge badge-info" id="sidebar-team-count">0</span>
+          </a>
+          <a href="javascript:void(0)" class="nav-item" id="nav-btn-vendanges" data-view="vendanges" title="Suivi des vendanges et récoltes">
+            <span class="nav-icon">🧺</span>
+            <span class="nav-label">Vendanges</span>
+            <span class="nav-badge" id="sidebar-vendanges-count">0</span>
+          </a>
+          <a href="javascript:void(0)" class="nav-item" id="nav-btn-palissage" data-view="palissage" title="Suivi du palissage et relevage de la vigne">
+            <span class="nav-icon">🌿</span>
+            <span class="nav-label">Palissage</span>
+            <span class="nav-badge" id="sidebar-palissage-count">0</span>
+          </a>
 
-        <div class="nav-section-title">ABONNEMENT STRIPE</div>
-        <a href="javascript:void(0)" class="nav-item" id="sidebar-sub-btn" title="Gérer mon abonnement et mes factures">
-          <span class="nav-icon">💳</span>
-          <span class="nav-label">Mon Abonnement</span>
-          <span class="nav-badge badge-success" id="sidebar-plan-badge">Pro</span>
-        </a>
+          <div class="nav-section-title">ABONNEMENT STRIPE</div>
+          <a href="javascript:void(0)" class="nav-item" id="sidebar-sub-btn" title="Gérer mon abonnement et mes factures">
+            <span class="nav-icon">💳</span>
+            <span class="nav-label">Mon Abonnement</span>
+            <span class="nav-badge badge-success" id="sidebar-plan-badge">Pro</span>
+          </a>
 
-        <div class="nav-section-title">OUTILS & BASE</div>
-        <a href="javascript:void(0)" class="nav-item" id="sidebar-add-team-btn" onclick="openAddTeamMemberModal()" title="Ajouter un utilisateur ou salarié">
-          <span class="nav-icon">＋</span>
-          <span class="nav-label">Nouvel Utilisateur</span>
-        </a>
-        <a href="javascript:void(0)" class="nav-item" id="sidebar-add-service-btn">
-          <span class="nav-icon">＋</span>
-          <span class="nav-label">Nouvelle Prestation</span>
-        </a>
-        <a href="javascript:void(0)" class="nav-item" id="sidebar-add-planned-btn">
-          <span class="nav-icon">📌</span>
-          <span class="nav-label">Planifier un travail</span>
-        </a>
-        <a href="javascript:void(0)" class="nav-item" id="sidebar-add-harvest-btn" onclick="openHarvestModal()" title="Ajouter une parcelle au suivi des vendanges">
-          <span class="nav-icon">🍇</span>
-          <span class="nav-label">Nouvelle Vendange</span>
-        </a>
-        <a href="javascript:void(0)" class="nav-item" id="sidebar-add-palissage-btn" onclick="openTrellisingModal()" title="Ajouter une parcelle au suivi du palissage">
-          <span class="nav-icon">🌿</span>
-          <span class="nav-label">Nouveau Palissage</span>
-        </a>
-        <a href="javascript:void(0)" class="nav-item" id="sidebar-add-client-btn">
-          <span class="nav-icon">＋</span>
-          <span class="nav-label">Nouveau Client</span>
-        </a>
-        <a href="javascript:void(0)" class="nav-item" id="sidebar-export-btn">
-          <span class="nav-icon">📥</span>
-          <span class="nav-label">Export Comptable CSV</span>
-        </a>
-        <a href="index.html" class="nav-item">
-          <span class="nav-icon">🌐</span>
-          <span class="nav-label">Site Vitrine</span>
-        </a>
-        <a href="javascript:void(0)" class="nav-item" id="sidebar-sync-supabase-btn" title="Synchroniser avec la base de données Supabase Cloud">
-          <span class="nav-icon">☁️</span>
-          <span class="nav-label">Sync Supabase Cloud</span>
-        </a>
-        <a href="javascript:void(0)" class="nav-item text-muted" id="sidebar-reset-btn" title="Vider la base ou réinitialiser">
-          <span class="nav-icon">🗑️</span>
-          <span class="nav-label">Vider la base</span>
-        </a>
+          <div class="nav-section-title">OUTILS & BASE</div>
+          <a href="javascript:void(0)" class="nav-item" id="sidebar-add-team-btn" onclick="openAddTeamMemberModal()" title="Ajouter un utilisateur ou salarié">
+            <span class="nav-icon">＋</span>
+            <span class="nav-label">Nouvel Utilisateur</span>
+          </a>
+          <a href="javascript:void(0)" class="nav-item" id="sidebar-add-service-btn">
+            <span class="nav-icon">＋</span>
+            <span class="nav-label">Nouvelle Prestation</span>
+          </a>
+          <a href="javascript:void(0)" class="nav-item" id="sidebar-add-planned-btn">
+            <span class="nav-icon">📌</span>
+            <span class="nav-label">Planifier un travail</span>
+          </a>
+          <a href="javascript:void(0)" class="nav-item" id="sidebar-add-harvest-btn" onclick="openHarvestModal()" title="Ajouter une parcelle au suivi des vendanges">
+            <span class="nav-icon">🍇</span>
+            <span class="nav-label">Nouvelle Vendange</span>
+          </a>
+          <a href="javascript:void(0)" class="nav-item" id="sidebar-add-palissage-btn" onclick="openTrellisingModal()" title="Ajouter une parcelle au suivi du palissage">
+            <span class="nav-icon">🌿</span>
+            <span class="nav-label">Nouveau Palissage</span>
+          </a>
+          <a href="javascript:void(0)" class="nav-item" id="sidebar-add-client-btn">
+            <span class="nav-icon">＋</span>
+            <span class="nav-label">Nouveau Client</span>
+          </a>
+          <a href="javascript:void(0)" class="nav-item" id="sidebar-export-btn">
+            <span class="nav-icon">📥</span>
+            <span class="nav-label">Export Comptable CSV</span>
+          </a>
+          <a href="index.html" class="nav-item">
+            <span class="nav-icon">🌐</span>
+            <span class="nav-label">Site Vitrine</span>
+          </a>
+          <a href="javascript:void(0)" class="nav-item" id="sidebar-sync-supabase-btn" title="Synchroniser avec la base de données Supabase Cloud">
+            <span class="nav-icon">☁️</span>
+            <span class="nav-label">Sync Supabase Cloud</span>
+          </a>
+          <a href="javascript:void(0)" class="nav-item text-muted" id="sidebar-reset-btn" title="Vider la base ou réinitialiser">
+            <span class="nav-icon">🗑️</span>
+            <span class="nav-label">Vider la base</span>
+          </a>
+        </div>
+
+        <!-- NAVIGATION 2 : MODE EXPLOITATION VITICOLE (10 Vues Dédiées) -->
+        <div id="sidebar-nav-exploitation">
+          <div class="nav-section-title">EXPLOITATION DU DOMAINE</div>
+          <a href="javascript:void(0)" class="nav-item active" data-exp-view="dashboard" id="exp-nav-dashboard">
+            <span class="nav-icon">📊</span>
+            <span class="nav-label">Tableau de bord</span>
+          </a>
+          <a href="javascript:void(0)" class="nav-item" data-exp-view="parcelles" id="exp-nav-parcelles" title="Parcelles propres du domaine">
+            <span class="nav-icon">🌿</span>
+            <span class="nav-label">Parcelles</span>
+            <span class="nav-badge" id="sidebar-exp-parcelles-count">0</span>
+          </a>
+          <a href="javascript:void(0)" class="nav-item" data-exp-view="travaux" id="exp-nav-travaux" title="Chantiers et travaux de la campagne">
+            <span class="nav-icon">🚜</span>
+            <span class="nav-label">Travaux</span>
+            <span class="nav-badge" id="sidebar-exp-travaux-count">0</span>
+          </a>
+          <a href="javascript:void(0)" class="nav-item" data-exp-view="intervention" id="exp-nav-intervention" title="Saisir un travail cultural sur le domaine">
+            <span class="nav-icon">＋</span>
+            <span class="nav-label">Nouvelle intervention</span>
+          </a>
+          <a href="javascript:void(0)" class="nav-item" data-exp-view="equipe" id="exp-nav-equipe" title="Équipe et main d'œuvre interne">
+            <span class="nav-icon">👥</span>
+            <span class="nav-label">Équipe</span>
+            <span class="nav-badge" id="sidebar-exp-equipe-count">0</span>
+          </a>
+          <a href="javascript:void(0)" class="nav-item" data-exp-view="materiel" id="exp-nav-materiel" title="Parc machines et engins viticoles">
+            <span class="nav-icon">🚜</span>
+            <span class="nav-label">Matériel</span>
+            <span class="nav-badge" id="sidebar-exp-materiel-count">0</span>
+          </a>
+          <a href="javascript:void(0)" class="nav-item" data-exp-view="intrants" id="exp-nav-intrants" title="Stock intrants, phyto et engrais">
+            <span class="nav-icon">📦</span>
+            <span class="nav-label">Intrants</span>
+            <span class="nav-badge" id="sidebar-exp-intrants-count">0</span>
+          </a>
+          <a href="javascript:void(0)" class="nav-item" data-exp-view="vendanges" id="exp-nav-vendanges" title="Vendanges et récoltes du domaine">
+            <span class="nav-icon">🍇</span>
+            <span class="nav-label">Vendanges</span>
+            <span class="nav-badge" id="sidebar-exp-vendanges-count">0</span>
+          </a>
+          <a href="javascript:void(0)" class="nav-item" data-exp-view="couts" id="exp-nav-couts" title="Coûts de revient et marges">
+            <span class="nav-icon">💰</span>
+            <span class="nav-label">Coûts</span>
+            <span class="nav-badge">Phase 3</span>
+          </a>
+          <a href="javascript:void(0)" class="nav-item" data-exp-view="parametres" id="exp-nav-parametres" title="Paramètres du domaine et type d'activité">
+            <span class="nav-icon">⚙️</span>
+            <span class="nav-label">Paramètres</span>
+          </a>
+
+          <div class="nav-section-title">OUTILS DOMAINE</div>
+          <a href="javascript:void(0)" class="nav-item" onclick="openActivitySettingsModal()" title="Modifier mon type d'activité">
+            <span class="nav-icon">🔄</span>
+            <span class="nav-label">Type d'activité</span>
+          </a>
+          <a href="index.html" class="nav-item">
+            <span class="nav-icon">🌐</span>
+            <span class="nav-label">Site Vitrine</span>
+          </a>
+        </div>
       </nav>
 
       <div class="sidebar-footer">
@@ -240,6 +320,18 @@
             <span></span>
             <span></span>
           </button>
+
+          <!-- Commutateur de Mode VitiTrack (Prestation ↔ Exploitation pour profils 'both') -->
+          <div class="viti-mode-switcher" id="topbar-mode-switcher" title="Basculer entre Prestation et Exploitation">
+            <button type="button" class="mode-btn mode-prestation" data-mode="prestation" aria-label="Mode Prestation">
+              <span class="mode-icon">🚜</span>
+              <span class="mode-label">Prestation</span>
+            </button>
+            <button type="button" class="mode-btn mode-exploitation" data-mode="exploitation" aria-label="Mode Exploitation">
+              <span class="mode-icon">🍇</span>
+              <span class="mode-label">Exploitation</span>
+            </button>
+          </div>
         </div>
 
         <div class="topbar-actions">
@@ -275,6 +367,10 @@
           <div class="user-topbar-profile" id="user-topbar-profile">
             <span class="user-topbar-avatar" title="Profil connecté">👤</span>
             <span class="user-topbar-name" id="user-topbar-name">Domaine Viticole</span>
+            <button type="button" class="btn-topbar-switch" onclick="openActivitySettingsModal()" title="Modifier le type d'activité (Prestation / Exploitation / Les deux)">
+              <span class="btn-text-desktop">⚙️ Activité</span>
+              <span class="btn-text-mobile">⚙️</span>
+            </button>
             <a href="login.html" class="btn-topbar-switch" id="btn-topbar-switch" title="Changer de compte ou s'inscrire">
               <span class="btn-text-desktop">🔄 Compte</span>
               <span class="btn-text-mobile">🔄</span>
@@ -294,6 +390,9 @@
 
       <!-- DASHBOARD BODY CONTAINER -->
       <div class="app-content">
+
+        <!-- ==================== CONTENEUR ENVIRONNEMENT 1 : PRESTATION ==================== -->
+        <div id="prestation-views-container">
 
         <!-- ==================== VUE 1 : TABLEAU DE BORD (OVERVIEW) ==================== -->
         <div class="app-view active" id="view-overview">
@@ -2238,6 +2337,929 @@
             </div>
           </section>
         </div>
+        <!-- ==================== FIN VUE 6 : CALENDRIER PRESTATION ==================== -->
+
+        </div> <!-- /#prestation-views-container -->
+
+        <!-- ==================== CONTENEUR ENVIRONNEMENT 2 : EXPLOITATION VITICOLE ==================== -->
+        <div id="exploitation-views-container">
+
+          <!-- ------------------------------------------------------------------
+               VUE EXPLOITATION 1 : TABLEAU DE BORD DU DOMAINE
+               ------------------------------------------------------------------ -->
+          <div class="app-view exp-view active" id="view-exp-dashboard">
+            <!-- 1. En-tête principal & Pilotage Campagne -->
+            <div class="view-header" style="align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+              <div>
+                <div class="exp-view-badge">🍇 PILOTAGE DU DOMAINE — CAMPAGNE <span id="exp-dash-header-campaign-year">2027</span></div>
+                <h1 class="view-heading" id="exp-dashboard-title">Tableau de Bord de Pilotage</h1>
+                <p class="view-subheading">Suivi en direct des travaux, parcelles à faire, coûts engagés et rendements.</p>
+              </div>
+              <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center;">
+                <button type="button" class="btn btn-exp-primary btn-md" onclick="switchExploitationView('intervention')" style="font-weight: 800; font-size: 0.95rem; box-shadow: 0 4px 14px rgba(123, 44, 191, 0.45);">
+                  <span class="btn-icon">＋</span>
+                  <span>Nouvelle intervention</span>
+                </button>
+                <button type="button" class="btn btn-outline btn-sm" onclick="switchExploitationView('parcelles')" title="Consulter le parcellaire du domaine">
+                  <span>🌿 Parcelles</span>
+                </button>
+                <button type="button" class="btn btn-outline btn-sm" onclick="switchExploitationView('travaux')" title="Consulter les travaux">
+                  <span>🚜 Travaux</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- 2. Barre de Filtres Globaux du Dashboard (Section 13) -->
+            <div class="dossier-filter-bar" id="exp-dashboard-filters-bar" style="margin-bottom: 1.25rem; display: flex; gap: 0.75rem; align-items: center; justify-content: space-between; flex-wrap: wrap; background: rgba(17, 25, 22, 0.85); padding: 0.85rem 1.15rem; border-radius: 12px; border: 1px solid rgba(82, 183, 136, 0.18);">
+              <div style="display: flex; gap: 0.65rem; align-items: center; flex-wrap: wrap; flex: 1;">
+                <span style="font-size: 0.82rem; font-weight: 700; color: #95a89e; text-transform: uppercase;">Filtres :</span>
+                <!-- Filtre Campagne -->
+                <select id="exp-dash-filter-campaign" class="form-select-simple" style="padding: 0.35rem 0.65rem; font-size: 0.85rem;" onchange="onDashboardFiltersChange()">
+                  <!-- Dynamique -->
+                </select>
+                <!-- Filtre Cépage -->
+                <select id="exp-dash-filter-cepage" class="form-select-simple" style="padding: 0.35rem 0.65rem; font-size: 0.85rem;" onchange="onDashboardFiltersChange()">
+                  <option value="">Tous les cépages</option>
+                </select>
+                <!-- Filtre Commune -->
+                <select id="exp-dash-filter-commune" class="form-select-simple" style="padding: 0.35rem 0.65rem; font-size: 0.85rem;" onchange="onDashboardFiltersChange()">
+                  <option value="">Toutes les communes</option>
+                </select>
+                <!-- Filtre Travail -->
+                <select id="exp-dash-filter-task" class="form-select-simple" style="padding: 0.35rem 0.65rem; font-size: 0.85rem;" onchange="onDashboardFiltersChange()">
+                  <option value="">Tous les travaux</option>
+                </select>
+                <button type="button" class="btn btn-outline btn-xs" onclick="resetDashboardFilters()" title="Réinitialiser les filtres">
+                  ✕ Effacer
+                </button>
+              </div>
+              <div id="exp-dash-filter-count-badge" style="font-size: 0.82rem; color: #c77dff; font-weight: 700;">
+                <!-- ex: 3 parcelles filtrées -->
+              </div>
+            </div>
+
+            <!-- 3. Alertes Opérationnelles (« À SURVEILLER » - Section 12) -->
+            <div id="exp-dashboard-alerts-container" style="display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1.25rem;">
+              <!-- Rendu dynamique via renderDashboardAlerts() -->
+            </div>
+
+            <!-- 4. Synthèse KPIs Clés de la Campagne (Section 1) -->
+            <div class="exp-cards-grid" id="exp-dashboard-kpis-grid" style="margin-bottom: 1.5rem;">
+              <!-- Surface exploitation -->
+              <div class="exp-card">
+                <div class="exp-card-header">
+                  <span class="exp-card-title">Surface Exploitation</span>
+                  <span class="exp-card-badge" id="exp-kpi-parcelles-badge">Parcellaire</span>
+                </div>
+                <div style="font-size: 1.85rem; font-weight: 800; color: #fff; font-family: var(--font-heading);" id="exp-kpi-surface">
+                  0.0000 <span style="font-size: 1rem; color: #95a89e; font-weight: 500;">ha</span>
+                </div>
+                <div style="font-size: 0.82rem; color: #95a89e;" id="exp-kpi-parcelles-count">0 parcelle(s) active(s)</div>
+              </div>
+
+              <!-- Coût engagé campagne -->
+              <div class="exp-card exp-cost-card" id="exp-kpi-cout-card">
+                <div class="exp-card-header">
+                  <span class="exp-card-title">Coût Engagé Campagne</span>
+                  <span class="exp-card-badge" style="background: rgba(123, 44, 191, 0.25); color: #e0aaff;">Budget</span>
+                </div>
+                <div style="font-size: 1.85rem; font-weight: 800; color: #fff; font-family: var(--font-heading);" id="exp-kpi-total-cost">
+                  0,00 €
+                </div>
+                <div style="font-size: 0.82rem; color: #52b788; font-weight: 700;" id="exp-kpi-cost-per-ha">0,00 €/ha moyen</div>
+              </div>
+
+              <!-- Rendement & Vendanges (si existantes) -->
+              <div class="exp-card" id="exp-kpi-harvest-card" style="grid-column: span 2;">
+                <div class="exp-card-header">
+                  <span class="exp-card-title">Production Récoltée & Rendement</span>
+                  <span class="exp-card-badge" style="background: rgba(82, 183, 136, 0.2); color: #52b788;">Vendanges</span>
+                </div>
+                <div id="exp-kpi-harvest-content" style="font-size: 1.15rem; font-weight: 600; color: #e5ece8; line-height: 1.4; padding: 0.35rem 0;">
+                  Données disponibles après saisie des vendanges.
+                </div>
+                <div style="font-size: 0.82rem; color: #95a89e;" id="exp-kpi-harvest-sub">Production en kg, rendement moyen en kg/ha et coût de revient au kilo produit.</div>
+              </div>
+            </div>
+
+            <!-- 5. AVANCEMENT DU VIGNOBLE (Section 2 - Cliquable) -->
+            <div class="table-card" id="exp-dashboard-progress-card" style="margin-bottom: 1.5rem;">
+              <div class="table-card-header" style="flex-wrap: wrap; gap: 0.75rem;">
+                <div>
+                  <h3 class="table-title">Avancement du Vignoble</h3>
+                  <p class="table-subtitle" id="exp-dashboard-global-progress-sub">Progression surfacique des principaux travaux de la campagne</p>
+                </div>
+                <div style="display: flex; gap: 0.5rem; align-items: center;">
+                  <button type="button" class="btn btn-outline btn-xs" onclick="openAssignTaskModal()">
+                    ＋ Affecter un travail
+                  </button>
+                  <button type="button" class="btn btn-outline btn-xs" onclick="switchExploitationView('travaux')">
+                    Gérer les travaux ➔
+                  </button>
+                </div>
+              </div>
+              <div id="exp-dashboard-progress-container" style="padding: 1.25rem; display: flex; flex-direction: column; gap: 0.85rem;">
+                <!-- Rendu dynamique via renderDashboardWorkProgress() -->
+              </div>
+            </div>
+
+            <!-- 6. PARCELLES À FAIRE (Section 3 - Opérationnel) -->
+            <div class="table-card" id="exp-dashboard-todo-card" style="margin-bottom: 1.5rem;">
+              <div class="table-card-header" style="flex-wrap: wrap; gap: 0.75rem;">
+                <div>
+                  <h3 class="table-title">🚜 Parcelles à Faire</h3>
+                  <p class="table-subtitle">Chantiers en attente ou en cours nécessitant votre intervention</p>
+                </div>
+                <div>
+                  <button type="button" class="btn btn-exp-primary btn-xs" onclick="switchExploitationView('intervention')">
+                    ＋ Enregistrer une intervention
+                  </button>
+                </div>
+              </div>
+              <div id="exp-dashboard-todo-parcelles-container" style="padding: 1.25rem;">
+                <!-- Rendu dynamique via renderDashboardTodoParcelles() -->
+              </div>
+            </div>
+
+            <!-- 7. ACTIVITÉ RÉCENTE (Section 4) -->
+            <div class="table-card" id="exp-dashboard-recent-card" style="margin-bottom: 1.5rem;">
+              <div class="table-card-header" style="flex-wrap: wrap; gap: 0.75rem;">
+                <div>
+                  <h3 class="table-title">📅 Dernières Interventions Terrain</h3>
+                  <p class="table-subtitle">Journal des chantiers récents réalisés sur le domaine</p>
+                </div>
+                <div>
+                  <button type="button" class="btn btn-outline btn-xs" onclick="switchExploitationView('intervention')">
+                    ＋ Saisie rapide
+                  </button>
+                </div>
+              </div>
+              <div id="exp-dashboard-recent-interventions" style="padding: 1rem;">
+                <!-- Rendu dynamique -->
+              </div>
+            </div>
+
+            <!-- 8. ANALYSE ÉCONOMIQUE DE LA CAMPAGNE (Sections 5, 6, 7 - Sous condition can_view_costs) -->
+            <div class="table-card exp-cost-section" id="exp-dashboard-economic-section" style="margin-bottom: 1.5rem;">
+              <div class="table-card-header">
+                <div>
+                  <h3 class="table-title">💰 Coûts de la Campagne & Répartition</h3>
+                  <p class="table-subtitle">Ventilation par nature de charge, analyse des travaux les plus coûteux et classement parcellaire</p>
+                </div>
+                <button type="button" class="btn btn-outline btn-xs" onclick="switchExploitationView('couts')">
+                  Vue Coûts Détaillée ➔
+                </button>
+              </div>
+              <div style="padding: 1.25rem; display: flex; flex-direction: column; gap: 1.5rem;">
+                <!-- Ventilation par catégorie (Section 5) -->
+                <div id="exp-dashboard-cost-categories-breakdown">
+                  <!-- Rendu dynamique -->
+                </div>
+
+                <!-- Grille à 2 colonnes : Coût par travail (Section 6) + Classement parcelles (Section 7) -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.5rem;">
+                  <!-- Quels travaux coûtent le plus ? -->
+                  <div style="background: rgba(0,0,0,0.25); border: 1px solid rgba(82, 183, 136, 0.15); border-radius: 10px; padding: 1.15rem;">
+                    <h4 style="margin: 0 0 0.75rem 0; font-size: 0.95rem; color: #fff; font-weight: 700;">📊 Quels travaux coûtent le plus ?</h4>
+                    <div id="exp-dashboard-cost-by-task-list">
+                      <!-- Rendu dynamique -->
+                    </div>
+                  </div>
+
+                  <!-- Coût par parcelle vs moyenne -->
+                  <div style="background: rgba(0,0,0,0.25); border: 1px solid rgba(82, 183, 136, 0.15); border-radius: 10px; padding: 1.15rem;">
+                    <h4 style="margin: 0 0 0.75rem 0; font-size: 0.95rem; color: #fff; font-weight: 700;">🌿 Coût par parcelle (€/ha)</h4>
+                    <div id="exp-dashboard-cost-by-parcelle-list">
+                      <!-- Rendu dynamique -->
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 9. ANALYSE COÛT & RENDEMENT + GRAPHIQUE INTERACTIF (Sections 8 & 9) -->
+            <div class="table-card" id="exp-dashboard-harvest-analytics-card" style="margin-bottom: 1.5rem;">
+              <div class="table-card-header">
+                <div>
+                  <h3 class="table-title">🍇 Analyse Coût & Rendement</h3>
+                  <p class="table-subtitle">Comparaison simultanée kg/ha vs €/ha vs €/kg et graphique de dispersion</p>
+                </div>
+                <button type="button" class="btn btn-outline btn-xs" onclick="switchExploitationView('vendanges')">
+                  Vue Vendanges ➔
+                </button>
+              </div>
+              <div style="padding: 1.25rem; display: flex; flex-direction: column; gap: 1.5rem;">
+                <!-- Graphique SVG interactif Rendement vs Coût (Section 9) -->
+                <div id="exp-dashboard-scatter-chart-wrap" style="background: rgba(10, 15, 13, 0.6); border: 1px solid rgba(82, 183, 136, 0.15); border-radius: 12px; padding: 1.25rem; position: relative;">
+                  <!-- Rendu SVG dynamique -->
+                </div>
+
+                <!-- Tableau comparatif parcelles triable (Section 8) -->
+                <div class="table-responsive">
+                  <table class="data-table" id="exp-dashboard-harvest-cost-table">
+                    <thead>
+                      <tr>
+                        <th>Parcelle</th>
+                        <th style="cursor: pointer;" onclick="sortDashboardHarvestTable('yield')">Rendement (kg/ha) ⬍</th>
+                        <th style="cursor: pointer;" onclick="sortDashboardHarvestTable('cost_ha')">Coût (€/ha) ⬍</th>
+                        <th style="cursor: pointer;" onclick="sortDashboardHarvestTable('cost_kg')">Coût (€/kg) ⬍</th>
+                        <th>Faits objectifs</th>
+                      </tr>
+                    </thead>
+                    <tbody id="exp-dashboard-harvest-cost-tbody">
+                      <!-- Rendu dynamique -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- 10. COMPARAISON ENTRE CAMPAGNES (Section 10 : ÉVOLUTION) -->
+            <div class="table-card" id="exp-dashboard-campaign-evolution-card" style="margin-bottom: 1.5rem;">
+              <div class="table-card-header">
+                <div>
+                  <h3 class="table-title">📈 Évolution de l'Exploitation (Comparatif Inter-Campagnes)</h3>
+                  <p class="table-subtitle" id="exp-dashboard-evolution-subtitle">Comparaison de la campagne courante avec la campagne précédente</p>
+                </div>
+              </div>
+              <div id="exp-dashboard-campaign-evolution-content" style="padding: 1.25rem;">
+                <!-- Rendu dynamique via renderDashboardCampaignEvolution() -->
+              </div>
+            </div>
+          </div>
+
+          <!-- ------------------------------------------------------------------
+               VUE EXPLOITATION 2 : PARCELLES DU DOMAINE
+               ------------------------------------------------------------------ -->
+          <div class="app-view exp-view" id="view-exp-parcelles" style="display: none;">
+            <div class="view-header">
+              <div>
+                <div class="exp-view-badge">🌿 CADASTRE DU DOMAINE</div>
+                <h1 class="view-heading">Parcelles de l'Exploitation</h1>
+                <p class="view-subheading">Registre cadastral, cépages, porte-greffes, densités et superficies (précision à 4 décimales).</p>
+              </div>
+              <div class="services-view-actions">
+                <button type="button" class="btn btn-exp-primary btn-sm" onclick="openAddParcelleModal()">
+                  <span class="btn-icon">＋</span>
+                  <span>Ajouter une parcelle</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Barre de filtre et de recherche parcellaire -->
+            <div class="dossier-filter-bar" style="margin-bottom: 1.5rem; display: flex; gap: 1rem; align-items: center; justify-content: space-between; flex-wrap: wrap;">
+              <div style="display: flex; gap: 0.5rem; align-items: center; flex: 1; min-width: 260px;">
+                <input type="text" id="exp-parcelle-search" class="form-control" placeholder="🔍 Rechercher une parcelle, commune, cépage..." oninput="handleParcelleSearch(this.value)" style="max-width: 380px;">
+              </div>
+              <div style="display: flex; gap: 0.4rem;" id="exp-parcelle-status-filters">
+                <button type="button" class="btn btn-xs btn-outline active" data-filter="all" onclick="filterParcellesStatus('all', this)">Toutes (<span id="exp-count-all">0</span>)</button>
+                <button type="button" class="btn btn-xs btn-outline" data-filter="active" onclick="filterParcellesStatus('active', this)">Actives (<span id="exp-count-active">0</span>)</button>
+                <button type="button" class="btn btn-xs btn-outline" data-filter="archived" onclick="filterParcellesStatus('archived', this)">Archivées (<span id="exp-count-archived">0</span>)</button>
+              </div>
+            </div>
+
+            <!-- Grille dynamique des parcelles (ou Empty State si 0) -->
+            <div id="exp-parcelles-list-container">
+              <!-- Rendu dynamique via renderParcellesView() -->
+            </div>
+          </div>
+
+          <!-- ------------------------------------------------------------------
+               VUE EXPLOITATION 3 : TRAVAUX & CHANTIERS DE LA CAMPAGNE
+               ------------------------------------------------------------------ -->
+          <div class="app-view exp-view" id="view-exp-travaux" style="display: none;">
+            <div class="view-header">
+              <div>
+                <div class="exp-view-badge">🚜 SUIVI DE CAMPAGNE</div>
+                <h1 class="view-heading">Travaux & Chantiers du Domaine</h1>
+                <p class="view-subheading">Suivi détaillé des opérations culturales de la campagne (taille, sols, traitements, relevage, vendanges).</p>
+              </div>
+              <div class="services-view-actions">
+                <button type="button" class="btn btn-outline btn-sm" onclick="openManageTasksModal()" title="Gérer la bibliothèque de travaux">
+                  <span>⚙️ Bibliothèque des travaux</span>
+                </button>
+                <button type="button" class="btn btn-exp-primary btn-sm" onclick="openAssignTaskModal()">
+                  <span class="btn-icon">＋</span>
+                  <span>Affecter un travail</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Sélecteur de campagne & résumé d'avancement -->
+            <div class="exp-card" style="margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; padding: 1.25rem 1.5rem;">
+              <div>
+                <div style="font-size: 0.8rem; font-weight: 700; color: #c77dff; text-transform: uppercase;">Campagne sélectionnée</div>
+                <h2 style="font-size: 1.35rem; font-weight: 800; color: #fff; margin: 0.2rem 0;" id="exp-travaux-campaign-name">Campagne 2026</h2>
+                <div style="font-size: 0.85rem; color: #95a89e;" id="exp-travaux-campaign-sub">Calcul de l'avancement pondéré par la surface</div>
+              </div>
+              <div style="display: flex; gap: 0.5rem;">
+                <button type="button" class="btn btn-outline btn-sm" onclick="openCampaignModal()">
+                  🔄 Changer de campagne
+                </button>
+              </div>
+            </div>
+
+            <!-- Grille d'avancement des travaux par surface -->
+            <div class="table-card" style="margin-bottom: 1.5rem;">
+              <div class="table-card-header">
+                <h3 class="table-title">Avancement Global par Travail Viticole</h3>
+                <p class="table-subtitle">Surface terminée / Surface concernée × 100</p>
+              </div>
+              <div id="exp-travaux-progress-container" style="padding: 1.25rem; display: flex; flex-direction: column; gap: 1rem;">
+                <!-- Rendu dynamique -->
+              </div>
+            </div>
+
+            <!-- Tableau détaillé des travaux par parcelle -->
+            <div class="table-card">
+              <div class="table-card-header">
+                <div>
+                  <h3 class="table-title">Suivi Détaillé des Travaux par Parcelle</h3>
+                  <p class="table-subtitle">Statuts en direct (À faire, En cours, Terminé)</p>
+                </div>
+              </div>
+              <div id="exp-travaux-parcelles-container">
+                <!-- Rendu dynamique -->
+              </div>
+            </div>
+          </div>
+
+          <!-- ------------------------------------------------------------------
+               VUE EXPLOITATION 4 : SAISIE D'INTERVENTION TERRAIN (< 30s)
+               ------------------------------------------------------------------ -->
+          <div class="app-view exp-view" id="view-exp-intervention" style="display: none;">
+            <div class="view-header">
+              <div>
+                <div style="display: flex; align-items: center; gap: 0.65rem; margin-bottom: 0.35rem;">
+                  <span class="exp-view-badge">⚡ SAISIE CULTURELLE TERRAIN</span>
+                  <span id="exp-int-offline-badge" class="status-badge billed" style="font-size: 0.75rem;">⚡ Mode Direct</span>
+                </div>
+                <h1 class="view-heading" id="exp-int-heading">Saisie d'Intervention Terrain</h1>
+                <p class="view-subheading">Enregistrez vos travaux en quelques secondes depuis les rangs de vigne.</p>
+              </div>
+              <div class="services-view-actions">
+                <button type="button" class="btn btn-outline btn-sm" onclick="switchExploitationView('dashboard')">
+                  ← Retour au tableau de bord
+                </button>
+              </div>
+            </div>
+
+            <div class="table-card" style="max-width: 900px; margin: 0 auto; padding: 1.75rem;">
+              <form id="form-exp-intervention" onsubmit="event.preventDefault(); saveExploitationIntervention();">
+                <input type="hidden" id="exp-int-edit-id" value="">
+
+                <!-- 1. CHOISIR LE TRAVAIL -->
+                <div class="form-section-box">
+                  <div class="form-section-header">
+                    <span class="form-step-num">1</span>
+                    <h3 class="form-section-title">Choisir le travail viticole</h3>
+                  </div>
+
+                  <!-- Chips d'accès rapide en 1 clic -->
+                  <div class="quick-tasks-chips" id="exp-int-quick-chips">
+                    <!-- Populated dynamically via JS -->
+                  </div>
+
+                  <div style="margin-top: 0.75rem;">
+                    <select id="exp-int-task" class="form-select-simple" onchange="onInterventionTaskChange(this.value)" required>
+                      <!-- Populated dynamically -->
+                    </select>
+                  </div>
+                </div>
+
+                <!-- 2. CHOISIR LA OU LES PARCELLES & SURFACES -->
+                <div class="form-section-box" style="margin-top: 1.25rem;">
+                  <div class="form-section-header" style="justify-content: space-between;">
+                    <div style="display: flex; align-items: center; gap: 0.65rem;">
+                      <span class="form-step-num">2</span>
+                      <h3 class="form-section-title">Choisir la ou les parcelles</h3>
+                    </div>
+                    <div style="display: flex; gap: 0.4rem;">
+                      <button type="button" class="btn btn-outline btn-xs" onclick="toggleAllInterventionParcelles(true)">Tout cocher</button>
+                      <button type="button" class="btn btn-outline btn-xs" onclick="toggleAllInterventionParcelles(false)">Tout décocher</button>
+                    </div>
+                  </div>
+
+                  <div id="exp-int-parcelles-checklist" style="display: flex; flex-direction: column; gap: 0.65rem; margin-top: 0.75rem;">
+                    <!-- Populated dynamically -->
+                  </div>
+
+                  <!-- Bandeau Surface Totale Travaillée -->
+                  <div id="exp-int-total-surface-banner" style="margin-top: 1rem; padding: 0.85rem 1rem; background: rgba(123, 44, 191, 0.15); border: 1px solid rgba(199, 125, 255, 0.35); border-radius: 8px; display: flex; align-items: center; justify-content: space-between;">
+                    <span style="font-size: 0.88rem; color: #e5ece8;">Surface totale du chantier :</span>
+                    <strong id="exp-int-total-surface-val" style="font-size: 1.15rem; color: #fff; font-family: var(--font-heading);">0.0000 ha</strong>
+                  </div>
+                </div>
+
+                <!-- 3. TEMPS & MAIN D'ŒUVRE -->
+                <div class="form-section-box" style="margin-top: 1.25rem;">
+                  <div class="form-section-header">
+                    <span class="form-step-num">3</span>
+                    <h3 class="form-section-title">Date, Durée & Main-d'œuvre</h3>
+                  </div>
+
+                  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 0.75rem;">
+                    <div>
+                      <label class="form-label" for="exp-int-date">Date de réalisation *</label>
+                      <input type="date" id="exp-int-date" class="epure-input" required>
+                    </div>
+                    <div>
+                      <label class="form-label" for="exp-int-duration">Durée du chantier (heures) *</label>
+                      <div style="display: flex; gap: 0.35rem; align-items: center;">
+                        <input type="number" step="0.25" min="0.1" id="exp-int-duration" class="epure-input" placeholder="ex: 2.5" required oninput="syncEquipmentDuration(this.value)">
+                        <div style="display: flex; gap: 0.2rem;">
+                          <button type="button" class="btn btn-outline btn-xs" onclick="addInterventionDuration(0.5)">+30m</button>
+                          <button type="button" class="btn btn-outline btn-xs" onclick="addInterventionDuration(1)">+1h</button>
+                          <button type="button" class="btn btn-outline btn-xs" onclick="addInterventionDuration(2)">+2h</button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1rem; margin-top: 1rem;">
+                    <div>
+                      <label class="form-label" for="exp-int-workers-select">Salarié(s) présent(s)</label>
+                      <div id="exp-int-workers-checklist" style="display: flex; flex-wrap: wrap; gap: 0.5rem; background: rgba(0,0,0,0.25); padding: 0.65rem; border-radius: 8px;">
+                        <!-- Populated dynamically -->
+                      </div>
+                    </div>
+                    <div>
+                      <label class="form-label" for="exp-int-worker-count">Nombre de personnes</label>
+                      <input type="number" min="1" id="exp-int-worker-count" class="epure-input" value="1">
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 4. MATÉRIEL UTILISÉ -->
+                <div class="form-section-box" style="margin-top: 1.25rem;">
+                  <div class="form-section-header">
+                    <span class="form-step-num">4</span>
+                    <h3 class="form-section-title">Matériel & Engins</h3>
+                  </div>
+
+                  <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1rem; margin-top: 0.75rem;">
+                    <div>
+                      <label class="form-label" for="exp-int-equipment">Engin / Outil utilisé</label>
+                      <select id="exp-int-equipment" class="form-select-simple">
+                        <!-- Populated dynamically -->
+                      </select>
+                    </div>
+                    <div>
+                      <label class="form-label" for="exp-int-equipment-hours">Heures machine</label>
+                      <input type="number" step="0.25" min="0" id="exp-int-equipment-hours" class="epure-input" placeholder="ex: 2.5">
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 5. INTRANTS & PRODUITS (OPTIONNEL) -->
+                <div class="form-section-box" style="margin-top: 1.25rem;">
+                  <div class="form-section-header" style="justify-content: space-between;">
+                    <div style="display: flex; align-items: center; gap: 0.65rem;">
+                      <span class="form-step-num">5</span>
+                      <h3 class="form-section-title">Intrants & Produits (Optionnel)</h3>
+                    </div>
+                    <label style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.82rem; color: #e5ece8; cursor: pointer;">
+                      <input type="checkbox" id="exp-int-use-input" onchange="toggleInterventionInputSection(this.checked)" style="width: 16px; height: 16px;">
+                      <span>Utiliser un intrant</span>
+                    </label>
+                  </div>
+
+                  <div id="exp-int-inputs-container" style="display: none; grid-template-columns: 2fr 1fr; gap: 1rem; margin-top: 0.75rem;">
+                    <div>
+                      <label class="form-label" for="exp-int-input-select">Produit utilisé</label>
+                      <select id="exp-int-input-select" class="form-select-simple" onchange="onInterventionInputChange(this.value)">
+                        <!-- Populated dynamically -->
+                      </select>
+                    </div>
+                    <div>
+                      <label class="form-label" for="exp-int-input-qty">Quantité appliquée (<span id="exp-int-input-unit-label">L</span>)</label>
+                      <input type="number" step="0.1" min="0" id="exp-int-input-qty" class="epure-input" placeholder="ex: 10">
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 6. OBSERVATIONS -->
+                <div class="form-section-box" style="margin-top: 1.25rem;">
+                  <div class="form-section-header">
+                    <span class="form-step-num">6</span>
+                    <h3 class="form-section-title">Observations & Notes terrain</h3>
+                  </div>
+
+                  <div style="margin-top: 0.75rem;">
+                    <textarea id="exp-int-notes" class="epure-input" rows="2" placeholder="Conditions météo, volume bouillie, consignes particulières..."></textarea>
+                  </div>
+                </div>
+
+                <!-- VALIDATION PRINCIPALE -->
+                <div style="margin-top: 1.75rem; display: flex; justify-content: flex-end; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+                  <button type="button" class="btn btn-outline" onclick="switchExploitationView('dashboard')">Annuler</button>
+                  <button type="submit" id="btn-exp-save-intervention" class="btn btn-exp-primary btn-lg" style="font-size: 1rem; padding: 0.85rem 1.75rem;">
+                    🍇 Enregistrer l'intervention (< 30s)
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          <!-- ------------------------------------------------------------------
+               VUE EXPLOITATION 5 : ÉQUIPE DU DOMAINE
+               ------------------------------------------------------------------ -->
+          <div class="app-view exp-view" id="view-exp-equipe" style="display: none;">
+            <div class="view-header">
+              <div>
+                <div class="exp-view-badge">👥 RESSOURCES HUMAINES</div>
+                <h1 class="view-heading">Équipe & Salariés du Domaine</h1>
+                <p class="view-subheading">Gestion des collaborateurs internes, tractoristes et saisonniers (taux horaires, qualifications, habilitations).</p>
+              </div>
+              <div class="services-view-actions">
+                <button type="button" class="btn btn-exp-primary btn-sm" onclick="openAddWorkerModal()">
+                  <span class="btn-icon">＋</span>
+                  <span>Nouveau collaborateur</span>
+                </button>
+              </div>
+            </div>
+
+            <div id="exp-workers-cards-container" class="exp-cards-grid">
+              <!-- Rendu dynamique via renderWorkersView() -->
+            </div>
+          </div>
+
+          <!-- ------------------------------------------------------------------
+               VUE EXPLOITATION 6 : PARC MATÉRIEL & ENGINS
+               ------------------------------------------------------------------ -->
+          <div class="app-view exp-view" id="view-exp-materiel" style="display: none;">
+            <div class="view-header">
+              <div>
+                <div class="exp-view-badge">🚜 PARC MATÉRIEL</div>
+                <h1 class="view-heading">Matériel & Engins de l'Exploitation</h1>
+                <p class="view-subheading">Tracteurs, enjambeurs, pulvérisateurs et outils attelés (coût horaire machine, carburant, amortissement).</p>
+              </div>
+              <div class="services-view-actions">
+                <button type="button" class="btn btn-exp-primary btn-sm" onclick="openAddEquipmentModal()">
+                  <span class="btn-icon">＋</span>
+                  <span>Nouveau matériel</span>
+                </button>
+              </div>
+            </div>
+
+            <div id="exp-equipment-cards-container" class="exp-cards-grid">
+              <!-- Rendu dynamique via renderEquipmentView() -->
+            </div>
+          </div>
+
+          <!-- ------------------------------------------------------------------
+               VUE EXPLOITATION 7 : INTRANTS & PRODUITS PHYTOSANITAIRES
+               ------------------------------------------------------------------ -->
+          <div class="app-view exp-view" id="view-exp-intrants" style="display: none;">
+            <div class="view-header">
+              <div>
+                <div class="exp-view-badge">📦 STOCKS & PRODUITS</div>
+                <h1 class="view-heading">Intrants & Fournitures Viticoles</h1>
+                <p class="view-subheading">Gestion des stocks de produits de protection, amendements, engrais et fournitures de palissage.</p>
+              </div>
+              <div class="services-view-actions">
+                <button type="button" class="btn btn-exp-primary btn-sm" onclick="openAddInputModal()">
+                  <span class="btn-icon">＋</span>
+                  <span>Nouvel intrant</span>
+                </button>
+              </div>
+            </div>
+
+            <div id="exp-inputs-cards-container" class="exp-cards-grid">
+              <!-- Rendu dynamique via renderInputsView() -->
+            </div>
+          </div>
+
+          <!-- ------------------------------------------------------------------
+               VUE EXPLOITATION 8 : VENDANGES, RENDEMENT & COÛT AU KG (PHASE 6)
+               ------------------------------------------------------------------ -->
+          <div class="app-view exp-view" id="view-exp-vendanges" style="display: none;">
+            <div class="view-header">
+              <div>
+                <div class="exp-view-badge">🍇 VENDANGES & RENDEMENTS</div>
+                <h1 class="view-heading">Vendanges, Rendement & Coût au Kilo</h1>
+                <p class="view-subheading">Suivi des pesées réelles par parcelle, calcul des rendements (kg/ha) et valorisation du coût de revient du raisin.</p>
+              </div>
+              <div class="services-view-actions">
+                <button type="button" class="btn btn-outline btn-sm" onclick="exportHarvestsCSV()" title="Exporter les données vendanges en CSV">
+                  <span class="btn-icon">📥</span>
+                  <span>Exporter CSV</span>
+                </button>
+                <button type="button" class="btn btn-exp-primary btn-sm" onclick="openAddHarvestModal()">
+                  <span class="btn-icon">＋</span>
+                  <span>Ajouter une pesée</span>
+                </button>
+                <button type="button" class="btn btn-outline btn-sm" onclick="switchExploitationView('dashboard')">
+                  ← Tableau de bord
+                </button>
+              </div>
+            </div>
+
+            <!-- 4 Indicateurs Clés des Vendanges -->
+            <div class="exp-kpis-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));">
+              <div class="exp-card">
+                <div class="exp-card-header">
+                  <span class="exp-card-title">Total Récolté</span>
+                  <span class="exp-card-badge">Production</span>
+                </div>
+                <div class="exp-kpi-num" id="exp-vendanges-kpi-total-kg">
+                  0 <span style="font-size: 1rem; color: #95a89e; font-weight: 500;">kg</span>
+                </div>
+                <div style="font-size: 0.82rem; color: #95a89e;" id="exp-vendanges-kpi-total-kg-sub">Cumul des pesées de la campagne</div>
+              </div>
+
+              <div class="exp-card">
+                <div class="exp-card-header">
+                  <span class="exp-card-title">Surface Vendangée</span>
+                  <span class="exp-card-badge" style="background: rgba(82, 183, 136, 0.15); color: #52b788; border-color: rgba(82, 183, 136, 0.3);">Unique</span>
+                </div>
+                <div class="exp-kpi-num" id="exp-vendanges-kpi-surface">
+                  0.0000 <span style="font-size: 1rem; color: #95a89e; font-weight: 500;">ha</span>
+                </div>
+                <div style="font-size: 0.82rem; color: #95a89e;" id="exp-vendanges-kpi-surface-sub">Surfaces réellement récoltées (sans doublon)</div>
+              </div>
+
+              <div class="exp-card">
+                <div class="exp-card-header">
+                  <span class="exp-card-title">Rendement Moyen</span>
+                  <span class="exp-card-badge" style="background: rgba(199, 125, 255, 0.15); color: #c77dff; border-color: rgba(199, 125, 255, 0.3);">Agronomie</span>
+                </div>
+                <div class="exp-kpi-num" id="exp-vendanges-kpi-rendement">
+                  0 <span style="font-size: 1rem; color: #95a89e; font-weight: 500;">kg/ha</span>
+                </div>
+                <div style="font-size: 0.82rem; color: #95a89e;" id="exp-vendanges-kpi-rendement-sub">Poids total / surface vendangée unique</div>
+              </div>
+
+              <div class="exp-card">
+                <div class="exp-card-header">
+                  <span class="exp-card-title">Coût Moyen / kg de Raisin</span>
+                  <span class="exp-card-badge" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24; border-color: rgba(245, 158, 11, 0.3);">Économique</span>
+                </div>
+                <div class="exp-kpi-num" id="exp-vendanges-kpi-cout-kg">
+                  —
+                </div>
+                <div style="font-size: 0.82rem; color: #95a89e;" id="exp-vendanges-kpi-cout-kg-sub">Coût de revient pondéré par kilo récolté</div>
+              </div>
+            </div>
+
+            <!-- Tableau de Synthèse des Vendanges par Parcelle -->
+            <div class="table-card" style="margin-top: 1.5rem;">
+              <div class="table-card-header" style="flex-wrap: wrap; gap: 0.75rem;">
+                <div>
+                  <h3 class="table-title">Synthèse des Vendanges par Parcelle</h3>
+                  <p class="table-subtitle">Rendements réels, avancement de vendange et coût de revient analytique au kilo</p>
+                </div>
+                <div style="display: flex; gap: 0.5rem; align-items: center;">
+                  <label for="exp-vendanges-sort-by" style="font-size: 0.82rem; color: #95a89e;">Trier par :</label>
+                  <select id="exp-vendanges-sort-by" class="form-select-simple" onchange="renderVendangesView()" style="width: auto; min-width: 170px;">
+                    <option value="kg_desc">Kg récoltés (décroissant)</option>
+                    <option value="kg_ha_desc">Rendement kg/ha (décroissant)</option>
+                    <option value="cout_kg_asc">Coût / kg (€/kg croissant)</option>
+                    <option value="surface_desc">Surface parcelle (ha)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div id="exp-vendanges-table-container" style="padding: 1rem;">
+                <!-- Rendu dynamique via renderVendangesView() -->
+              </div>
+            </div>
+
+            <!-- Journal Détaillé des Pesées de Vendange -->
+            <div class="table-card" style="margin-top: 1.5rem;">
+              <div class="table-card-header">
+                <div>
+                  <h3 class="table-title">Journal des Pesées Réelles</h3>
+                  <p class="table-subtitle">Toutes les pesées enregistrées (matin, après-midi, bennes, caisses)</p>
+                </div>
+                <button type="button" class="btn btn-exp-primary btn-xs" onclick="openAddHarvestModal()">
+                  ＋ Nouvelle pesée
+                </button>
+              </div>
+
+              <div id="exp-harvests-log-container" style="padding: 1rem;">
+                <!-- Rendu dynamique via renderVendangesView() -->
+              </div>
+            </div>
+          </div>
+
+          <!-- ------------------------------------------------------------------
+               VUE EXPLOITATION 9 : COÛTS DE REVIENT & RENTABILITÉ (PHASE 5)
+               ------------------------------------------------------------------ -->
+          <div class="app-view exp-view" id="view-exp-couts" style="display: none;">
+            <div class="view-header">
+              <div>
+                <div class="exp-view-badge">💰 ANALYSE ÉCONOMIQUE & COÛT DE REVIENT</div>
+                <h1 class="view-heading">Coûts de Revient & Rentabilité Parcellaire</h1>
+                <p class="view-subheading">Calculs automatiques à partir des interventions terrain (main-d'œuvre, mécanisation, intrants) et charges directes.</p>
+              </div>
+              <div class="services-view-actions">
+                <button type="button" class="btn btn-exp-primary btn-sm" onclick="openAddExternalCostModal()">
+                  <span class="btn-icon">＋</span>
+                  <span>Ajouter une charge externe</span>
+                </button>
+                <button type="button" class="btn btn-outline btn-sm" onclick="switchExploitationView('dashboard')">
+                  ← Tableau de bord
+                </button>
+              </div>
+            </div>
+
+            <!-- 4 Indicateurs Économiques Clés de l'Exploitation -->
+            <div class="exp-kpis-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));">
+              <div class="exp-card">
+                <div class="exp-card-header">
+                  <span class="exp-card-title">Coût Total Campagne</span>
+                  <span class="exp-card-badge">Cumul</span>
+                </div>
+                <div class="exp-kpi-num" id="exp-couts-total-campagne">
+                  0.00 <span style="font-size: 1rem; color: #95a89e; font-weight: 500;">€</span>
+                </div>
+                <div style="font-size: 0.82rem; color: #95a89e;" id="exp-couts-total-campagne-sub">Interventions + Charges directes</div>
+              </div>
+
+              <div class="exp-card">
+                <div class="exp-card-header">
+                  <span class="exp-card-title">Coût Moyen / Hectare</span>
+                  <span class="exp-card-badge" style="background: rgba(82, 183, 136, 0.15); color: #52b788; border-color: rgba(82, 183, 136, 0.3);">Pondéré</span>
+                </div>
+                <div class="exp-kpi-num" id="exp-couts-moyenne-ha">
+                  0.00 <span style="font-size: 1rem; color: #95a89e; font-weight: 500;">€/ha</span>
+                </div>
+                <div style="font-size: 0.82rem; color: #95a89e;">Moyenne pondérée aux surfaces réelles</div>
+              </div>
+
+              <div class="exp-card">
+                <div class="exp-card-header">
+                  <span class="exp-card-title">Coût / ha le Plus Élevé</span>
+                  <span class="exp-card-badge" style="background: rgba(239, 68, 68, 0.15); color: #ef4444; border-color: rgba(239, 68, 68, 0.3);">Maximum</span>
+                </div>
+                <div class="exp-kpi-num" style="font-size: 1.45rem;" id="exp-couts-max-parcelle">
+                  —
+                </div>
+                <div style="font-size: 0.82rem; color: #95a89e;" id="exp-couts-max-parcelle-sub">Parcelle la plus coûteuse à l'ha</div>
+              </div>
+
+              <div class="exp-card">
+                <div class="exp-card-header">
+                  <span class="exp-card-title">Coût / ha le Plus Faible</span>
+                  <span class="exp-card-badge" style="background: rgba(82, 183, 136, 0.15); color: #52b788; border-color: rgba(82, 183, 136, 0.3);">Minimum</span>
+                </div>
+                <div class="exp-kpi-num" style="font-size: 1.45rem;" id="exp-couts-min-parcelle">
+                  —
+                </div>
+                <div style="font-size: 0.82rem; color: #95a89e;" id="exp-couts-min-parcelle-sub">Parcelle la plus économe à l'ha</div>
+              </div>
+            </div>
+
+            <!-- Tableau de Synthèse des Coûts Parcellaires -->
+            <div class="table-card" style="margin-top: 1.5rem;">
+              <div class="table-card-header" style="flex-wrap: wrap; gap: 0.75rem;">
+                <div>
+                  <h3 class="table-title">Synthèse des Coûts par Parcelle</h3>
+                  <p class="table-subtitle">Ventilation analytique par catégorie et comparaison à la moyenne exploitation</p>
+                </div>
+                <div style="display: flex; gap: 0.5rem; align-items: center;">
+                  <label for="exp-couts-sort-by" style="font-size: 0.82rem; color: #95a89e;">Trier par :</label>
+                  <select id="exp-couts-sort-by" class="form-select-simple" onchange="renderCoutsView()" style="width: auto; min-width: 170px;">
+                    <option value="cout_ha_desc">Coût / ha (décroissant)</option>
+                    <option value="cout_ha_asc">Coût / ha (croissant)</option>
+                    <option value="total_desc">Coût Total (€)</option>
+                    <option value="surface_desc">Surface (ha)</option>
+                    <option value="labor_desc">Main-d'œuvre (€)</option>
+                    <option value="equip_desc">Matériel (€)</option>
+                    <option value="input_desc">Intrants (€)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div id="exp-couts-table-container" style="padding: 1rem;">
+                <!-- Rendu dynamique via renderCoutsView() -->
+              </div>
+            </div>
+
+            <!-- Liste des Prestations Externes et Charges Directes -->
+            <div class="table-card" style="margin-top: 1.5rem;">
+              <div class="table-card-header">
+                <div>
+                  <h3 class="table-title">Prestations Externes & Autres Charges Directes</h3>
+                  <p class="table-subtitle">Travaux à façon tiers, analyses de sol, fournitures spécifiques de palissage</p>
+                </div>
+                <button type="button" class="btn btn-exp-primary btn-xs" onclick="openAddExternalCostModal()">
+                  ＋ Nouvelle dépense
+                </button>
+              </div>
+
+              <div id="exp-external-costs-table-container" style="padding: 1rem;">
+                <!-- Rendu dynamique via renderExternalCostsTable() -->
+              </div>
+            </div>
+          </div>
+
+          <!-- ------------------------------------------------------------------
+               VUE EXPLOITATION 10 : PARAMÈTRES DU DOMAINE
+               ------------------------------------------------------------------ -->
+          <div class="app-view exp-view" id="view-exp-parametres" style="display: none;">
+            <div class="view-header">
+              <div>
+                <div class="exp-view-badge">⚙️ CONFIGURATION & IDENTITÉ</div>
+                <h1 class="view-heading">Paramètres de l'Exploitation</h1>
+                <p class="view-subheading">Informations du domaine viticole, gestion des campagnes, bibliothèque des travaux et membres de l'organisation.</p>
+              </div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 1.5rem; max-width: 1050px;">
+              <!-- 1. Identité de l'Exploitation (Organisation) -->
+              <div class="exp-card" style="padding: 1.75rem;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+                  <div>
+                    <h3 style="font-size: 1.2rem; font-weight: 700; color: #fff; margin: 0 0 0.35rem 0;">🍇 Identité de l'Exploitation</h3>
+                    <p style="font-size: 0.85rem; color: #95a89e; margin: 0;">Rattachée à votre organisation unique (<span id="exp-settings-org-id-label" style="font-family: monospace; color: #c77dff;">...</span>)</p>
+                  </div>
+                  <button type="button" class="btn btn-exp-primary btn-sm" onclick="saveExploitationSettings()">
+                    💾 Enregistrer les modifications
+                  </button>
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem;">
+                  <div class="form-group">
+                    <label class="form-label" for="exp-settings-name">Nom de l'exploitation / Domaine</label>
+                    <input type="text" id="exp-settings-name" class="epure-input" placeholder="Ex: Domaine Les Crayères">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" for="exp-settings-appellation">Appellation / Région viticole</label>
+                    <input type="text" id="exp-settings-appellation" class="epure-input" placeholder="Ex: AOC Pauillac / Champagne">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" for="exp-settings-total-surface">Superficie totale déclarée (ha)</label>
+                    <input type="number" step="0.0001" min="0" id="exp-settings-total-surface" class="epure-input" placeholder="Ex: 12.4500">
+                  </div>
+                </div>
+              </div>
+
+              <!-- 2. Gestion des Campagnes Viticoles -->
+              <div class="exp-card" style="padding: 1.75rem;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+                  <div>
+                    <h3 style="font-size: 1.2rem; font-weight: 700; color: #fff; margin: 0 0 0.35rem 0;">📅 Campagnes Viticoles</h3>
+                    <p style="font-size: 0.85rem; color: #95a89e; margin: 0;">Une seule campagne active par organisation à la fois.</p>
+                  </div>
+                  <button type="button" class="btn btn-outline btn-sm" onclick="openCampaignModal()">
+                    ＋ Nouvelle campagne
+                  </button>
+                </div>
+
+                <div id="exp-settings-campaigns-list" style="display: flex; flex-direction: column; gap: 0.75rem;">
+                  <!-- Liste dynamique des campagnes -->
+                </div>
+              </div>
+
+              <!-- 3. Bibliothèque des Travaux Viticoles -->
+              <div class="exp-card" style="padding: 1.75rem;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+                  <div>
+                    <h3 style="font-size: 1.2rem; font-weight: 700; color: #fff; margin: 0 0 0.35rem 0;">🚜 Bibliothèque des Travaux du Domaine</h3>
+                    <p style="font-size: 0.85rem; color: #95a89e; margin: 0;">Personnalisez la liste des opérations culturales suivies sur vos parcelles.</p>
+                  </div>
+                  <button type="button" class="btn btn-exp-primary btn-sm" onclick="openAddTaskModal()">
+                    ＋ Ajouter un travail
+                  </button>
+                </div>
+
+                <div id="exp-settings-tasks-list" style="display: flex; flex-direction: column; gap: 0.5rem;">
+                  <!-- Liste dynamique des travaux -->
+                </div>
+              </div>
+
+              <!-- 4. Membres & Rôles de l'Organisation -->
+              <div class="exp-card" style="padding: 1.75rem;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+                  <div>
+                    <h3 style="font-size: 1.2rem; font-weight: 700; color: #fff; margin: 0 0 0.35rem 0;">👥 Membres de l'Exploitation</h3>
+                    <p style="font-size: 0.85rem; color: #95a89e; margin: 0;">Membres rattachés via <code>organization_members</code> avec contrôle RLS strict.</p>
+                  </div>
+                </div>
+
+                <div id="exp-settings-members-list" style="display: flex; flex-direction: column; gap: 0.65rem;">
+                  <!-- Liste dynamique des membres -->
+                </div>
+              </div>
+
+              <!-- 5. Environnement & Type d'Activité -->
+              <div class="exp-card" style="padding: 1.75rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                  <div>
+                    <h3 style="font-size: 1.15rem; font-weight: 700; color: #fff; margin: 0 0 0.35rem 0;">🔄 Type d'Activité VitiTrack</h3>
+                    <p style="font-size: 0.85rem; color: #95a89e; margin: 0;">Basculez entre Prestation, Exploitation ou les Deux à tout moment.</p>
+                  </div>
+                  <button type="button" class="btn btn-outline btn-sm" onclick="openActivitySettingsModal()">
+                    Modifier le type d'activité
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div> <!-- /#exploitation-views-container -->
       </div>
     </main>
   </div>
@@ -4164,10 +5186,1155 @@
   <!-- TOAST NOTIFICATION CONTAINER -->
   <div class="toast-container" id="toast-container"></div>
 
-  <!-- SUPABASE CDN & CONFIG -->
+  <!-- ==================== MODAL ONBOARDING : COMMENT UTILISEZ-VOUS VITITRACK ? ==================== -->
+  <div class="onboarding-overlay" id="modal-onboarding-activity" aria-hidden="true" role="dialog" aria-modal="true">
+    <div class="onboarding-modal-card">
+      <div class="onboarding-header">
+        <div class="onboarding-badge">🍇 Bienvenue sur VitiTrack Pro</div>
+        <h2 class="onboarding-title">Comment utilisez-vous VitiTrack ?</h2>
+        <p class="onboarding-subtitle">
+          Sélectionnez votre profil d'activité. Vous pourrez modifier ce choix à tout moment dans les paramètres sans perdre aucune donnée.
+        </p>
+      </div>
+
+      <div class="onboarding-grid">
+        <!-- Option 1 : Prestation -->
+        <div class="onboarding-choice-card card-prestation">
+          <div class="choice-icon-wrap">🚜</div>
+          <span class="choice-tag">Prestataire de travaux</span>
+          <h3 class="choice-title">Je réalise des prestations viticoles</h3>
+          <p class="choice-desc">Gestion clients, parcelles clients, travaux réalisés et facturation.</p>
+          <button type="button" class="btn-choice" onclick="setActivityType('prestation')">
+            <span>Choisir Prestation</span>
+            <span>➔</span>
+          </button>
+        </div>
+
+        <!-- Option 2 : Exploitation -->
+        <div class="onboarding-choice-card card-exploitation">
+          <div class="choice-icon-wrap">🍇</div>
+          <span class="choice-tag">Domaine viticole</span>
+          <h3 class="choice-title">Je gère une exploitation viticole</h3>
+          <p class="choice-desc">Suivi de mes parcelles, travaux, équipes et coûts de revient.</p>
+          <button type="button" class="btn-choice" onclick="setActivityType('exploitation')">
+            <span>Choisir Exploitation</span>
+            <span>➔</span>
+          </button>
+        </div>
+
+        <!-- Option 3 : Les deux -->
+        <div class="onboarding-choice-card card-both">
+          <div class="choice-icon-wrap">🚜 ＋ 🍇</div>
+          <span class="choice-tag">Profil hybride</span>
+          <h3 class="choice-title">Je fais les deux</h3>
+          <p class="choice-desc">Je possède une exploitation et je réalise également des prestations pour des clients.</p>
+          <button type="button" class="btn-choice" onclick="setActivityType('both')">
+            <span>Choisir les deux</span>
+            <span>➔</span>
+          </button>
+        </div>
+      </div>
+
+      <p class="onboarding-footer-note">
+        🔒 Vos données sont isolées et sécurisées. Vous pourrez à tout moment basculer ou activer les deux environnements.
+      </p>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL PARAMÈTRES : MODIFIER LE TYPE D'ACTIVITÉ ==================== -->
+  <div class="activity-settings-modal" id="modal-activity-settings" aria-hidden="true" role="dialog" aria-modal="true">
+    <div class="activity-settings-card">
+      <div style="display: flex; align-items: center; justify-content: space-between;">
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+          <div style="width: 40px; height: 40px; border-radius: 10px; background: rgba(82, 183, 136, 0.15); display: flex; align-items: center; justify-content: center; font-size: 1.3rem;">🔄</div>
+          <div>
+            <h3 style="margin: 0; font-size: 1.25rem; font-weight: 700; color: #fff;">Type d'Activité VitiTrack</h3>
+            <p style="margin: 0; font-size: 0.82rem; color: #95a89e;">Ajustez vos environnements actifs à tout moment</p>
+          </div>
+        </div>
+        <button type="button" class="modal-close-btn" onclick="closeActivitySettingsModal()" aria-label="Fermer">✕</button>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 0.85rem;">
+        <label style="display: flex; align-items: flex-start; gap: 0.85rem; padding: 0.95rem; border-radius: 12px; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(82, 183, 136, 0.2); cursor: pointer;">
+          <input type="radio" name="activity-setting-choice" value="prestation" style="margin-top: 0.25rem;">
+          <div>
+            <strong style="color: #fff; font-size: 0.95rem;">🚜 Mode Prestation uniquement</strong>
+            <p style="margin: 0.25rem 0 0 0; font-size: 0.82rem; color: #95a89e;">
+              Gestion des clients, parcelles clientes, interventions facturées et facturation HT.
+            </p>
+          </div>
+        </label>
+
+        <label style="display: flex; align-items: flex-start; gap: 0.85rem; padding: 0.95rem; border-radius: 12px; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(199, 125, 255, 0.25); cursor: pointer;">
+          <input type="radio" name="activity-setting-choice" value="exploitation" style="margin-top: 0.25rem;">
+          <div>
+            <strong style="color: #fff; font-size: 0.95rem;">🍇 Mode Exploitation uniquement</strong>
+            <p style="margin: 0.25rem 0 0 0; font-size: 0.82rem; color: #95a89e;">
+              Gestion de votre propre domaine : parcelles, travaux culturaux, équipe et coûts de revient.
+            </p>
+          </div>
+        </label>
+
+        <label style="display: flex; align-items: flex-start; gap: 0.85rem; padding: 0.95rem; border-radius: 12px; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(233, 196, 106, 0.3); cursor: pointer;">
+          <input type="radio" name="activity-setting-choice" value="both" style="margin-top: 0.25rem;">
+          <div>
+            <strong style="color: #fff; font-size: 0.95rem;">🚜 ＋ 🍇 Les deux (Prestation & Exploitation)</strong>
+            <p style="margin: 0.25rem 0 0 0; font-size: 0.82rem; color: #95a89e;">
+              Accès complet aux deux espaces avec le commutateur rapide en haut de page.
+            </p>
+          </div>
+        </label>
+      </div>
+
+  <!-- ==================== MODAL EXPLOITATION 1 : AJOUT / ÉDITION DE PARCELLE ==================== -->
+  <div class="modal-overlay" id="modal-exp-parcelle" aria-hidden="true" role="dialog" aria-modal="true">
+    <div class="modal-dialog" style="max-width: 680px;">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div class="modal-header-icon epure-header-icon" style="background: rgba(123, 44, 191, 0.2); color: #c77dff;">
+            🌿
+          </div>
+          <div>
+            <h3 class="modal-title" id="exp-parcelle-modal-title">Ajouter une parcelle au domaine</h3>
+            <p class="modal-subtitle">Enregistrement cadastral et caractéristiques agronomiques</p>
+          </div>
+          <button type="button" class="modal-close-btn" onclick="closeParcelleModal()" aria-label="Fermer">✕</button>
+        </div>
+
+        <form id="form-exp-parcelle" onsubmit="event.preventDefault(); saveParcelle();" novalidate>
+          <input type="hidden" id="exp-parcelle-edit-id" value="">
+          <div class="modal-body" style="padding: 1.5rem; display: flex; flex-direction: column; gap: 1.15rem;">
+            <!-- Ligne 1 : Nom de la parcelle & Surface -->
+            <div class="form-row">
+              <div class="form-group flex-2">
+                <label for="exp-parcelle-nom" class="form-label">
+                  <span>Nom de la parcelle</span> <span class="required">*</span>
+                </label>
+                <input type="text" id="exp-parcelle-nom" class="epure-input" placeholder="Ex: Les Crayères, Clos du Moulin" required>
+              </div>
+              <div class="form-group flex-1">
+                <label for="exp-parcelle-surface" class="form-label">
+                  <span>Surface (ha, 4 décimales)</span> <span class="required">*</span>
+                </label>
+                <input type="number" step="0.0001" min="0.0001" id="exp-parcelle-surface" class="epure-input" placeholder="Ex: 0.8425" required>
+              </div>
+            </div>
+
+            <!-- Ligne 2 : Commune & Lieu-dit -->
+            <div class="form-row">
+              <div class="form-group flex-1">
+                <label for="exp-parcelle-commune" class="form-label">Commune</label>
+                <input type="text" id="exp-parcelle-commune" class="epure-input" placeholder="Ex: Pauillac, Reims, Saint-Émilion">
+              </div>
+              <div class="form-group flex-1">
+                <label for="exp-parcelle-lieu-dit" class="form-label">Lieu-dit cadastral</label>
+                <input type="text" id="exp-parcelle-lieu-dit" class="epure-input" placeholder="Ex: Les Crayères Sud">
+              </div>
+            </div>
+
+            <!-- Ligne 3 : Cépage & Porte-greffe -->
+            <div class="form-row">
+              <div class="form-group flex-1">
+                <label for="exp-parcelle-cepage" class="form-label">Cépage</label>
+                <input type="text" id="exp-parcelle-cepage" class="epure-input" placeholder="Ex: Chardonnay, Merlot, Cabernet..." list="cepages-list">
+                <datalist id="cepages-list">
+                  <option value="Chardonnay">
+                  <option value="Merlot Noir">
+                  <option value="Cabernet Sauvignon">
+                  <option value="Cabernet Franc">
+                  <option value="Pinot Noir">
+                  <option value="Syrah">
+                  <option value="Sauvignon Blanc">
+                  <option value="Grenache">
+                  <option value="Gamay">
+                </datalist>
+              </div>
+              <div class="form-group flex-1">
+                <label for="exp-parcelle-porte-greffe" class="form-label">Porte-greffe</label>
+                <input type="text" id="exp-parcelle-porte-greffe" class="epure-input" placeholder="Ex: SO4, Riparia Gloire, 3309C, Gravesac">
+              </div>
+            </div>
+
+            <!-- Ligne 4 : Année de plantation, Densité, Nombre de pieds -->
+            <div class="form-row">
+              <div class="form-group flex-1">
+                <label for="exp-parcelle-annee" class="form-label">Année plantation</label>
+                <input type="number" id="exp-parcelle-annee" class="epure-input" placeholder="Ex: 2008" min="1900" max="2099">
+              </div>
+              <div class="form-group flex-1">
+                <label for="exp-parcelle-densite" class="form-label">Densité (pieds/ha)</label>
+                <input type="number" id="exp-parcelle-densite" class="epure-input" placeholder="Ex: 8000" min="0">
+              </div>
+              <div class="form-group flex-1">
+                <label for="exp-parcelle-pieds" class="form-label">Nombre de pieds total</label>
+                <input type="number" id="exp-parcelle-pieds" class="epure-input" placeholder="Ex: 6740" min="0">
+              </div>
+            </div>
+
+            <!-- Ligne 5 : Écartements (m) & Statut -->
+            <div class="form-row">
+              <div class="form-group flex-1">
+                <label for="exp-parcelle-ecart-rangs" class="form-label">Écartement rangs (m)</label>
+                <input type="number" step="0.05" id="exp-parcelle-ecart-rangs" class="epure-input" placeholder="Ex: 1.80">
+              </div>
+              <div class="form-group flex-1">
+                <label for="exp-parcelle-ecart-pieds" class="form-label">Écartement pieds (m)</label>
+                <input type="number" step="0.05" id="exp-parcelle-ecart-pieds" class="epure-input" placeholder="Ex: 0.90">
+              </div>
+              <div class="form-group flex-1">
+                <label for="exp-parcelle-status" class="form-label">Statut</label>
+                <select id="exp-parcelle-status" class="form-select-simple">
+                  <option value="active">Active (En production)</option>
+                  <option value="archived">Archivée</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Notes techniques -->
+            <div class="form-group">
+              <label for="exp-parcelle-notes" class="form-label">Notes agronomiques & terroir</label>
+              <textarea id="exp-parcelle-notes" class="epure-input" rows="2" placeholder="Exposition, nature du sol, clone, historique..."></textarea>
+            </div>
+          </div>
+
+          <div class="modal-footer" style="padding: 1rem 1.5rem; display: flex; justify-content: flex-end; gap: 0.75rem; border-top: 1px solid rgba(82, 183, 136, 0.15);">
+            <button type="button" class="btn btn-outline btn-sm" onclick="closeParcelleModal()">Annuler</button>
+            <button type="submit" class="btn btn-exp-primary btn-sm">
+              💾 Enregistrer la parcelle
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL EXPLOITATION 2 : FICHE PARCELLE DÉTAILLÉE ==================== -->
+  <div class="fiche-parcelle-modal" id="modal-exp-fiche-parcelle" aria-hidden="true" role="dialog" aria-modal="true">
+    <div class="fiche-parcelle-card">
+      <!-- Header Fiche Parcelle -->
+      <div class="fiche-parcelle-header">
+        <div style="display: flex; align-items: center; gap: 1rem;">
+          <div style="width: 48px; height: 48px; border-radius: 14px; background: rgba(123, 44, 191, 0.25); border: 1px solid rgba(199, 125, 255, 0.4); display: flex; align-items: center; justify-content: center; font-size: 1.6rem;">
+            🍇
+          </div>
+          <div>
+            <div style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;">
+              <h2 id="fiche-parcelle-title" style="margin: 0; font-size: 1.45rem; font-weight: 800; color: #fff; font-family: var(--font-heading);">LES CRAYÈRES</h2>
+              <span id="fiche-parcelle-badge-status" class="status-badge billed">Active</span>
+            </div>
+            <div style="font-size: 0.86rem; color: #95a89e; margin-top: 0.2rem;" id="fiche-parcelle-subtitle">
+              Surface : 0,8425 ha • Commune : Pauillac • Cépage : Chardonnay
+            </div>
+          </div>
+        </div>
+        <button type="button" class="modal-close-btn" onclick="closeFicheParcelle()" aria-label="Fermer">✕</button>
+      </div>
+
+      <!-- Navigation 5 Onglets -->
+      <div class="fiche-tabs-nav">
+        <button type="button" class="fiche-tab-btn active" data-tab="infos" onclick="switchFicheTab('infos', this)">📋 Informations</button>
+        <button type="button" class="fiche-tab-btn" data-tab="travaux" onclick="switchFicheTab('travaux', this)">🚜 Travaux de campagne</button>
+        <button type="button" class="fiche-tab-btn" data-tab="historique" onclick="switchFicheTab('historique', this)">📅 Historique</button>
+        <button type="button" class="fiche-tab-btn" data-tab="couts" onclick="switchFicheTab('couts', this)">💰 Coûts</button>
+        <button type="button" class="fiche-tab-btn" data-tab="vendanges" onclick="switchFicheTab('vendanges', this)">🍇 Vendanges</button>
+      </div>
+
+      <!-- Contenu des Onglets -->
+      <div class="fiche-tab-content">
+        <!-- Onglet 1 : Informations Générales -->
+        <div id="fiche-tab-content-infos" class="fiche-sub-tab">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem;">
+            <div class="exp-card" style="padding: 1rem;">
+              <div style="font-size: 0.75rem; color: #95a89e; text-transform: uppercase; font-weight: 700;">Superficie</div>
+              <div style="font-size: 1.4rem; font-weight: 800; color: #fff; margin-top: 0.25rem;" id="fiche-info-surface">0.8425 ha</div>
+            </div>
+            <div class="exp-card" style="padding: 1rem;">
+              <div style="font-size: 0.75rem; color: #95a89e; text-transform: uppercase; font-weight: 700;">Cépage & Porte-greffe</div>
+              <div style="font-size: 1.15rem; font-weight: 700; color: #fff; margin-top: 0.25rem;" id="fiche-info-cepage">Chardonnay</div>
+              <div style="font-size: 0.8rem; color: #95a89e;" id="fiche-info-porte-greffe">SO4</div>
+            </div>
+            <div class="exp-card" style="padding: 1rem;">
+              <div style="font-size: 0.75rem; color: #95a89e; text-transform: uppercase; font-weight: 700;">Plantation & Densité</div>
+              <div style="font-size: 1.15rem; font-weight: 700; color: #fff; margin-top: 0.25rem;" id="fiche-info-annee">Plantée en 2008</div>
+              <div style="font-size: 0.8rem; color: #95a89e;" id="fiche-info-densite">8 000 pieds/ha</div>
+            </div>
+            <div class="exp-card" style="padding: 1rem;">
+              <div style="font-size: 0.75rem; color: #95a89e; text-transform: uppercase; font-weight: 700;">Écartements & Pieds</div>
+              <div style="font-size: 1.15rem; font-weight: 700; color: #fff; margin-top: 0.25rem;" id="fiche-info-ecartement">1.80m × 0.90m</div>
+              <div style="font-size: 0.8rem; color: #95a89e;" id="fiche-info-pieds">6 740 pieds au total</div>
+            </div>
+          </div>
+
+          <div class="exp-card" style="padding: 1.25rem; margin-top: 1rem;">
+            <h4 style="margin: 0 0 0.5rem 0; font-size: 0.95rem; color: #fff;">Cadastre, Commune & Terroir</h4>
+            <div style="font-size: 0.88rem; color: #e5ece8; line-height: 1.6;" id="fiche-info-cadastre-notes">
+              Commune : Pauillac • Lieu-dit : Les Crayères
+            </div>
+          </div>
+        </div>
+
+        <!-- Onglet 2 : Travaux de Campagne -->
+        <div id="fiche-tab-content-travaux" class="fiche-sub-tab" style="display: none;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h4 style="margin: 0; font-size: 1rem; color: #fff;">Travaux programmés sur cette parcelle</h4>
+            <button type="button" class="btn btn-exp-primary btn-xs" onclick="openAssignTaskModal(currentFicheParcelleId)">
+              ＋ Affecter un travail
+            </button>
+          </div>
+          <div id="fiche-parcelle-tasks-list">
+            <!-- Rendu dynamique -->
+          </div>
+        </div>
+
+        <!-- Onglet 3 : Historique des Interventions -->
+        <div id="fiche-tab-content-historique" class="fiche-sub-tab" style="display: none;">
+          <div id="fiche-parcelle-history-list">
+            <!-- Dynamic render -->
+          </div>
+        </div>
+
+        <!-- Onglet 4 : Coûts Analytiques & Rentabilité (Phase 5) -->
+        <div id="fiche-tab-content-couts" class="fiche-sub-tab" style="display: none;">
+          <!-- Synthèse Chiffrée Clé -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.25rem;">
+            <div class="exp-card" style="padding: 1rem; background: rgba(123, 44, 191, 0.15); border-color: rgba(199, 125, 255, 0.35);">
+              <div style="font-size: 0.75rem; color: #95a89e; text-transform: uppercase; font-weight: 700;">Coût Total Campagne</div>
+              <div style="font-size: 1.6rem; font-weight: 800; color: #fff; margin-top: 0.25rem;" id="fiche-couts-total">0.00 €</div>
+              <div style="font-size: 0.78rem; color: #95a89e;">Interventions + Charges directes</div>
+            </div>
+
+            <div class="exp-card" style="padding: 1rem;">
+              <div style="font-size: 0.75rem; color: #95a89e; text-transform: uppercase; font-weight: 700;">Coût à l'Hectare</div>
+              <div style="font-size: 1.6rem; font-weight: 800; color: #c77dff; margin-top: 0.25rem;" id="fiche-couts-par-ha">0.00 €/ha</div>
+              <div style="font-size: 0.78rem;" id="fiche-couts-ecart-moyenne">—</div>
+            </div>
+
+            <div class="exp-card" style="padding: 1rem;">
+              <div style="font-size: 0.75rem; color: #95a89e; text-transform: uppercase; font-weight: 700;">Coût de Revient au Kilo</div>
+              <div style="font-size: 1.15rem; font-weight: 700; color: #e5ece8; margin-top: 0.25rem;" id="fiche-couts-par-kg">—</div>
+              <div style="font-size: 0.78rem; color: #95a89e;" id="fiche-couts-par-kg-sub">Disponible après saisie des vendanges</div>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.25rem;">
+            <!-- Colonne Gauche : Ventilation par Catégorie -->
+            <div class="exp-card" style="padding: 1.25rem;">
+              <h4 style="margin: 0 0 1rem 0; font-size: 0.95rem; color: #fff; display: flex; align-items: center; justify-content: space-between;">
+                <span>📊 Ventilation des Coûts</span>
+                <span style="font-size: 0.78rem; color: #95a89e; font-weight: 400;">Campagne active</span>
+              </h4>
+              <div id="fiche-couts-ventilation-list" style="display: flex; flex-direction: column; gap: 0.75rem;">
+                <!-- Rendu dynamique -->
+              </div>
+            </div>
+
+            <!-- Colonne Droite : Coût par Travail Viticole & Analyse des Écarts -->
+            <div style="display: flex; flex-direction: column; gap: 1rem;">
+              <div class="exp-card" style="padding: 1.25rem;">
+                <h4 style="margin: 0 0 0.85rem 0; font-size: 0.95rem; color: #fff;">
+                  🚜 Coût par Travail Viticole
+                </h4>
+                <div id="fiche-couts-tasks-list" style="display: flex; flex-direction: column; gap: 0.5rem;">
+                  <!-- Rendu dynamique -->
+                </div>
+              </div>
+
+              <div class="exp-card" style="padding: 1.25rem; background: rgba(0,0,0,0.3);">
+                <h4 style="margin: 0 0 0.65rem 0; font-size: 0.95rem; color: #fff;">
+                  🔍 Analyse des Écarts vs Moyenne
+                </h4>
+                <div id="fiche-couts-ecarts-detail" style="font-size: 0.85rem; color: #e5ece8; line-height: 1.5;">
+                  <!-- Rendu dynamique -->
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Onglet 5 : Vendanges & Rendements (Phase 6) -->
+        <div id="fiche-tab-content-vendanges" class="fiche-sub-tab" style="display: none;">
+          <!-- 3 KPIs Clés de la Parcelle -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.25rem;">
+            <div class="exp-card" style="padding: 1rem; background: rgba(199, 125, 255, 0.12); border-color: rgba(199, 125, 255, 0.3);">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div style="font-size: 0.75rem; color: #95a89e; text-transform: uppercase; font-weight: 700;">Récolte Campagne</div>
+                <span id="fiche-vendanges-status-badge" class="harvest-status-badge badge-harvest-todo">⏳ À vendanger</span>
+              </div>
+              <div style="font-size: 1.6rem; font-weight: 800; color: #fff; margin-top: 0.25rem;" id="fiche-vendanges-total-kg">0 kg</div>
+              <div style="font-size: 0.78rem; color: #95a89e;" id="fiche-vendanges-surface-recoltee">Surface récoltée : 0.0000 ha</div>
+            </div>
+
+            <div class="exp-card" style="padding: 1rem;">
+              <div style="font-size: 0.75rem; color: #95a89e; text-transform: uppercase; font-weight: 700;">Rendement Réel</div>
+              <div style="font-size: 1.6rem; font-weight: 800; color: #52b788; margin-top: 0.25rem;" id="fiche-vendanges-rendement-ha">0 kg/ha</div>
+              <div style="font-size: 0.78rem; color: #95a89e;" id="fiche-vendanges-ecart-rendement">—</div>
+            </div>
+
+            <div class="exp-card" style="padding: 1rem;">
+              <div style="font-size: 0.75rem; color: #95a89e; text-transform: uppercase; font-weight: 700;">Coût de Revient au Kilo</div>
+              <div style="font-size: 1.6rem; font-weight: 800; color: #c77dff; margin-top: 0.25rem;" id="fiche-vendanges-cout-kg">—</div>
+              <div style="font-size: 0.78rem; color: #95a89e;" id="fiche-vendanges-ecart-cout-kg">Coût annuel / kg récoltés</div>
+            </div>
+          </div>
+
+          <!-- Historique des Pesées de la Campagne -->
+          <div class="exp-card" style="padding: 1.25rem; margin-bottom: 1.25rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+              <div>
+                <h4 style="margin: 0; font-size: 0.95rem; color: #fff;">🍇 Pesées Enregistrées sur la Campagne</h4>
+                <p style="margin: 0.2rem 0 0 0; font-size: 0.8rem; color: #95a89e;">Chaque pesée s'additionne automatiquement au total parcellaire</p>
+              </div>
+              <button type="button" class="btn btn-exp-primary btn-xs" onclick="openAddHarvestModal(currentFicheParcelleId)">
+                ＋ Ajouter une pesée
+              </button>
+            </div>
+            <div id="fiche-vendanges-weighings-list">
+              <!-- Rendu dynamique -->
+            </div>
+          </div>
+
+          <!-- Historique Pluriannuel Inter-Campagnes (Section 11) -->
+          <div class="exp-card" style="padding: 1.25rem; background: rgba(0,0,0,0.3);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem;">
+              <h4 style="margin: 0; font-size: 0.95rem; color: #fff;">
+                📈 Évolution de la parcelle
+              </h4>
+              <span style="font-size: 0.78rem; color: #95a89e;">Coût €/ha • Rendement kg/ha • Coût €/kg</span>
+            </div>
+            <div id="fiche-vendanges-campaigns-history">
+              <!-- Rendu dynamique -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer Fiche Parcelle -->
+      <div style="padding: 1rem 1.75rem; border-top: 1px solid rgba(82, 183, 136, 0.15); display: flex; justify-content: space-between; align-items: center; background: rgba(10, 15, 13, 0.75);">
+        <div style="display: flex; gap: 0.5rem;">
+          <button type="button" class="btn btn-outline btn-sm" id="btn-fiche-edit" onclick="editParcelleFromFiche()">
+            ✏️ Modifier
+          </button>
+          <button type="button" class="btn btn-outline btn-sm" id="btn-fiche-archive" onclick="toggleArchiveFromFiche()">
+            📦 Archiver
+          </button>
+        </div>
+        <button type="button" class="btn btn-primary btn-sm" onclick="closeFicheParcelle()">
+          Fermer la fiche
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL EXPLOITATION 3 : BIBLIOTHÈQUE DES TRAVAUX ==================== -->
+  <div class="modal-overlay" id="modal-exp-task" aria-hidden="true" role="dialog" aria-modal="true">
+    <div class="modal-dialog" style="max-width: 540px;">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div class="modal-header-icon epure-header-icon" style="background: rgba(123, 44, 191, 0.2); color: #c77dff;">
+            🚜
+          </div>
+          <div>
+            <h3 class="modal-title" id="exp-task-modal-title">Ajouter une opération culturale</h3>
+            <p class="modal-subtitle">Bibliothèque des travaux viticoles du domaine</p>
+          </div>
+          <button type="button" class="modal-close-btn" onclick="closeTaskModal()" aria-label="Fermer">✕</button>
+        </div>
+
+        <form id="form-exp-task" onsubmit="event.preventDefault(); saveTask();" novalidate>
+          <input type="hidden" id="exp-task-edit-id" value="">
+          <div class="modal-body" style="padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem;">
+            <div class="form-group">
+              <label for="exp-task-nom" class="form-label">
+                <span>Intitulé du travail</span> <span class="required">*</span>
+              </label>
+              <input type="text" id="exp-task-nom" class="epure-input" placeholder="Ex: TAILLE, TRAVAIL DU SOL..." required>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group flex-1">
+                <label for="exp-task-category" class="form-label">Catégorie</label>
+                <select id="exp-task-category" class="form-select-simple">
+                  <option value="Taille & Végétation">Taille & Végétation</option>
+                  <option value="Travaux en Vert">Travaux en Vert</option>
+                  <option value="Travaux du Sol">Travaux du Sol</option>
+                  <option value="Traitements">Traitements</option>
+                  <option value="Nutrition du Sol">Nutrition du Sol</option>
+                  <option value="Récolte">Récolte</option>
+                  <option value="Divers">Divers</option>
+                </select>
+              </div>
+              <div class="form-group flex-1">
+                <label for="exp-task-unit" class="form-label">Unité de référence</label>
+                <select id="exp-task-unit" class="form-select-simple">
+                  <option value="ha">Hectares (ha)</option>
+                  <option value="h">Heures (h)</option>
+                  <option value="kg">Kilos (kg)</option>
+                  <option value="forfait">Forfait global</option>
+                </select>
+              </div>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; background: rgba(0,0,0,0.25); border-radius: 8px;">
+              <input type="checkbox" id="exp-task-active" checked style="width: 18px; height: 18px;">
+              <label for="exp-task-active" style="color: #fff; font-size: 0.88rem; cursor: pointer; margin: 0;">
+                Travail actif dans la campagne
+              </label>
+            </div>
+          </div>
+
+          <div class="modal-footer" style="padding: 1rem 1.5rem; display: flex; justify-content: flex-end; gap: 0.75rem; border-top: 1px solid rgba(82, 183, 136, 0.15);">
+            <button type="button" class="btn btn-outline btn-sm" onclick="closeTaskModal()">Annuler</button>
+            <button type="submit" class="btn btn-exp-primary btn-sm">
+              💾 Enregistrer le travail
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL EXPLOITATION 4 : NOUVELLE CAMPAGNE ==================== -->
+  <div class="modal-overlay" id="modal-exp-campaign" aria-hidden="true" role="dialog" aria-modal="true">
+    <div class="modal-dialog" style="max-width: 520px;">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div class="modal-header-icon epure-header-icon" style="background: rgba(123, 44, 191, 0.2); color: #c77dff;">
+            📅
+          </div>
+          <div>
+            <h3 class="modal-title">Gestion des Campagnes Viticoles</h3>
+            <p class="modal-subtitle">Créer ou activer une campagne pour l'organisation</p>
+          </div>
+          <button type="button" class="modal-close-btn" onclick="closeCampaignModal()" aria-label="Fermer">✕</button>
+        </div>
+
+        <form id="form-exp-campaign" onsubmit="event.preventDefault(); saveCampaign();" novalidate>
+          <div class="modal-body" style="padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem;">
+            <div class="form-row">
+              <div class="form-group flex-2">
+                <label for="exp-campaign-name" class="form-label">
+                  <span>Nom de la campagne</span> <span class="required">*</span>
+                </label>
+                <input type="text" id="exp-campaign-name" class="epure-input" placeholder="Ex: Campagne 2027" required>
+              </div>
+              <div class="form-group flex-1">
+                <label for="exp-campaign-year" class="form-label">
+                  <span>Année</span> <span class="required">*</span>
+                </label>
+                <input type="number" id="exp-campaign-year" class="epure-input" placeholder="2027" required>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group flex-1">
+                <label for="exp-campaign-start" class="form-label">Date de début</label>
+                <input type="date" id="exp-campaign-start" class="epure-input">
+              </div>
+              <div class="form-group flex-1">
+                <label for="exp-campaign-end" class="form-label">Date de fin</label>
+                <input type="date" id="exp-campaign-end" class="epure-input">
+              </div>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; background: rgba(0,0,0,0.25); border-radius: 8px;">
+              <input type="checkbox" id="exp-campaign-is-active" checked style="width: 18px; height: 18px;">
+              <label for="exp-campaign-is-active" style="color: #fff; font-size: 0.88rem; cursor: pointer; margin: 0;">
+                Définir immédiatement comme campagne active
+              </label>
+            </div>
+          </div>
+
+          <div class="modal-footer" style="padding: 1rem 1.5rem; display: flex; justify-content: flex-end; gap: 0.75rem; border-top: 1px solid rgba(82, 183, 136, 0.15);">
+            <button type="button" class="btn btn-outline btn-sm" onclick="closeCampaignModal()">Annuler</button>
+            <button type="submit" class="btn btn-exp-primary btn-sm">
+              💾 Enregistrer la campagne
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL EXPLOITATION 5 : AFFECTER UN TRAVAIL SUR PARCELLE ==================== -->
+  <div class="modal-overlay" id="modal-exp-assign-task" aria-hidden="true" role="dialog" aria-modal="true">
+    <div class="modal-dialog" style="max-width: 620px;">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div class="modal-header-icon epure-header-icon" style="background: rgba(123, 44, 191, 0.2); color: #c77dff;">
+            🚜
+          </div>
+          <div>
+            <h3 class="modal-title">Affecter un travail viticole</h3>
+            <p class="modal-subtitle">Programmer une opération sur les parcelles du domaine</p>
+          </div>
+          <button type="button" class="modal-close-btn" onclick="closeAssignTaskModal()" aria-label="Fermer">✕</button>
+        </div>
+
+        <form id="form-exp-assign-task" onsubmit="event.preventDefault(); saveAssignTask();" novalidate>
+          <div class="modal-body" style="padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem;">
+            <!-- Choix du Travail -->
+            <div class="form-group">
+              <label for="exp-assign-task-id" class="form-label">
+                <span>Opération culturale</span> <span class="required">*</span>
+              </label>
+              <select id="exp-assign-task-id" class="form-select-simple" required>
+                <!-- Populated dynamically -->
+              </select>
+            </div>
+
+            <!-- Choix des Parcelles -->
+            <div class="form-group">
+              <label class="form-label">
+                <span>Parcelle(s) concernée(s)</span> <span class="required">*</span>
+              </label>
+              <div id="exp-assign-parcelles-checklist" style="max-height: 180px; overflow-y: auto; background: rgba(0,0,0,0.3); border: 1px solid rgba(82, 183, 136, 0.2); border-radius: 8px; padding: 0.75rem; display: flex; flex-direction: column; gap: 0.5rem;">
+                <!-- Populated dynamically -->
+              </div>
+            </div>
+
+            <!-- Statut & Date -->
+            <div class="form-row">
+              <div class="form-group flex-1">
+                <label for="exp-assign-status" class="form-label">Statut</label>
+                <select id="exp-assign-status" class="form-select-simple">
+                  <option value="todo">⏳ À faire</option>
+                  <option value="in_progress">🚜 En cours</option>
+                  <option value="completed">✅ Terminé (100% surface)</option>
+                </select>
+              </div>
+              <div class="form-group flex-1">
+                <label for="exp-assign-planned-date" class="form-label">Date prévue</label>
+                <input type="date" id="exp-assign-planned-date" class="epure-input">
+              </div>
+            </div>
+
+            <!-- Notes -->
+            <div class="form-group">
+              <label for="exp-assign-notes" class="form-label">Consignes & remarques</label>
+              <input type="text" id="exp-assign-notes" class="epure-input" placeholder="Ex: Priorité coteau sud, passage croisé...">
+            </div>
+          </div>
+
+          <div class="modal-footer" style="padding: 1rem 1.5rem; display: flex; justify-content: flex-end; gap: 0.75rem; border-top: 1px solid rgba(82, 183, 136, 0.15);">
+            <button type="button" class="btn btn-outline btn-sm" onclick="closeAssignTaskModal()">Annuler</button>
+            <button type="submit" class="btn btn-exp-primary btn-sm">
+              💾 Affecter le travail
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL EXPLOITATION 6 : SALARIÉ / COLLABORATEUR ==================== -->
+  <div class="modal-overlay" id="modal-exp-worker" aria-hidden="true" role="dialog" aria-modal="true">
+    <div class="modal-dialog" style="max-width: 520px;">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div class="modal-header-icon epure-header-icon" style="background: rgba(123, 44, 191, 0.2); color: #c77dff;">
+            👤
+          </div>
+          <div>
+            <h3 class="modal-title" id="exp-worker-modal-title">Nouveau Collaborateur</h3>
+            <p class="modal-subtitle">Ressources humaines & coûts horaires de la main-d'œuvre</p>
+          </div>
+          <button type="button" class="modal-close-btn" onclick="closeWorkerModal()" aria-label="Fermer">✕</button>
+        </div>
+
+        <form id="form-exp-worker" onsubmit="event.preventDefault(); saveWorker();" novalidate>
+          <input type="hidden" id="exp-worker-edit-id" value="">
+          <div class="modal-body" style="padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem;">
+            <div class="form-row">
+              <div class="form-group flex-1">
+                <label for="exp-worker-first-name" class="form-label">
+                  <span>Prénom</span> <span class="required">*</span>
+                </label>
+                <input type="text" id="exp-worker-first-name" class="epure-input" placeholder="Ex: Thomas" required>
+              </div>
+              <div class="form-group flex-1">
+                <label for="exp-worker-last-name" class="form-label">
+                  <span>Nom</span> <span class="required">*</span>
+                </label>
+                <input type="text" id="exp-worker-last-name" class="epure-input" placeholder="Ex: Mercier" required>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group flex-1">
+                <label for="exp-worker-role" class="form-label">Rôle viticole</label>
+                <select id="exp-worker-role" class="form-select-simple">
+                  <option value="Tractoriste">Tractoriste</option>
+                  <option value="Ouvrier viticole">Ouvrier viticole</option>
+                  <option value="Chef de culture">Chef de culture</option>
+                  <option value="Gérant">Gérant / Exploitant</option>
+                  <option value="Saisonnier">Saisonnier</option>
+                  <option value="Apprenti">Apprenti</option>
+                </select>
+              </div>
+              <div class="form-group flex-1">
+                <label for="exp-worker-employment-type" class="form-label">Type de contrat</label>
+                <select id="exp-worker-employment-type" class="form-select-simple">
+                  <option value="CDI">CDI</option>
+                  <option value="CDD">CDD</option>
+                  <option value="Saisonnier">Saisonnier</option>
+                  <option value="Apprentissage">Apprentissage</option>
+                  <option value="Prestataire">Prestataire externe</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="exp-worker-hourly-cost" class="form-label">
+                <span>Coût horaire chargé (€/h)</span> <span class="required">*</span>
+              </label>
+              <input type="number" step="0.5" min="0" id="exp-worker-hourly-cost" class="epure-input" placeholder="Ex: 26.50" required>
+              <div style="font-size: 0.78rem; color: #95a89e; margin-top: 0.35rem;">
+                Ce taux horaire sera figé (snapshot) lors de chaque saisie d'intervention terrain.
+              </div>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; background: rgba(0,0,0,0.25); border-radius: 8px;">
+              <input type="checkbox" id="exp-worker-is-active" checked style="width: 18px; height: 18px;">
+              <label for="exp-worker-is-active" style="color: #fff; font-size: 0.88rem; cursor: pointer; margin: 0;">
+                Membre actif de l'exploitation
+              </label>
+            </div>
+          </div>
+
+          <div class="modal-footer" style="padding: 1rem 1.5rem; display: flex; justify-content: flex-end; gap: 0.75rem; border-top: 1px solid rgba(82, 183, 136, 0.15);">
+            <button type="button" class="btn btn-outline btn-sm" onclick="closeWorkerModal()">Annuler</button>
+            <button type="submit" class="btn btn-exp-primary btn-sm">
+              💾 Enregistrer le collaborateur
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL EXPLOITATION 7 : MATÉRIEL / MACHINE ==================== -->
+  <div class="modal-overlay" id="modal-exp-equipment" aria-hidden="true" role="dialog" aria-modal="true">
+    <div class="modal-dialog" style="max-width: 560px;">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div class="modal-header-icon epure-header-icon" style="background: rgba(123, 44, 191, 0.2); color: #c77dff;">
+            🚜
+          </div>
+          <div>
+            <h3 class="modal-title" id="exp-equipment-modal-title">Nouveau Matériel</h3>
+            <p class="modal-subtitle">Engin viticole, outil tracté et coût horaire machine</p>
+          </div>
+          <button type="button" class="modal-close-btn" onclick="closeEquipmentModal()" aria-label="Fermer">✕</button>
+        </div>
+
+        <form id="form-exp-equipment" onsubmit="event.preventDefault(); saveEquipment();" novalidate>
+          <input type="hidden" id="exp-equipment-edit-id" value="">
+          <div class="modal-body" style="padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem;">
+            <div class="form-row">
+              <div class="form-group flex-2">
+                <label for="exp-equipment-name" class="form-label">
+                  <span>Nom de l'engin / machine</span> <span class="required">*</span>
+                </label>
+                <input type="text" id="exp-equipment-name" class="epure-input" placeholder="Ex: Bobard 1092, Fendt 209V..." required>
+              </div>
+              <div class="form-group flex-1">
+                <label for="exp-equipment-category" class="form-label">Catégorie</label>
+                <select id="exp-equipment-category" class="form-select-simple">
+                  <option value="Tracteur enjambeur">Tracteur enjambeur</option>
+                  <option value="Tracteur interligne">Tracteur interligne</option>
+                  <option value="Rognonneuse">Rognonneuse</option>
+                  <option value="Pulvérisateur">Pulvérisateur</option>
+                  <option value="Outil du sol">Outil du sol (interceps, griffon)</option>
+                  <option value="Prétailleuse / Épampreuse">Prétailleuse / Épampreuse</option>
+                  <option value="Benne / Remorque">Benne / Remorque</option>
+                  <option value="Autre">Autre matériel</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group flex-1">
+                <label for="exp-equipment-hourly-cost" class="form-label">
+                  <span>Coût horaire machine (€/h)</span> <span class="required">*</span>
+                </label>
+                <input type="number" step="0.5" min="0" id="exp-equipment-hourly-cost" class="epure-input" placeholder="Ex: 45.00" required>
+              </div>
+              <div class="form-group flex-1">
+                <label for="exp-equipment-fuel-type" class="form-label">Carburant</label>
+                <select id="exp-equipment-fuel-type" class="form-select-simple">
+                  <option value="GNR">GNR</option>
+                  <option value="Diesel">Diesel</option>
+                  <option value="Essence">Essence</option>
+                  <option value="Électrique">Électrique</option>
+                  <option value="Sans">Sans moteur</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group flex-1">
+                <label for="exp-equipment-fuel-consumption" class="form-label">Consommation moyenne (L/h)</label>
+                <input type="number" step="0.5" min="0" id="exp-equipment-fuel-consumption" class="epure-input" placeholder="Ex: 8.5">
+              </div>
+              <div class="form-group flex-1" style="display: flex; align-items: flex-end; padding-bottom: 0.5rem;">
+                <label style="display: flex; align-items: center; gap: 0.6rem; cursor: pointer; color: #fff; font-size: 0.88rem; margin: 0;">
+                  <input type="checkbox" id="exp-equipment-includes-fuel" checked style="width: 18px; height: 18px;">
+                  <span>Coût horaire inclut déjà le carburant</span>
+                </label>
+              </div>
+            </div>
+
+            <div style="font-size: 0.78rem; color: #95a89e; background: rgba(0,0,0,0.2); padding: 0.6rem 0.8rem; border-radius: 6px;">
+              💡 <em>Si le carburant est inclus, le moteur économique n'appliquera aucun double comptage lors de la saisie d'intervention.</em>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; background: rgba(0,0,0,0.25); border-radius: 8px;">
+              <input type="checkbox" id="exp-equipment-is-active" checked style="width: 18px; height: 18px;">
+              <label for="exp-equipment-is-active" style="color: #fff; font-size: 0.88rem; cursor: pointer; margin: 0;">
+                Matériel actif et disponible
+              </label>
+            </div>
+          </div>
+
+          <div class="modal-footer" style="padding: 1rem 1.5rem; display: flex; justify-content: flex-end; gap: 0.75rem; border-top: 1px solid rgba(82, 183, 136, 0.15);">
+            <button type="button" class="btn btn-outline btn-sm" onclick="closeEquipmentModal()">Annuler</button>
+            <button type="submit" class="btn btn-exp-primary btn-sm">
+              💾 Enregistrer le matériel
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL EXPLOITATION 8 : INTRANT / PRODUIT ==================== -->
+  <div class="modal-overlay" id="modal-exp-input" aria-hidden="true" role="dialog" aria-modal="true">
+    <div class="modal-dialog" style="max-width: 560px;">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div class="modal-header-icon epure-header-icon" style="background: rgba(123, 44, 191, 0.2); color: #c77dff;">
+            📦
+          </div>
+          <div>
+            <h3 class="modal-title" id="exp-input-modal-title">Nouvel Intrant / Fourniture</h3>
+            <p class="modal-subtitle">Protection phytosanitaire, engrais et fournitures viticoles</p>
+          </div>
+          <button type="button" class="modal-close-btn" onclick="closeInputModal()" aria-label="Fermer">✕</button>
+        </div>
+
+        <form id="form-exp-input" onsubmit="event.preventDefault(); saveInput();" novalidate>
+          <input type="hidden" id="exp-input-edit-id" value="">
+          <div class="modal-body" style="padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem;">
+            <div class="form-row">
+              <div class="form-group flex-2">
+                <label for="exp-input-name" class="form-label">
+                  <span>Nom du produit / fourniture</span> <span class="required">*</span>
+                </label>
+                <input type="text" id="exp-input-name" class="epure-input" placeholder="Ex: Cuivre Nordox 75 WG, Thiovit Jet..." required>
+              </div>
+              <div class="form-group flex-1">
+                <label for="exp-input-category" class="form-label">Catégorie</label>
+                <select id="exp-input-category" class="form-select-simple">
+                  <option value="Traitement phyto">Traitement phyto</option>
+                  <option value="Nutrition du sol">Nutrition du sol / Engrais</option>
+                  <option value="Palissage">Palissage (fils, piquets, liens)</option>
+                  <option value="Œnologie">Œnologie / Cuverie</option>
+                  <option value="Divers">Fourniture diverse</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group flex-1">
+                <label for="exp-input-unit" class="form-label">Unité d'application</label>
+                <select id="exp-input-unit" class="form-select-simple" onchange="updateInputUnitLabels(this.value)">
+                  <option value="kg">kg (Kilo)</option>
+                  <option value="L">L (Litre)</option>
+                  <option value="unité">unité</option>
+                  <option value="m">m (Mètre)</option>
+                  <option value="sac">sac</option>
+                </select>
+              </div>
+              <div class="form-group flex-1">
+                <label for="exp-input-supplier" class="form-label">Fournisseur</label>
+                <input type="text" id="exp-input-supplier" class="epure-input" placeholder="Ex: AgraViti, VitiBio...">
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group flex-1">
+                <label for="exp-input-purchase-price" class="form-label">Prix d'achat total HT (€)</label>
+                <input type="number" step="0.5" min="0" id="exp-input-purchase-price" class="epure-input" placeholder="Ex: 245.00" oninput="calculateInputUnitCost()">
+              </div>
+              <div class="form-group flex-1">
+                <label for="exp-input-purchase-qty" class="form-label">Quantité achetée</label>
+                <input type="number" step="0.5" min="0.01" id="exp-input-purchase-qty" class="epure-input" placeholder="Ex: 10" oninput="calculateInputUnitCost()">
+              </div>
+              <div class="form-group flex-1">
+                <label for="exp-input-unit-cost" class="form-label">
+                  <span>Coût unitaire (<span class="unit-cost-label">€/kg</span>)</span> <span class="required">*</span>
+                </label>
+                <input type="number" step="0.01" min="0" id="exp-input-unit-cost" class="epure-input" placeholder="Ex: 24.50" required>
+              </div>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; background: rgba(0,0,0,0.25); border-radius: 8px;">
+              <input type="checkbox" id="exp-input-is-active" checked style="width: 18px; height: 18px;">
+              <label for="exp-input-is-active" style="color: #fff; font-size: 0.88rem; cursor: pointer; margin: 0;">
+                Produit en stock disponible
+              </label>
+            </div>
+          </div>
+
+          <div class="modal-footer" style="padding: 1rem 1.5rem; display: flex; justify-content: flex-end; gap: 0.75rem; border-top: 1px solid rgba(82, 183, 136, 0.15);">
+            <button type="button" class="btn btn-outline btn-sm" onclick="closeInputModal()">Annuler</button>
+            <button type="submit" class="btn btn-exp-primary btn-sm">
+              💾 Enregistrer l'intrant
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL EXPLOITATION 9 : PRESTATION EXTERNE / CHARGE DIRECTE ==================== -->
+  <div class="modal-overlay" id="modal-exp-external-cost" aria-hidden="true" role="dialog" aria-modal="true">
+    <div class="modal-dialog" style="max-width: 580px;">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div class="modal-header-icon epure-header-icon" style="background: rgba(199, 125, 255, 0.2); color: #c77dff;">
+            💶
+          </div>
+          <div>
+            <h3 class="modal-title" id="exp-ext-cost-modal-title">Prestation Externe & Charge Directe</h3>
+            <p class="modal-subtitle">Dépense directe affectée à une parcelle (taille tiers, analyses, piquets, etc.)</p>
+          </div>
+          <button type="button" class="modal-close-btn" onclick="closeExternalCostModal()" aria-label="Fermer">✕</button>
+        </div>
+
+        <form id="form-exp-external-cost" onsubmit="event.preventDefault(); saveExternalCost();" novalidate>
+          <input type="hidden" id="exp-ext-cost-edit-id" value="">
+          <div class="modal-body" style="padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem;">
+            <div class="form-row">
+              <div class="form-group flex-1">
+                <label for="exp-ext-cost-date" class="form-label">
+                  <span>Date</span> <span class="required">*</span>
+                </label>
+                <input type="date" id="exp-ext-cost-date" class="epure-input" required>
+              </div>
+              <div class="form-group flex-1">
+                <label for="exp-ext-cost-parcelle" class="form-label">
+                  <span>Parcelle affectée</span> <span class="required">*</span>
+                </label>
+                <select id="exp-ext-cost-parcelle" class="form-select-simple" required>
+                  <option value="">Sélectionner une parcelle...</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group flex-1">
+                <label for="exp-ext-cost-category" class="form-label">
+                  <span>Catégorie de charge</span> <span class="required">*</span>
+                </label>
+                <select id="exp-ext-cost-category" class="form-select-simple" required>
+                  <option value="Prestation externe">Prestation externe (Entreprise tiers)</option>
+                  <option value="Taille par tiers">Taille par tiers</option>
+                  <option value="Vendanges par tiers">Vendanges par tiers</option>
+                  <option value="Travaux du sol tiers">Travaux mécanisés tiers</option>
+                  <option value="Analyse de sol / foliaire">Analyse de sol / foliaire</option>
+                  <option value="Fournitures palissage">Fournitures palissage (piquets, fils, agrafes)</option>
+                  <option value="Plants de complantation">Plants de complantation</option>
+                  <option value="Carburant spécifique">Carburant spécifique</option>
+                  <option value="Location spécifique">Location matériel spécifique</option>
+                  <option value="Transport">Transport / Logistique</option>
+                  <option value="Autre charge directe">Autre charge directe</option>
+                </select>
+              </div>
+              <div class="form-group flex-1">
+                <label for="exp-ext-cost-supplier" class="form-label">Prestataire / Fournisseur</label>
+                <input type="text" id="exp-ext-cost-supplier" class="epure-input" placeholder="Ex: ETS Vignobles Services, Labo Oeno...">
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group flex-2">
+                <label for="exp-ext-cost-description" class="form-label">
+                  <span>Description / Objet</span> <span class="required">*</span>
+                </label>
+                <input type="text" id="exp-ext-cost-description" class="epure-input" placeholder="Ex: Entreprise extérieure pour taille, Remplacement de 40 piquets..." required>
+              </div>
+              <div class="form-group flex-1">
+                <label for="exp-ext-cost-amount" class="form-label">
+                  <span>Montant HT (€)</span> <span class="required">*</span>
+                </label>
+                <input type="number" step="0.01" min="0" id="exp-ext-cost-amount" class="epure-input" placeholder="Ex: 1200.00" required>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="exp-ext-cost-notes" class="form-label">Notes / Précisions</label>
+              <textarea id="exp-ext-cost-notes" class="epure-input" rows="2" placeholder="Facture N°, observations techniques..."></textarea>
+            </div>
+          </div>
+
+          <div class="modal-footer" style="padding: 1rem 1.5rem; display: flex; justify-content: flex-end; gap: 0.75rem; border-top: 1px solid rgba(82, 183, 136, 0.15);">
+            <button type="button" class="btn btn-outline btn-sm" onclick="closeExternalCostModal()">Annuler</button>
+            <button type="submit" class="btn btn-exp-primary btn-sm">
+              💾 Enregistrer la charge
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL EXPLOITATION 10 : PESÉE DE VENDANGE ==================== -->
+  <div class="modal-overlay" id="modal-exp-harvest" aria-hidden="true" role="dialog" aria-modal="true">
+    <div class="modal-dialog" style="max-width: 580px;">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div class="modal-header-icon epure-header-icon" style="background: rgba(199, 125, 255, 0.2); color: #c77dff;">
+            🍇
+          </div>
+          <div>
+            <h3 class="modal-title" id="exp-harvest-modal-title">Pesée de Vendange</h3>
+            <p class="modal-subtitle">Enregistrement terrain de la récolte au kilo et calcul du rendement</p>
+          </div>
+          <button type="button" class="modal-close-btn" onclick="closeHarvestModal()" aria-label="Fermer">✕</button>
+        </div>
+
+        <form id="form-exp-harvest" onsubmit="event.preventDefault(); saveHarvest();" novalidate>
+          <input type="hidden" id="exp-harvest-edit-id" value="">
+          <div class="modal-body" style="padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem;">
+            <div class="form-row">
+              <div class="form-group flex-2">
+                <label for="exp-harvest-parcelle" class="form-label">
+                  <span>Parcelle récoltée</span> <span class="required">*</span>
+                </label>
+                <select id="exp-harvest-parcelle" class="form-select-simple" onchange="onHarvestParcelleChange()" required>
+                  <option value="">Sélectionner une parcelle...</option>
+                </select>
+              </div>
+              <div class="form-group flex-1">
+                <label for="exp-harvest-date" class="form-label">
+                  <span>Date</span> <span class="required">*</span>
+                </label>
+                <input type="date" id="exp-harvest-date" class="epure-input" required>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group flex-1">
+                <label for="exp-harvest-weight" class="form-label">
+                  <span>Poids récolté (kg)</span> <span class="required">*</span>
+                </label>
+                <input type="number" step="0.5" min="0.1" id="exp-harvest-weight" class="epure-input" placeholder="Ex: 3420" required>
+              </div>
+              <div class="form-group flex-1">
+                <label for="exp-harvest-surface" class="form-label">
+                  <span>Surface récoltée (ha)</span> <span class="required">*</span>
+                </label>
+                <input type="number" step="0.0001" min="0.0001" id="exp-harvest-surface" class="epure-input" placeholder="Ex: 0.8425" required>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group flex-1">
+                <label for="exp-harvest-variety" class="form-label">Cépage</label>
+                <input type="text" id="exp-harvest-variety" class="epure-input" placeholder="Ex: Chardonnay, Pinot Noir...">
+              </div>
+              <div class="form-group flex-1">
+                <label for="exp-harvest-team" class="form-label">Équipe (vendangeurs)</label>
+                <input type="number" min="1" id="exp-harvest-team" class="epure-input" placeholder="Ex: 8 (informatif)">
+              </div>
+              <div class="form-group flex-1">
+                <label for="exp-harvest-duration" class="form-label">Durée (heures)</label>
+                <input type="number" step="0.5" min="0" id="exp-harvest-duration" class="epure-input" placeholder="Ex: 4.0">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="exp-harvest-notes" class="form-label">Notes & Observations (sanitaire, cuve, etc.)</label>
+              <textarea id="exp-harvest-notes" class="epure-input" rows="2" placeholder="Pesée du matin, benne 1, cuve A3, état sanitaire impeccable..."></textarea>
+            </div>
+          </div>
+
+          <div class="modal-footer" style="padding: 1rem 1.5rem; display: flex; justify-content: flex-end; gap: 0.75rem; border-top: 1px solid rgba(82, 183, 136, 0.15);">
+            <button type="button" class="btn btn-outline btn-sm" onclick="closeHarvestModal()">Annuler</button>
+            <button type="submit" class="btn btn-exp-primary btn-sm">
+              💾 Enregistrer la pesée
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       MODALE EXPLOITATION 11 : DÉTAIL D'AVANCEMENT D'UN TRAVAIL PAR PARCELLES (PHASE 7)
+       ========================================================================= -->
+  <div class="fiche-parcelle-modal" id="modal-exp-task-parcelles-detail" aria-hidden="true" role="dialog" aria-modal="true">
+    <div class="fiche-parcelle-card" style="max-width: 720px;">
+      <div class="fiche-parcelle-header">
+        <div>
+          <div class="exp-view-badge" id="modal-task-detail-category">OPÉRATION VITICOLE</div>
+          <h2 id="modal-task-detail-title" style="margin: 0; font-size: 1.35rem; font-weight: 800; color: #fff; font-family: var(--font-heading);">
+            TAILLE — Avancement Parcellaire
+          </h2>
+          <p id="modal-task-detail-subtitle" style="margin: 0.25rem 0 0 0; font-size: 0.85rem; color: #95a89e;">
+            Progression : 15,4 / 21,1 ha terminés (73%)
+          </p>
+        </div>
+        <button type="button" class="modal-close-btn" onclick="closeTaskParcellesModal()" aria-label="Fermer">✕</button>
+      </div>
+
+      <div style="padding: 1.25rem 1.75rem; overflow-y: auto; max-height: 70vh; display: flex; flex-direction: column; gap: 1.25rem;">
+        <!-- Section 1 : En cours -->
+        <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.25); border-radius: 10px; padding: 1rem;">
+          <h4 style="margin: 0 0 0.65rem 0; font-size: 0.92rem; color: #fbbf24; display: flex; align-items: center; justify-content: space-between;">
+            <span>⏳ En cours de réalisation</span>
+            <span id="modal-task-count-progress" class="status-badge pending">0</span>
+          </h4>
+          <div id="modal-task-list-progress" style="display: flex; flex-direction: column; gap: 0.5rem;">
+            <!-- Dynamique -->
+          </div>
+        </div>
+
+        <!-- Section 2 : À faire -->
+        <div style="background: rgba(148, 163, 184, 0.08); border: 1px solid rgba(148, 163, 184, 0.2); border-radius: 10px; padding: 1rem;">
+          <h4 style="margin: 0 0 0.65rem 0; font-size: 0.92rem; color: #cbd5e1; display: flex; align-items: center; justify-content: space-between;">
+            <span>🌱 À faire</span>
+            <span id="modal-task-count-todo" class="status-badge" style="background: rgba(255,255,255,0.06); color: #cbd5e1;">0</span>
+          </h4>
+          <div id="modal-task-list-todo" style="display: flex; flex-direction: column; gap: 0.5rem;">
+            <!-- Dynamique -->
+          </div>
+        </div>
+
+        <!-- Section 3 : Terminées -->
+        <div style="background: rgba(82, 183, 136, 0.08); border: 1px solid rgba(82, 183, 136, 0.25); border-radius: 10px; padding: 1rem;">
+          <h4 style="margin: 0 0 0.65rem 0; font-size: 0.92rem; color: #52b788; display: flex; align-items: center; justify-content: space-between;">
+            <span>✅ Terminées</span>
+            <span id="modal-task-count-done" class="status-badge billed">0</span>
+          </h4>
+          <div id="modal-task-list-done" style="display: flex; flex-direction: column; gap: 0.5rem;">
+            <!-- Dynamique -->
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer" style="padding: 1rem 1.75rem; border-top: 1px solid rgba(82, 183, 136, 0.15); display: flex; justify-content: flex-end;">
+        <button type="button" class="btn btn-outline btn-sm" onclick="closeTaskParcellesModal()">Fermer</button>
+      </div>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js"></script>
   <script src="stripe-config.js"></script>
   <script src="dashboard.js"></script>
+  <script src="exploitation.js"></script>
 </body>
 </html>

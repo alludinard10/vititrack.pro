@@ -872,6 +872,8 @@
                 fullName,
                 role: meta.role || "Gérant Exploitant",
                 canViewDashboard: true,
+                activity_type: meta.activity_type || meta.activityType,
+                active_mode: meta.active_mode || meta.activeMode,
                 loggedInAt: new Date().toISOString()
               });
             }, 600);

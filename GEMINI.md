@@ -365,6 +365,36 @@ Vititrack pro/
 - **Topbar compactée** sur mobile avec suppression des éléments superflus pour maximiser l'espace de lecture.
 - **Prise en compte des contraintes iOS/Android** : taille de police minimale de 16px sur les champs pour éviter le zoom automatique de Safari Mobile.
 
+### 4.4 Module Exploitation Viticole & Tableau de Bord de Pilotage (Phases 3 à 7)
+- **Bivalence d'activité (`vititrack_activity_type`)** : Switch fluide entre Mode Prestation (ETV) et Mode Exploitation (Domaine viticole propre) avec isolation stricte.
+- **Architecture de données relationnelle Supabase & Cache Local** :
+  - `organizations`, `organization_members` (avec contrôle strict `can_view_costs`).
+  - `exploitation_parcelles`, `exploitation_campaigns`, `exploitation_tasks`, `exploitation_parcelle_tasks`.
+  - `exploitation_interventions`, `exploitation_intervention_parcelles`, `exploitation_intervention_workers`, `exploitation_intervention_equipment`, `exploitation_intervention_inputs`.
+  - `exploitation_harvests`, `exploitation_external_costs`, `exploitation_intervention_fuel`.
+- **Moteur Économique & Coûts de Revient Parcellaires (Phase 5)** :
+  - Somme des 6 composantes de charge : Main-d'œuvre, Matériel, Intrants, Carburant, Prestations externes, Autres charges directes.
+  - Répartition multi-parcelles rigoureusement au prorata des surfaces travaillées.
+  - Snapshotting des tarifs horaires historiques pour immunité aux variations futures.
+  - Moyenne pondérée exploitation : `Somme des coûts / Somme des surfaces réelles`.
+  - Indicateurs objectifs d'écart vs moyenne : *Sous la moyenne*, *Dans la moyenne*, *Au-dessus de la moyenne* (zéro qualificatif subjectif).
+- **Vendanges, Rendement & Coût au kg (Phase 6)** :
+  - Pesées multiples cumulatives par parcelle avec gestion unique de la surface vendangée.
+  - Rendement kg/ha et calcul dynamique du coût de production au kilo produit (`totalCost / totalWeightKg`).
+- **Tableau de Bord de Pilotage & Analyse de l'Exploitation (Phase 7)** :
+  - **Vision en moins de 10 secondes** pour le chef d'exploitation.
+  - **En-tête Campagne & Filtres Globaux** : Campagne, Cépage, Commune, Travail avec recalcul réactif instantané.
+  - **Zone d'alertes opérationnelles (« À SURVEILLER »)** : Basée uniquement sur des faits mesurables (parcelles restantes, file d'attente hors-ligne, dérive de coût > 15%, baisse de rendement > 15%).
+  - **Avancement du Vignoble** : Basé rigoureusement sur les surfaces réelles (`X / Y ha terminés`), cartes interactives ouvrant la modale parcellaire (Terminées, En cours, À faire).
+  - **Parcelles à faire opérationnelles** : Liste des parcelles en attente avec bouton d'action directe `＋ Saisir intervention`.
+  - **Activité récente** : Journal chronologique avec regroupement intelligent (*Aujourd'hui*, *Hier*, *Date*) et bouton d'ouverture.
+  - **Analyse économique (sous condition `can_view_costs`)** : Ventilation des 6 catégories avec barre de répartition colorée, classement « Quels travaux coûtent le plus ? » avec €/ha, et classement objectif des parcelles.
+  - **Analyse Coût / Rendement** : Tableau croisé triable (kg/ha, €/ha, €/kg) et nuage de points de dispersion interactif SVG (axes X/Y, lignes de repère des moyennes, infobulles).
+  - **Comparatif Inter-Campagnes (Évolution)** : Comparaison Campagne N vs N-1 avec badges de variation % pour coût/ha, rendement et coût/kg.
+  - **Fiche Parcelle Pluriannuelle** : Historique complet des campagnes successives de la parcelle (Coût €/ha, Rendement kg/ha, Coût €/kg).
+  - **Ordonnancement Mobile Prioritaire** : 1. Avancement, 2. Parcelles à faire, 3. Bouton + Nouvelle intervention, 4. Activité récente, 5. KPIs, 6. Analyses économiques.
+  - **Zéro fausse donnée** : États vides utiles avec bouton d'action opérationnelle.
+
 ---
 
 ## 5. Règles Métier Viticoles & Conventions de Design
