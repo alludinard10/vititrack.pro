@@ -28,14 +28,24 @@ function getAuthUser() {
 
 function getAuthUserId() {
   const user = getAuthUser();
-  // Si l'utilisateur connecté est un collaborateur / tractoriste invité,
-  // il accède directement au compte et aux chantiers de l'administrateur gérant !
-  if (user && user.isTeamMember && user.ownerUserId) {
+  if (!user) return null;
+
+  // Si collaborateur / salarié rattaché à un gérant propriétaire :
+  // utilise toujours l'UUID vérifié côté serveur du propriétaire
+  if (user.isTeamMember && user.ownerUserId && user.ownerUserId.includes("-")) {
     return user.ownerUserId;
   }
-  if (user && user.id) return user.id;
-  if (user && user.email) return user.email.replace(/[^a-zA-Z0-9_-]/g, "_");
-  return "guest_user";
+
+  // Toujours l'UUID réel Supabase Auth (authUserId ou id sous forme de UUID valide)
+  // Jamais member_id ni un identifiant généré à partir de l'email
+  if (user.authUserId && user.authUserId.includes("-")) {
+    return user.authUserId;
+  }
+  if (user.id && user.id.includes("-")) {
+    return user.id;
+  }
+
+  return null;
 }
 
 function getUserStorageKey(baseKey) {
@@ -908,7 +918,6 @@ function loadDatabase() {
       clients = [];
     }
   } else {
-    // Si compte démo -> démo. Si NOUVEAU COMPTE UTILISATEUR -> 0 CLIENT (TABLEAU DE BORD NU)
     clients = isDemo ? getDemoClients() : [];
     saveClientsLocally();
   }
@@ -923,7 +932,6 @@ function loadDatabase() {
       interventions = [];
     }
   } else {
-    // NOUVEL UTILISATEUR -> 0 INTERVENTION (TABLEAU DE BORD NU)
     interventions = isDemo ? getDemoInterventions() : [];
     saveInterventionsLocally();
   }
@@ -933,8 +941,8 @@ function loadDatabase() {
   if (savedServices) {
     try {
       services = JSON.parse(savedServices);
-      let servicesChanged = false;
       if (Array.isArray(services)) {
+        let servicesChanged = false;
         // Synchronisation automatique des tarifs effeuillage (550 €/ha) et débardage (0,15 €/kg) du catalogue Prestations
         services.forEach(s => {
           if (s.id === "srv-07" && (s.price === 37 || s.rateType === "hourly")) {
@@ -964,13 +972,14 @@ function loadDatabase() {
         if (servicesChanged) {
           saveServicesLocally();
         }
+      } else {
+        services = [];
       }
     } catch (e) {
       console.error("Erreur de parsing prestations", e);
       services = [];
     }
   } else {
-    // NOUVEL UTILISATEUR -> 0 PRESTATION DE NOTÉE (TABLEAU DE BORD NU)
     services = isDemo ? [...DEFAULT_SERVICES] : [];
     saveServicesLocally();
   }
@@ -1181,30 +1190,51 @@ async function initSupabaseSync() {
 async function loadFromSupabase() {
   try {
     const sb = window.supabaseClient;
-    const userId = getAuthUserId();
+    if (!sb) return;
 
-    // 1. Fetch Clients with Parcelles strictly for current user
+    // 1. Vérification stricte que la session Supabase Auth est réellement active
+    let session = null;
+    try {
+      const { data } = await sb.auth.getSession();
+      session = data ? data.session : null;
+    } catch (e) {
+      console.warn("Notice vérification session Supabase :", e);
+    }
+
+    if (!session || !session.user) {
+      console.log("ℹ️ [VitiTrack Pro] Session Supabase non active. Cache local préservé sans écrasement.");
+      if (window.updateSupabaseBadge) {
+        window.updateSupabaseBadge(false, "Session inactive • Mode Local");
+      }
+      return;
+    }
+
+    // 2. Récupération de l'UUID réel propriétaire (garanti sans member_id ni email)
+    const userId = getAuthUserId();
+    if (!userId || !userId.includes("-")) {
+      console.warn("⚠️ [VitiTrack Pro] Identifiant propriétaire invalide pour Supabase :", userId);
+      return;
+    }
+
+    // 3. Requêtes ciblées avec l'UUID réel propriétaire
     const { data: dbClients, error: errClients } = await sb
       .from("clients")
       .select("*, parcelles(*)")
       .eq("user_id", userId)
       .order("created_at", { ascending: false });
 
-    // 2. Fetch Interventions strictly for current user
     const { data: dbInv, error: errInv } = await sb
       .from("interventions")
       .select("*")
       .eq("user_id", userId)
       .order("datetime", { ascending: false });
 
-    // 3. Fetch Services strictly for current user
     const { data: dbSrv, error: errSrv } = await sb
       .from("services")
       .select("*")
       .eq("user_id", userId)
       .order("id", { ascending: true });
 
-    // 4. Fetch Planned Works strictly for current user
     const { data: dbPw, error: errPw } = await sb
       .from("planned_works")
       .select("*")
@@ -1212,18 +1242,15 @@ async function loadFromSupabase() {
       .order("created_at", { ascending: false });
 
     if (errClients || errInv || errSrv || errPw) {
-      console.warn("⚠️ [VitiTrack Pro] Notice Supabase :", errClients || errInv || errSrv || errPw);
-      return;
+      console.warn("⚠️ [VitiTrack Pro] Erreur lors du chargement Supabase :", errClients || errInv || errSrv || errPw);
+      return; // Ne jamais écraser les données locales en cas d'erreur réseau ou RLS
     }
 
-    const hasCloudData = (dbClients && dbClients.length > 0) || 
-                         (dbInv && dbInv.length > 0) || 
-                         (dbSrv && dbSrv.length > 0) || 
-                         (dbPw && dbPw.length > 0);
+    let hasUpdated = false;
 
-    if (hasCloudData) {
-      // Map Cloud Clients & Parcelles
-      clients = (dbClients || []).map(c => ({
+    // 4. Mise à jour SÉCURISÉE : Ne jamais effacer les données si Supabase renvoie vide
+    if (dbClients && dbClients.length > 0) {
+      clients = dbClients.map(c => ({
         id: c.id,
         name: c.name,
         commune: c.commune || "",
@@ -1240,9 +1267,12 @@ async function loadFromSupabase() {
           soil: p.soil || "Non renseigné"
         }))
       }));
+      saveClientsLocally();
+      hasUpdated = true;
+    }
 
-      // Map Cloud Interventions
-      interventions = (dbInv || []).map(inv => ({
+    if (dbInv && dbInv.length > 0) {
+      interventions = dbInv.map(inv => ({
         id: inv.id,
         datetime: inv.datetime,
         worker: inv.worker || "",
@@ -1260,101 +1290,80 @@ async function loadFromSupabase() {
         status: inv.status || "À facturer",
         notes: inv.notes || ""
       }));
-
-      // Map Cloud Services if present
-      if (dbSrv && dbSrv.length > 0) {
-        services = dbSrv.map(s => ({
-          id: s.id,
-          name: s.name,
-          category: s.category,
-          rateType: s.rate_type,
-          price: parseFloat(s.price || 0),
-          description: s.description || ""
-        }));
-      } else {
-        services = [];
-      }
-
-      // Map Cloud Planned Works
-      if (dbPw) {
-        plannedWorks = dbPw.map(pw => ({
-          id: pw.id,
-          clientId: pw.client_id || "",
-          clientName: pw.client_name,
-          parcel: pw.parcel,
-          service: pw.service,
-          worker: pw.worker || "Non assigné",
-          date: pw.date || "",
-          quantity: parseFloat(pw.quantity || 0),
-          status: pw.status || "À réaliser",
-          notes: pw.notes || ""
-        }));
-      }
-
-      // Détection et réparation préventive des éventuelles collisions avant mise en cache local
-      repairLocalCollisions();
-
-      // Save fresh data to user's isolated local cache
-      saveClientsLocally();
       saveInterventionsLocally();
+      hasUpdated = true;
+    }
+
+    if (dbSrv && dbSrv.length > 0) {
+      services = dbSrv.map(s => ({
+        id: s.id,
+        name: s.name,
+        category: s.category,
+        rateType: s.rate_type,
+        price: parseFloat(s.price || 0),
+        description: s.description || ""
+      }));
       saveServicesLocally();
+      hasUpdated = true;
+    }
+
+    if (dbPw && dbPw.length > 0) {
+      plannedWorks = dbPw.map(pw => ({
+        id: pw.id,
+        clientId: pw.client_id || "",
+        clientName: pw.client_name,
+        parcel: pw.parcel,
+        service: pw.service,
+        worker: pw.worker || "Non assigné",
+        date: pw.date || "",
+        quantity: parseFloat(pw.quantity || 0),
+        status: pw.status || "À réaliser",
+        notes: pw.notes || ""
+      }));
       savePlannedWorksLocally();
+      hasUpdated = true;
+    }
 
-      // Récupération et synchronisation des collaborateurs du domaine depuis Cloud Supabase Auth
-      if (typeof window.fetchTeamMembersFromCloud === "function") {
-        try {
-          const authUser = getAuthUser();
-          const cloudMembers = await window.fetchTeamMembersFromCloud(userId, authUser?.email || "");
-          if (cloudMembers && cloudMembers.length > 0) {
-            let teamChanged = false;
-            cloudMembers.forEach(cm => {
-              const existingIdx = (teamUsers || []).findIndex(u => 
-                (u.email && u.email.toLowerCase() === (cm.email || "").toLowerCase()) || u.id === cm.id
-              );
-              if (existingIdx !== -1) {
-                teamUsers[existingIdx] = { ...teamUsers[existingIdx], ...cm };
-                teamChanged = true;
-              } else {
-                teamUsers.push(cm);
-                teamChanged = true;
-              }
-            });
-            if (teamChanged) {
-              saveTeamLocally();
-              syncGlobalTeamDirectory();
-              renderTeamList();
-              renderKPIs();
-              populatePlannedWorkerSelect();
+    repairLocalCollisions();
+
+    // Récupération et synchronisation des collaborateurs du domaine depuis Cloud Supabase Auth
+    if (typeof window.fetchTeamMembersFromCloud === "function") {
+      try {
+        const authUser = getAuthUser();
+        const cloudMembers = await window.fetchTeamMembersFromCloud(userId, authUser?.email || "");
+        if (cloudMembers && cloudMembers.length > 0) {
+          let teamChanged = false;
+          cloudMembers.forEach(cm => {
+            const existingIdx = (teamUsers || []).findIndex(u => 
+              (u.email && u.email.toLowerCase() === (cm.email || "").toLowerCase()) || u.id === cm.id
+            );
+            if (existingIdx !== -1) {
+              teamUsers[existingIdx] = { ...teamUsers[existingIdx], ...cm };
+              teamChanged = true;
+            } else {
+              teamUsers.push(cm);
+              teamChanged = true;
             }
+          });
+          if (teamChanged) {
+            saveTeamLocally();
+            syncGlobalTeamDirectory();
+            renderTeamList();
+            renderKPIs();
+            populatePlannedWorkerSelect();
           }
-        } catch (e) {
-          console.warn("Notice fetchTeamMembersFromCloud in loadFromSupabase:", e);
         }
+      } catch (e) {
+        console.warn("Notice fetchTeamMembersFromCloud in loadFromSupabase:", e);
       }
+    }
 
+    if (hasUpdated) {
       renderAll();
-      if (window.updateSupabaseBadge) {
-        window.updateSupabaseBadge(true, "Cloud Supabase synchronisé");
-      }
-    } else {
-      // Utilisateur sans données cloud existantes
-      const user = getAuthUser();
-      const isDemo = user && (user.isDemo === true || user.email === "exploitant@domaineludinard.fr");
-      if (!isDemo) {
-        // TABLEAU DE BORD INTÉGRALEMENT NU (0 client, 0 parcelle, 0 prestation, 0 intervention)
-        clients = [];
-        interventions = [];
-        services = [];
-        plannedWorks = [];
-        saveClientsLocally();
-        saveInterventionsLocally();
-        saveServicesLocally();
-        savePlannedWorksLocally();
-        renderAll();
-      }
-      if (window.updateSupabaseBadge) {
-        window.updateSupabaseBadge(true, "Cloud connecté • Prêt");
-      }
+    }
+
+    if (window.updateSupabaseBadge) {
+      window.updateSupabaseBadge(true, "Cloud Supabase synchronisé");
     }
   } catch (e) {
     console.error("❌ [VitiTrack Pro] Erreur chargement Supabase :", e);
@@ -6712,15 +6721,16 @@ async function checkAuthUser() {
         const meta = session.user.user_metadata || {};
         const isTeamMember = meta.is_team_member || !!meta.owner_user_id;
         user = {
-          id: meta.member_id || session.user.id,
+          id: session.user.id,
           authUserId: session.user.id,
+          memberId: meta.member_id || undefined,
           email: session.user.email,
           domainName: meta.owner_domain || meta.domain_name || meta.domain || session.user.email.split("@")[0],
           fullName: meta.full_name || (isTeamMember ? "Collaborateur" : "Exploitant"),
           role: meta.role || (isTeamMember ? "Tractoriste / Chauffeur d'engins" : "Gérant Exploitant"),
           isTeamMember: isTeamMember,
           canViewDashboard: isTeamMember ? (meta.can_view_dashboard !== undefined ? (meta.can_view_dashboard === true || meta.can_view_dashboard === "true") : false) : true,
-          ownerUserId: meta.owner_user_id || undefined,
+          ownerUserId: meta.owner_user_id || (!isTeamMember ? session.user.id : undefined),
           ownerDomain: meta.owner_domain || undefined,
           ownerEmail: meta.owner_email || undefined,
           activity_type: meta.activity_type || meta.activityType || (user ? (user.activity_type || user.activityType) : undefined),
@@ -7010,7 +7020,6 @@ function getDemoTeamUsers() {
       roleCategory: "gerant",
       email: "exploitant@domaineludinard.fr",
       phone: "06 12 34 56 78",
-      password: "viti",
       status: "Actif",
       color: "#2d6a4f",
       certifications: "Certiphyto Décideur, Direction d'exploitation",
@@ -7023,7 +7032,6 @@ function getDemoTeamUsers() {
       roleCategory: "tractoriste",
       email: "thomas@domaineludinard.fr",
       phone: "06 23 45 67 89",
-      password: "viti2026",
       status: "Actif",
       color: "#2563eb",
       certifications: "CACES R482, Certiphyto Opérateur, Taille Cordon",
@@ -7036,7 +7044,6 @@ function getDemoTeamUsers() {
       roleCategory: "ouvrier",
       email: "sophie@domaineludinard.fr",
       phone: "06 34 56 78 90",
-      password: "viti2026",
       status: "Actif",
       color: "#9333ea",
       certifications: "Taille Guyot & Poussard, Palissage & Épamprage",
@@ -7049,7 +7056,6 @@ function getDemoTeamUsers() {
       roleCategory: "tractoriste",
       email: "julien@domaineludinard.fr",
       phone: "06 45 67 89 01",
-      password: "viti2026",
       status: "Actif",
       color: "#d97706",
       certifications: "CACES Tracteur, Travail du sol & Broyage",
@@ -7297,7 +7303,7 @@ function copyMemberAccess(userId) {
 Exploitation : ${domainName}
 Collaborateur : ${user.name} (${user.role})
 Identifiant (E-mail) : ${user.email || 'Non renseigné'}
-Mot de passe / PIN : ${user.password || 'viti2026'}
+Mot de passe / PIN : ${user.password || "Défini à l'activation"}
 Connexion directe : ${loginUrl}
 
 Connectez-vous depuis votre smartphone pour saisir vos chantiers et interventions directement dans les parcelles.`;
@@ -7332,15 +7338,16 @@ function syncGlobalTeamDirectory() {
     const authUser = getAuthUser();
     const ownerUserId = (authUser && authUser.isTeamMember && authUser.ownerUserId)
       ? authUser.ownerUserId
-      : ((authUser && authUser.id) ? authUser.id : "demo-user-123");
+      : ((authUser && authUser.id && authUser.id.includes("-")) ? authUser.id : null);
+    if (!ownerUserId) return;
 
     const ownerDomain = (authUser && authUser.isTeamMember && authUser.ownerDomain)
       ? authUser.ownerDomain
-      : ((authUser && (authUser.domainName || authUser.name)) || "Domaine Ludinard & Clair");
+      : ((authUser && (authUser.domainName || authUser.name)) || "");
 
     const ownerEmail = (authUser && authUser.isTeamMember && authUser.ownerEmail)
       ? authUser.ownerEmail
-      : ((authUser && authUser.email) || "exploitant@domaineludinard.fr");
+      : ((authUser && authUser.email) || "");
 
     let directory = [];
     try {
@@ -7361,7 +7368,7 @@ function syncGlobalTeamDirectory() {
           role: member.role,
           roleCategory: member.roleCategory || getRoleCategory(member.role),
           email: member.email.trim().toLowerCase(),
-          password: member.password || "viti2026",
+          password: member.password || "",
           canViewDashboard: member.canViewDashboard !== false,
           ownerUserId: ownerUserId,
           ownerDomain: ownerDomain,
@@ -7382,17 +7389,19 @@ async function syncTeamUserToSupabaseAuth(member) {
   const authUser = getAuthUser();
   const ownerUserId = (authUser && authUser.isTeamMember && authUser.ownerUserId)
     ? authUser.ownerUserId
-    : ((authUser && authUser.id) ? authUser.id : "c2d45d88-3214-4c93-9361-565d6ac24d1a");
+    : ((authUser && authUser.id && authUser.id.includes("-")) ? authUser.id : null);
+  if (!ownerUserId) return;
 
   const ownerDomain = (authUser && authUser.isTeamMember && authUser.ownerDomain)
     ? authUser.ownerDomain
-    : ((authUser && (authUser.domainName || authUser.name)) || "SARL Ludinard Clair");
+    : ((authUser && (authUser.domainName || authUser.name)) || "");
 
   const ownerEmail = (authUser && authUser.isTeamMember && authUser.ownerEmail)
     ? authUser.ownerEmail
-    : ((authUser && authUser.email) || "al.ludinard@gmail.com");
+    : ((authUser && authUser.email) || "");
 
-  const memberPassword = (member.password && member.password.trim()) || "viti2026";
+  const memberPassword = (member.password && member.password.trim()) || "";
+  if (!memberPassword) return;
 
   try {
     if (typeof window.upsertConfirmedUser === "function") {
@@ -7483,7 +7492,7 @@ function openEditTeamMemberModal(userId) {
   if (statusSelect) statusSelect.value = user.status || "Actif";
   if (accessSelect) accessSelect.value = user.canViewDashboard !== false ? "true" : "false";
   if (emailInput) emailInput.value = user.email || "";
-  if (pwdInput) pwdInput.value = user.password || "viti2026";
+  if (pwdInput) pwdInput.value = user.password || "";
   if (phoneInput) phoneInput.value = user.phone || "";
   if (certInput) certInput.value = user.certifications || "";
   if (notesInput) notesInput.value = user.notes || "";
@@ -7522,7 +7531,7 @@ function handleTeamMemberFormSubmit(e) {
   const status = document.getElementById("input-member-status")?.value || "Actif";
   const canViewDashboard = document.getElementById("input-member-can-view-dashboard")?.value === "true";
   const email = document.getElementById("input-member-email")?.value?.trim() || "";
-  const password = document.getElementById("input-member-password")?.value?.trim() || "viti2026";
+  const password = document.getElementById("input-member-password")?.value?.trim() || "";
   const phone = document.getElementById("input-member-phone")?.value?.trim() || "";
   const certifications = document.getElementById("input-member-certifications")?.value?.trim() || "";
   const notes = document.getElementById("input-member-notes")?.value?.trim() || "";

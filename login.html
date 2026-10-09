@@ -631,7 +631,7 @@
             ? directory.find(m => (m.email || "").toLowerCase().trim() === emailLower)
             : (directory && directory[emailLower] ? directory[emailLower] : null);
           if (member) {
-            if (!member.password || member.password.trim() === pwdTrim || pwdTrim === "viti" || pwdTrim === "viti2026") {
+            if (member.password && member.password.trim() === pwdTrim) {
               return {
                 ...member,
                 canViewDashboard: member.canViewDashboard !== undefined ? (member.canViewDashboard === true || member.canViewDashboard === "true") : false
@@ -650,7 +650,7 @@
             if (Array.isArray(users)) {
               const found = users.find(u => (u.email || "").toLowerCase().trim() === emailLower);
               if (found) {
-                if (!found.password || found.password.trim() === pwdTrim || pwdTrim === "viti" || pwdTrim === "viti2026") {
+                if (found.password && found.password.trim() === pwdTrim) {
                   const ownerUserId = key.replace("vititrack_team_users_v3_", "");
                   return {
                     memberId: found.id,
@@ -670,53 +670,6 @@
           }
         }
       } catch (err) {}
-
-      // 3. Démo par défaut : tractoristes et ouvriers du Domaine Ludinard
-      const demoTeam = [
-        {
-          memberId: "usr-02",
-          name: "Thomas Mercier",
-          role: "Chef de culture / Tractoriste",
-          roleCategory: "tractoriste",
-          email: "thomas@domaineludinard.fr",
-          password: "viti2026",
-          canViewDashboard: false,
-          ownerUserId: "demo-user-123",
-          ownerDomain: "Domaine Ludinard & Clair",
-          ownerEmail: "exploitant@domaineludinard.fr"
-        },
-        {
-          memberId: "usr-03",
-          name: "Sophie Laurent",
-          role: "Ouvrière viticole qualifiée",
-          roleCategory: "ouvrier",
-          email: "sophie@domaineludinard.fr",
-          password: "viti2026",
-          canViewDashboard: false,
-          ownerUserId: "demo-user-123",
-          ownerDomain: "Domaine Ludinard & Clair",
-          ownerEmail: "exploitant@domaineludinard.fr"
-        },
-        {
-          memberId: "usr-04",
-          name: "Julien Beraud",
-          role: "Tractoriste / Chauffeur d'engins",
-          roleCategory: "tractoriste",
-          email: "julien@domaineludinard.fr",
-          password: "viti2026",
-          canViewDashboard: false,
-          ownerUserId: "demo-user-123",
-          ownerDomain: "Domaine Ludinard & Clair",
-          ownerEmail: "exploitant@domaineludinard.fr"
-        }
-      ];
-
-      const demoMember = demoTeam.find(d => d.email.toLowerCase() === emailLower);
-      if (demoMember) {
-        if (!pwdTrim || pwdTrim === demoMember.password || pwdTrim === "viti" || pwdTrim === "viti2026" || pwdTrim === "demo" || pwdTrim === "demo1234") {
-          return demoMember;
-        }
-      }
 
       return null;
     }
@@ -798,7 +751,7 @@
               } catch (e) {}
             }
 
-            if (recoveredTeamMember && (!recoveredTeamMember.password || recoveredTeamMember.password === password || password === "viti2026")) {
+            if (recoveredTeamMember && recoveredTeamMember.password && recoveredTeamMember.password === password) {
               const targetDomain = recoveredTeamMember.ownerDomain || "Domaine Viticole";
               showAlert(`🚜 Bonjour ${recoveredTeamMember.name} ! Connexion au compte de votre gérant (${targetDomain})...`, "success");
               setTimeout(() => {

@@ -10,3 +10,9 @@ node_modules/
 .vscode/
 video-promo/
 *.mp4
+tests/backup_*.json
+tests/owner_seed_data.json
+tests/test_verify_restoration.js
+tests/test_live_post_migration.js
+tests/test_carto_security.js
+supabase/*cartographie*.sql
