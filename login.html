@@ -507,7 +507,7 @@
 
   <!-- SUPABASE SCRIPTS -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="supabase-config.js"></script>
+  <script src="supabase-config.js?v=3.1"></script>
 
   <script>
     // Tab switching logic
@@ -694,154 +694,87 @@
       btnText.textContent = "⏳ Connexion en cours...";
 
       try {
-        // VÉRIFICATION 1 : Profil collaborateur / tractoriste rattaché à un compte gérant
-        const teamMember = findTeamMember(email, password);
-        if (teamMember) {
-          showAlert(`🚜 Bonjour ${teamMember.name} ! Connexion au compte de votre gérant (${teamMember.ownerDomain})...`, "success");
-          setTimeout(() => {
-            finishLogin({
-              id: teamMember.memberId,
-              email: teamMember.email,
-              fullName: teamMember.name,
-              role: teamMember.role,
-              roleCategory: teamMember.roleCategory,
-              canViewDashboard: teamMember.canViewDashboard !== undefined ? (teamMember.canViewDashboard === true || teamMember.canViewDashboard === "true") : false,
-              isTeamMember: true,
-              ownerUserId: teamMember.ownerUserId,
-              ownerDomain: teamMember.ownerDomain,
-              ownerEmail: teamMember.ownerEmail,
-              domainName: teamMember.ownerDomain,
-              loggedInAt: new Date().toISOString()
-            });
-          }, 600);
+        // Authentification Supabase Auth obligatoire
+        if (!window.supabaseClient) {
+          showAlert("Service d'authentification indisponible. Vérifiez votre connexion Internet.", "error");
+          btn.disabled = false;
+          btnText.textContent = "🔐 Se connecter";
           return;
         }
 
-        // VÉRIFICATION 2 : Accès gérant démo immédiat
-        if (email.toLowerCase() === "exploitant@domaineludinard.fr") {
-          showAlert("✅ Connexion gérant réussie ! Redirection...", "success");
-          setTimeout(() => {
-            finishLogin({
-              id: "demo-user-123",
-              email: "exploitant@domaineludinard.fr",
-              domainName: "Domaine Ludinard & Clair",
-              fullName: "Alexis Ludinard",
-              role: "Gérant Exploitant",
-              isDemo: true,
-              loggedInAt: new Date().toISOString()
-            });
-          }, 600);
-          return;
-        }
+        const { data, error } = await window.supabaseClient.auth.signInWithPassword({
+          email,
+          password
+        });
 
-        // VÉRIFICATION 3 : Authentification Supabase standard (Gérants exploitants & Équipe)
-        if (window.supabaseClient) {
-          const { data, error } = await window.supabaseClient.auth.signInWithPassword({
-            email,
-            password
-          });
-
-          if (error) {
-            // Tentative de récupération Cloud de secours si mot de passe ou membre d'équipe récent
-            let recoveredTeamMember = null;
-            if (typeof window.fetchTeamMembersFromCloud === "function") {
-              try {
-                const cloudMembers = await window.fetchTeamMembersFromCloud("", "");
-                recoveredTeamMember = (cloudMembers || []).find(m => (m.email || "").toLowerCase() === email.toLowerCase());
-              } catch (e) {}
-            }
-
-            if (recoveredTeamMember && recoveredTeamMember.password && recoveredTeamMember.password === password) {
-              const targetDomain = recoveredTeamMember.ownerDomain || "Domaine Viticole";
-              showAlert(`🚜 Bonjour ${recoveredTeamMember.name} ! Connexion au compte de votre gérant (${targetDomain})...`, "success");
-              setTimeout(() => {
-                finishLogin({
-                  id: recoveredTeamMember.id,
-                  email: recoveredTeamMember.email,
-                  fullName: recoveredTeamMember.name,
-                  role: recoveredTeamMember.role,
-                  roleCategory: recoveredTeamMember.roleCategory,
-                  canViewDashboard: recoveredTeamMember.canViewDashboard !== undefined ? (recoveredTeamMember.canViewDashboard === true || recoveredTeamMember.canViewDashboard === "true") : false,
-                  isTeamMember: true,
-                  ownerUserId: recoveredTeamMember.ownerUserId,
-                  ownerDomain: targetDomain,
-                  ownerEmail: recoveredTeamMember.ownerEmail,
-                  domainName: targetDomain,
-                  loggedInAt: new Date().toISOString()
-                });
-              }, 600);
-              return;
-            }
-
-            let message = error.message;
-            if (message.includes("Invalid login credentials")) {
-              message = "Identifiant ou mot de passe incorrect.";
-            } else if (message.includes("Email not confirmed")) {
-              message = "Veuillez confirmer votre adresse e-mail avant de vous connecter.";
-            }
-            showAlert(`❌ ${message}`, "error");
-            btn.disabled = false;
-            btnText.textContent = "🔐 Se connecter";
-            return;
+        if (error) {
+          let message = error.message;
+          if (message.includes("Invalid login credentials")) {
+            message = "Identifiant ou mot de passe incorrect.";
+          } else if (message.includes("Email not confirmed")) {
+            message = "Veuillez confirmer votre adresse e-mail avant de vous connecter.";
           }
+          showAlert(`❌ ${message}`, "error");
+          btn.disabled = false;
+          btnText.textContent = "🔐 Se connecter";
+          return;
+        }
 
-          if (data && data.user) {
-            const meta = data.user.user_metadata || {};
-            const isTeamMember = meta.is_team_member || !!meta.owner_user_id;
+        if (data && data.user) {
+          const meta = data.user.user_metadata || {};
+          const isTeamMember = meta.is_team_member || !!meta.owner_user_id;
 
-            if (isTeamMember) {
-              const targetDomain = meta.owner_domain || "Domaine Viticole";
-              const targetName = meta.full_name || data.user.email;
-              showAlert(`🚜 Bonjour ${targetName} ! Connexion au compte de votre gérant (${targetDomain})...`, "success");
-              setTimeout(() => {
-                finishLogin({
-                  id: meta.member_id || data.user.id,
-                  authUserId: data.user.id,
-                  email: data.user.email,
-                  fullName: targetName,
-                  role: meta.role || "Tractoriste / Chauffeur d'engins",
-                  roleCategory: meta.role_category || "tractoriste",
-                  canViewDashboard: meta.can_view_dashboard !== undefined ? (meta.can_view_dashboard === true || meta.can_view_dashboard === "true") : false,
-                  isTeamMember: true,
-                  ownerUserId: meta.owner_user_id,
-                  ownerDomain: targetDomain,
-                  ownerEmail: meta.owner_email || "",
-                  domainName: targetDomain,
-                  loggedInAt: new Date().toISOString()
-                });
-              }, 600);
-              return;
-            }
-
-            const domainName = meta.domain_name || meta.domain || email.split("@")[0];
-            const fullName = meta.full_name || "Exploitant";
-
-            showAlert("✅ Connexion réussie ! Redirection...", "success");
+          if (isTeamMember) {
+            const targetDomain = meta.owner_domain || "Domaine Viticole";
+            const targetName = meta.full_name || data.user.email;
+            showAlert(`🚜 Bonjour ${targetName} ! Connexion au compte de votre domaine (${targetDomain})...`, "success");
             setTimeout(() => {
               finishLogin({
                 id: data.user.id,
+                authUserId: data.user.id,
+                memberId: meta.member_id || data.user.id,
                 email: data.user.email,
-                domainName,
-                fullName,
-                role: meta.role || "Gérant Exploitant",
-                canViewDashboard: true,
-                activity_type: meta.activity_type || meta.activityType,
-                active_mode: meta.active_mode || meta.activeMode,
+                fullName: targetName,
+                role: meta.role || "Tractoriste / Chauffeur d'engins",
+                roleCategory: meta.role_category || "tractoriste",
+                canViewDashboard: meta.can_view_dashboard !== undefined ? (meta.can_view_dashboard === true || meta.can_view_dashboard === "true") : false,
+                isTeamMember: true,
+                ownerUserId: meta.owner_user_id,
+                ownerDomain: targetDomain,
+                ownerEmail: meta.owner_email || "",
+                domainName: targetDomain,
                 loggedInAt: new Date().toISOString()
               });
             }, 600);
             return;
           }
+
+          const domainName = meta.owner_domain || meta.domain_name || meta.domain || email.split("@")[0];
+          const fullName = meta.full_name || "Exploitant";
+
+          showAlert("✅ Connexion réussie ! Redirection...", "success");
+          setTimeout(() => {
+            finishLogin({
+              id: data.user.id,
+              authUserId: data.user.id,
+              email: data.user.email,
+              domainName,
+              fullName,
+              role: meta.role || "Gérant Exploitant",
+              canViewDashboard: true,
+              isTeamMember: false,
+              ownerUserId: data.user.id,
+              activity_type: meta.activity_type || meta.activityType,
+              active_mode: meta.active_mode || meta.activeMode,
+              loggedInAt: new Date().toISOString()
+            });
+          }, 600);
+          return;
         }
 
-        // Fallback local if Supabase is offline
-        finishLogin({
-          email,
-          domainName: "Domaine Viticole",
-          fullName: "Exploitant",
-          role: "Gérant Exploitant",
-          loggedInAt: new Date().toISOString()
-        });
+        showAlert("Réponse d'authentification invalide.", "error");
+        btn.disabled = false;
+        btnText.textContent = "🔐 Se connecter";
       } catch (err) {
         console.error("Erreur login :", err);
         showAlert(`Erreur : ${err.message || err}`, "error");

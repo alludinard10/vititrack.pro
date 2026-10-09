@@ -197,105 +197,26 @@ document.addEventListener('DOMContentLoaded', () => {
   // ========== TYPING EFFECT ON HERO BADGE ==========
   // Subtle pulse animation already handled by CSS
 
-  // ========== LOGIN MODAL HANDLERS ==========
-  const loginModal = document.getElementById('login-modal');
-  const navLoginBtn = document.getElementById('nav-login-btn');
-  const heroLoginBtn = document.getElementById('hero-login-btn');
-  const loginModalClose = document.getElementById('login-modal-close');
-  const landingLoginForm = document.getElementById('landing-login-form');
-  const modalBtnDemo = document.getElementById('modal-btn-demo');
-  const modalPwdToggle = document.getElementById('modal-pwd-toggle');
-  const modalLoginPwd = document.getElementById('modal-login-pwd');
-
-  const openLoginModal = (e) => {
-    if (e) e.preventDefault();
-    if (loginModal) {
-      loginModal.classList.add('open');
-      loginModal.setAttribute('aria-hidden', 'false');
-      document.body.style.overflow = 'hidden';
-    }
-  };
-
-  const closeLoginModal = () => {
-    if (loginModal) {
-      loginModal.classList.remove('open');
-      loginModal.setAttribute('aria-hidden', 'true');
-      document.body.style.overflow = '';
-    }
-  };
-
   // ========== ROUTING & AUTH HANDLERS ==========
+  // Tous les accès applicatifs mènent au parcours officiel Supabase Auth sur login.html
   const directToAppOrLogin = (e) => {
-    e.preventDefault();
-    const storedUser = localStorage.getItem('vititrack_auth_user');
-    if (storedUser) {
-      try {
-        const parsed = JSON.parse(storedUser);
-        if (parsed && (parsed.email || parsed.id)) {
-          window.location.href = 'dashboard.html';
-          return;
-        }
-      } catch (err) {}
-    }
+    if (e) e.preventDefault();
     window.location.href = 'login.html';
   };
 
+  const navLoginBtn = document.getElementById('nav-login-btn');
+  const heroLoginBtn = document.getElementById('hero-login-btn');
   const navDashboardLink = document.querySelector('.nav-dashboard-link');
   const navCta = document.querySelector('.nav-cta');
   const heroPrimaryBtn = document.querySelector('.hero-actions .btn-primary');
   const previewLinks = document.querySelectorAll('.dashboard-cta-group a, .dashboard-visual-link');
 
+  if (navLoginBtn) navLoginBtn.addEventListener('click', directToAppOrLogin);
+  if (heroLoginBtn) heroLoginBtn.addEventListener('click', directToAppOrLogin);
   if (navDashboardLink) navDashboardLink.addEventListener('click', directToAppOrLogin);
   if (navCta) navCta.addEventListener('click', directToAppOrLogin);
   if (heroPrimaryBtn) heroPrimaryBtn.addEventListener('click', directToAppOrLogin);
   previewLinks.forEach(link => link.addEventListener('click', directToAppOrLogin));
-
-  if (loginModalClose) loginModalClose.addEventListener('click', closeLoginModal);
-
-  if (loginModal) {
-    loginModal.addEventListener('click', (e) => {
-      if (e.target === loginModal) closeLoginModal();
-    });
-  }
-
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && loginModal && loginModal.classList.contains('open')) {
-      closeLoginModal();
-    }
-  });
-
-  if (modalPwdToggle && modalLoginPwd) {
-    modalPwdToggle.addEventListener('click', () => {
-      if (modalLoginPwd.type === 'password') {
-        modalLoginPwd.type = 'text';
-        modalPwdToggle.textContent = '🙈';
-      } else {
-        modalLoginPwd.type = 'password';
-        modalPwdToggle.textContent = '👁️';
-      }
-    });
-  }
-
-  const authenticateAndRedirect = (email, domain) => {
-    const user = {
-      email: email || 'exploitant@domaineludinard.fr',
-      domainName: domain || 'Domaine Ludinard-Clair',
-      role: 'Gérant Exploitant',
-      loggedInAt: new Date().toISOString()
-    };
-    try {
-      localStorage.setItem('vititrack_auth_user', JSON.stringify(user));
-    } catch (err) {}
-    window.location.href = 'dashboard.html';
-  };
-
-  if (landingLoginForm) {
-    landingLoginForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const email = document.getElementById('modal-login-email')?.value.trim();
-      authenticateAndRedirect(email, 'Domaine Viticole');
-    });
-  }
 
   // ========== THEME TOGGLE (JOUR / NUIT) ==========
   const themeToggleBtn = document.getElementById('theme-toggle-btn');

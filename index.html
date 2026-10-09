@@ -548,67 +548,10 @@
     </div>
   </footer>
 
-  <!-- ==================== MODAL DE CONNEXION RAPIDE ==================== -->
-  <div class="auth-modal-overlay" id="login-modal" aria-hidden="true">
-    <div class="auth-modal-dialog">
-      <div class="auth-modal-header">
-        <div class="auth-brand-badge">
-          <span class="auth-brand-icon">🍇</span>
-          <span class="auth-brand-name">Viti<span class="logo-accent">Track</span> <span class="badge-mini-pro">PRO</span></span>
-        </div>
-        <button type="button" class="auth-modal-close" id="login-modal-close" aria-label="Fermer">✕</button>
-      </div>
-
-      <div class="auth-modal-body">
-        <div class="auth-header-text">
-          <h3>Espace Connexion</h3>
-          <p>Accédez à votre gestionnaire de parcelles et facturation viticole</p>
-        </div>
-
-        <form id="landing-login-form" class="auth-dialog-form">
-          <div class="auth-form-group">
-            <label for="modal-login-email">Identifiant ou E-mail du domaine</label>
-            <div class="auth-input-container">
-              <span class="auth-field-icon">👤</span>
-              <input type="email" id="modal-login-email" placeholder="Adresse e-mail" required>
-            </div>
-          </div>
-
-          <div class="auth-form-group">
-            <div class="auth-label-row">
-              <label for="modal-login-pwd">Mot de passe</label>
-              <a href="#" class="auth-forgot-pwd" id="modal-forgot-link">Oublié ?</a>
-            </div>
-            <div class="auth-input-container">
-              <span class="auth-field-icon">🔒</span>
-              <input type="password" id="modal-login-pwd" placeholder="••••••••••••" required>
-              <button type="button" class="auth-pwd-toggle" id="modal-pwd-toggle" aria-label="Afficher le mot de passe">👁️</button>
-            </div>
-          </div>
-
-          <div class="auth-check-row">
-            <label>
-              <input type="checkbox" id="modal-login-remember" checked>
-              <span>Rester connecté sur cet appareil</span>
-            </label>
-          </div>
-
-          <button type="submit" class="btn btn-primary btn-glow auth-btn-submit" id="modal-btn-submit">
-            <span>🔐 Se connecter</span>
-          </button>
-        </form>
-
-        <div class="auth-security-footer">
-          <span>🔒 Chiffrement SSL • Données sécurisées • Hébergement France</span>
-        </div>
-      </div>
-    </div>
-  </div>
-
   <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="supabase-config.js"></script>
-  <script src="stripe-config.js"></script>
-  <script src="script.js"></script>
+  <script src="supabase-config.js?v=3.1"></script>
+  <script src="stripe-config.js?v=3.1"></script>
+  <script src="script.js?v=3.1"></script>
 </body>
 </html>

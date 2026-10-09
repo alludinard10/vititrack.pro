@@ -555,11 +555,24 @@ function repairLocalCollisions() {
 window.repairLocalCollisions = repairLocalCollisions;
 
 // ==================== INITIALIZATION ====================
-function initDashboard() {
+async function initDashboard() {
   try {
     initTheme();
   } catch (e) {
     console.warn("Erreur initTheme :", e);
+  }
+
+  // 1. Vérification systématique de la session Supabase Auth au démarrage.
+  // Si aucune session valide n'existe, redirection immédiate vers login.html sans afficher un tableau de bord vide.
+  let authUser = null;
+  try {
+    authUser = await checkAuthUser();
+  } catch (err) {
+    console.warn("Erreur checkAuthUser au démarrage :", err);
+  }
+
+  if (!authUser) {
+    return; // Redirection déjà opérée dans checkAuthUser
   }
 
   try {
@@ -589,12 +602,9 @@ function initDashboard() {
     console.warn("Erreur applyDashboardPermissions :", e);
   }
 
-  // Vérification d'authentification asynchrone sans bloquer l'interactivité
-  checkAuthUser().then(() => {
-    // Chargement de l'abonnement Stripe
+  // Chargement Stripe & Checkout si applicable
+  try {
     if (typeof loadUserSubscription === "function") loadUserSubscription();
-
-    // Vérification d'un paiement en attente depuis la landing page ou login
     const urlParams = new URLSearchParams(window.location.search);
     const checkoutPlan = urlParams.get("checkout_plan");
     if (checkoutPlan && window.VitiTrackStripe) {
@@ -603,13 +613,13 @@ function initDashboard() {
       window.history.replaceState({}, document.title, cleanUrl.pathname + (cleanUrl.search || ""));
       window.VitiTrackStripe.startCheckout(checkoutPlan);
     }
-  }).catch(err => {
-    console.warn("Notice vérification utilisateur :", err);
-  });
+  } catch (err) {
+    console.warn("Notice vérification Stripe :", err);
+  }
 
-  // Synchronisation Supabase en tâche de fond
+  // Synchronisation et chargement des données réelles depuis Supabase Cloud
   try {
-    initSupabaseSync();
+    await initSupabaseSync();
   } catch (err) {
     console.warn("Notice initialisation Supabase :", err);
   }
@@ -1202,15 +1212,17 @@ async function loadFromSupabase() {
     }
 
     if (!session || !session.user) {
-      console.log("ℹ️ [VitiTrack Pro] Session Supabase non active. Cache local préservé sans écrasement.");
+      console.log("ℹ️ [VitiTrack Pro] Session Supabase non active. Redirection vers login.");
       if (window.updateSupabaseBadge) {
         window.updateSupabaseBadge(false, "Session inactive • Mode Local");
       }
+      localStorage.removeItem("vititrack_auth_user");
+      window.location.replace("login.html");
       return;
     }
 
     // 2. Récupération de l'UUID réel propriétaire (garanti sans member_id ni email)
-    const userId = getAuthUserId();
+    const userId = getAuthUserId() || session.user.id;
     if (!userId || !userId.includes("-")) {
       console.warn("⚠️ [VitiTrack Pro] Identifiant propriétaire invalide pour Supabase :", userId);
       return;
@@ -1360,6 +1372,9 @@ async function loadFromSupabase() {
 
     if (hasUpdated) {
       renderAll();
+      if (typeof renderPlannedWorks === "function") {
+        renderPlannedWorks();
+      }
     }
 
     if (window.updateSupabaseBadge) {
@@ -6694,63 +6709,101 @@ function showToast(message, type = "success") {
 
 // ==================== AUTHENTICATION & SESSION ====================
 async function checkAuthUser() {
-  let user = null;
-
-  // 1. Priorité absolue : lecture immédiate du cache local pour zéro blocage
-  try {
-    const raw = localStorage.getItem("vititrack_auth_user");
-    if (raw) user = JSON.parse(raw);
-  } catch (e) {}
-
-  // Mise à jour immédiate de l'interface utilisateur si l'utilisateur est déjà en cache
-  if (user) {
-    updateUserInterface(user);
+  const sb = window.supabaseClient;
+  if (!sb) {
+    console.warn("⚠️ [VitiTrack Pro] Supabase SDK non initialisé. Redirection login.");
+    localStorage.removeItem("vititrack_auth_user");
+    currentAuthUser = null;
+    window.location.replace("login.html");
+    return null;
   }
 
-  // 2. Vérification Supabase en arrière-plan avec timeout strict de 1.5s
-  if (window.supabaseClient) {
-    try {
-      const sessionPromise = window.supabaseClient.auth.getSession();
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error("Supabase auth timeout")), 1500)
-      );
-      const { data } = await Promise.race([sessionPromise, timeoutPromise]);
-      const session = data ? data.session : null;
+  // Vérification systématique de la véritable session Supabase Auth
+  let session = null;
+  try {
+    const { data, error } = await sb.auth.getSession();
+    if (error) {
+      console.warn("Notice Supabase getSession :", error.message);
+    }
+    session = data ? data.session : null;
+  } catch (err) {
+    console.warn("Erreur vérification session Supabase :", err);
+  }
 
-      if (session && session.user) {
-        const meta = session.user.user_metadata || {};
-        const isTeamMember = meta.is_team_member || !!meta.owner_user_id;
-        user = {
-          id: session.user.id,
-          authUserId: session.user.id,
-          memberId: meta.member_id || undefined,
-          email: session.user.email,
-          domainName: meta.owner_domain || meta.domain_name || meta.domain || session.user.email.split("@")[0],
-          fullName: meta.full_name || (isTeamMember ? "Collaborateur" : "Exploitant"),
-          role: meta.role || (isTeamMember ? "Tractoriste / Chauffeur d'engins" : "Gérant Exploitant"),
-          isTeamMember: isTeamMember,
-          canViewDashboard: isTeamMember ? (meta.can_view_dashboard !== undefined ? (meta.can_view_dashboard === true || meta.can_view_dashboard === "true") : false) : true,
-          ownerUserId: meta.owner_user_id || (!isTeamMember ? session.user.id : undefined),
-          ownerDomain: meta.owner_domain || undefined,
-          ownerEmail: meta.owner_email || undefined,
-          activity_type: meta.activity_type || meta.activityType || (user ? (user.activity_type || user.activityType) : undefined),
-          active_mode: meta.active_mode || meta.activeMode || (user ? (user.active_mode || user.activeMode) : undefined),
-          loggedInAt: new Date().toISOString()
-        };
-        localStorage.setItem("vititrack_auth_user", JSON.stringify(user));
-        currentAuthUser = user;
-        updateUserInterface(user);
+  // Si aucune session Supabase valide n'existe :
+  // Nettoyer uniquement les anciennes clés d'authentification locale devenues incompatibles
+  // SANS supprimer aucune donnée métier locale (clients, parcelles, prestations, interventions).
+  if (!session || !session.user || !session.user.id) {
+    console.log("🔒 [VitiTrack Pro] Aucune session Supabase active. Redirection vers login.html.");
+    localStorage.removeItem("vititrack_auth_user");
+    currentAuthUser = null;
+    window.location.replace("login.html");
+    return null;
+  }
+
+  const authUserId = session.user.id;
+  const userEmail = session.user.email || "";
+  const meta = session.user.user_metadata || {};
+
+  // 6. Pour les salariés, utiliser uniquement un rattachement propriétaire vérifié côté serveur.
+  // Ne jamais accorder un accès sur la seule base de métadonnées modifiables par l'utilisateur (user_metadata).
+  let isVerifiedTeamMember = false;
+  let verifiedOwnerUserId = null;
+  let canViewDashboard = true;
+  let userRole = meta.role || "Gérant Exploitant";
+
+  // A) Vérification serveur via app_metadata (non altérable par l'utilisateur)
+  if (session.user.app_metadata && session.user.app_metadata.owner_user_id) {
+    isVerifiedTeamMember = true;
+    verifiedOwnerUserId = session.user.app_metadata.owner_user_id;
+    canViewDashboard = session.user.app_metadata.can_view_dashboard !== false;
+    userRole = session.user.app_metadata.role || userRole;
+  } else {
+    // B) Vérification serveur via table relationnelle team_memberships (protégée par RLS côté serveur)
+    try {
+      const { data: membership } = await sb
+        .from("team_memberships")
+        .select("owner_user_id, role, can_view_dashboard, status")
+        .eq("member_user_id", authUserId)
+        .eq("status", "accepted")
+        .maybeSingle();
+
+      if (membership && membership.owner_user_id) {
+        isVerifiedTeamMember = true;
+        verifiedOwnerUserId = membership.owner_user_id;
+        canViewDashboard = membership.can_view_dashboard !== false;
+        if (membership.role) userRole = membership.role;
       }
     } catch (err) {
-      console.warn("Notice vérification session Supabase :", err.message || err);
+      console.warn("Notice vérification serveur team_memberships :", err);
     }
   }
 
-  // Si aucun utilisateur n'est authentifié (ni local, ni Supabase), redirection login
-  if (!user) {
-    window.location.href = "login.html";
-    return;
-  }
+  // 5. Pour le compte propriétaire, utiliser directement session.user.id comme identifiant
+  const finalOwnerUserId = isVerifiedTeamMember ? verifiedOwnerUserId : authUserId;
+
+  const user = {
+    id: authUserId,
+    authUserId: authUserId,
+    memberId: meta.member_id || undefined,
+    email: userEmail,
+    domainName: meta.owner_domain || meta.domain_name || meta.domain || userEmail.split("@")[0],
+    fullName: meta.full_name || (isVerifiedTeamMember ? "Collaborateur" : "Exploitant"),
+    role: userRole,
+    isTeamMember: isVerifiedTeamMember,
+    canViewDashboard: isVerifiedTeamMember ? canViewDashboard : true,
+    ownerUserId: finalOwnerUserId,
+    ownerDomain: meta.owner_domain || undefined,
+    ownerEmail: meta.owner_email || undefined,
+    activity_type: meta.activity_type || meta.activityType,
+    active_mode: meta.active_mode || meta.activeMode,
+    loggedInAt: new Date().toISOString()
+  };
+
+  localStorage.setItem("vititrack_auth_user", JSON.stringify(user));
+  currentAuthUser = user;
+  updateUserInterface(user);
+  return user;
 }
 
 function updateUserInterface(user) {
