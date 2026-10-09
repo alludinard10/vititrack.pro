@@ -5444,7 +5444,8 @@ body[data-theme="light"],
 }
 
 [data-theme="light"] .dashboard-table-card,
-[data-theme="light"] .table-card {
+[data-theme="light"] .table-card,
+[data-theme="light"] .planned-works-card {
   background: #ffffff !important;
   background-color: #ffffff !important;
   border: 1px solid rgba(45, 106, 79, 0.15) !important;
@@ -5453,13 +5454,15 @@ body[data-theme="light"],
 
 [data-theme="light"] .table-header-bar,
 [data-theme="light"] .table-header-top,
-[data-theme="light"] .table-controls-bar {
+[data-theme="light"] .table-controls-bar,
+[data-theme="light"] .planned-card-header {
   border-bottom: 1px solid rgba(45, 106, 79, 0.1) !important;
   background: #ffffff !important;
   background-color: #ffffff !important;
 }
 
-[data-theme="light"] .table-title {
+[data-theme="light"] .table-title,
+[data-theme="light"] .planned-card-title {
   color: #14241d !important;
 }
 

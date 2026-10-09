@@ -150,17 +150,18 @@ Vititrack pro/
   2. *🚜 Toutes les interventions* : tableau filtré par la date choisie avec bascule de statut sans perte d'onglet.
   3. *👤 Coordonnées & Notes* : fiche contact complète.
 
-#### D. Vue 3 : Prestations & Travaux à faire & Planification (Onglets dédiés dans Pilotage)
-- **Onglet Pilotage 1 : Prestations (Catalogue des prestations viticoles)** :
-  - Accès direct depuis le menu latéral *Pilotage* avec badge dynamique du nombre de prestations.
+#### D. Vues Autonomes : Prestations vs Travaux à faire & Planification (Séparation Stricte)
+- **Vue 3 : Prestations (Catalogue exclusif des prestations viticoles)** :
+  - **Vue 100% dédiée au catalogue** : Accessible directement via `#nav-btn-services` (`data-view="services"`), sans aucun mélange avec les chantiers prévisionnels.
+  - **Barre de métriques dédiée Prestations** : Décompte des prestations au catalogue, au taux horaire (`€/h`), à l'hectare (`€/ha`), au forfait fixe (`€`) et au kilo (`€/kg`).
   - **Modes de facturation multiples** : Taux horaire (`€/h`), Forfait à l'hectare (`€/ha`), Forfait fixe global (`€`), et Facturation au kilo (`€/kg` pour vendanges et récoltes au poids).
-  - **Filtres sous forme de menus déroulants** : deux sélecteurs compacts pour filtrer instantanément par *Catégorie viticole* et par *Mode de facturation* (€/h, €/ha, forfait, au kilo).
-  - **Organisation en menus déroulants accordéons par catégorie** : affichage soigné regroupé par catégorie avec compteurs de prestations et chevrons repliables.
-  - Unités de facturation : à l'hectare (`ha`), à l'heure (`h`), au forfait (`forfait`), au kilo (`kg`).
-  - Tarifs indicatifs HT avec calcul automatique lors de la saisie d'une intervention.
-  - Création, modification et suppression de prestations.
-- **Onglet Pilotage 2 : Travaux à faire & Planification (Planning des travaux prévisionnels)** :
-  - **Accès direct depuis la section Pilotage** dans le menu latéral (`#nav-btn-planned`) avec badge d'alerte ambre affichant le nombre de chantiers en attente (`#sidebar-planned-count`).
+  - **Filtres sous forme de menus déroulants & recherche instantanée** : Filtrage par *Catégorie viticole*, par *Mode de facturation* et champ de recherche dynamique en temps réel.
+  - **Organisation en accordéons ou cartes directes** : Regroupement élégant par catégorie viticole avec boutons d'édition et suppression.
+  - Bouton d'action direct : `＋ Nouvelle prestation`.
+- **Vue Dédiée : Travaux à faire & Planification (Planning des chantiers prévisionnels)** :
+  - **Vue 100% dédiée aux travaux à réaliser** : Accessible directement via `#nav-btn-planned` (`data-view="planned"`), sans afficher le catalogue des prestations.
+  - **Barre de métriques dédiée aux travaux planifiés** : Nombre de chantiers en attente (`#planned-kpi-total`), domaines viticoles concernés (`#planned-kpi-clients`), surface cumulée prévisionnelle (`#planned-kpi-surface`) et salariés assignés (`#planned-kpi-assigned`).
+  - **Recherche instantanée** : Filtre live (`#planned-search-input`) permettant de trouver instantanément un chantier par client, parcelle, salarié, tâche ou notes.
   - **Planification multi-domaines & multi-parcelles en menus déroulants (Modal 6)** : Deux menus déroulants compacts et élégants (`.modal-dropdown-wrap`) côte à côte :
     - *Menu déroulant « Domaines / Clients »* : sélecteur avec recherche instantanée, boutons « Tout cocher / Tout décocher », pastilles de statut, et sélection simultanée de multiples domaines avec affichage dynamique des domaines choisis sur le bouton déclencheur.
     - *Menu déroulant « Parcelles associées »* : activé dès la sélection d'au moins un client, liste déroulante groupée par domaine avec cases à cocher, recherche de parcelles, boutons « Tout / Aucun », et calcul en direct du nombre de parcelles et de la surface cumulée totale (**précision à 4 décimales**).

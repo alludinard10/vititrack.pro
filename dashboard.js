@@ -291,6 +291,7 @@ let servicesSearchFilter = "";
 let servicesCategoryFilter = "all";
 let servicesRateTypeFilter = "all";
 let servicesActiveSubtab = "catalog";
+let plannedSearchFilter = "";
 let pendingInterventionFormState = null;
 
 // Vendanges & Récoltes State
@@ -1877,50 +1878,16 @@ function setupEventListeners() {
   if (addPlannedTable) addPlannedTable.addEventListener("click", () => openPlannedModal());
   if (emptyAddPlanned) emptyAddPlanned.addEventListener("click", () => openPlannedModal());
 
-  // Services View Subnav Tabs & Filters
-  const tabBtnCatalog = document.getElementById("tab-btn-catalog");
-  const tabBtnPlanned = document.getElementById("tab-btn-planned");
-
-  if (tabBtnCatalog) {
-    tabBtnCatalog.addEventListener("click", () => {
-      servicesActiveSubtab = "catalog";
-      tabBtnCatalog.classList.add("active");
-      if (tabBtnPlanned) tabBtnPlanned.classList.remove("active");
-      const catContent = document.getElementById("services-catalog-tab-content");
-      const planContent = document.getElementById("services-planned-tab-content");
-      if (catContent) catContent.style.display = "block";
-      if (planContent) planContent.style.display = "none";
-      const searchWrapper = document.getElementById("services-search-wrapper");
-      if (searchWrapper) searchWrapper.style.display = "block";
-
-      const navSrv = document.getElementById("nav-btn-services");
-      const navPln = document.getElementById("nav-btn-planned");
-      if (navSrv) navSrv.classList.add("active");
-      if (navPln) navPln.classList.remove("active");
-    });
-  }
-
-  if (tabBtnPlanned) {
-    tabBtnPlanned.addEventListener("click", () => {
-      servicesActiveSubtab = "planned";
-      tabBtnPlanned.classList.add("active");
-      if (tabBtnCatalog) tabBtnCatalog.classList.remove("active");
-      const catContent = document.getElementById("services-catalog-tab-content");
-      const planContent = document.getElementById("services-planned-tab-content");
-      if (catContent) catContent.style.display = "none";
-      if (planContent) planContent.style.display = "block";
-      const searchWrapper = document.getElementById("services-search-wrapper");
-      if (searchWrapper) searchWrapper.style.display = "none";
-
-      const navSrv = document.getElementById("nav-btn-services");
-      const navPln = document.getElementById("nav-btn-planned");
-      if (navPln) navPln.classList.add("active");
-      if (navSrv) navSrv.classList.remove("active");
-
+  // Planned Works Search Input
+  const plannedSearchInput = document.getElementById("planned-search-input");
+  if (plannedSearchInput) {
+    plannedSearchInput.addEventListener("input", (e) => {
+      plannedSearchFilter = e.target.value.toLowerCase().trim();
       renderPlannedWorks();
     });
   }
 
+  // Prestations Search Input
   const servicesSearchInput = document.getElementById("services-search-input");
   if (servicesSearchInput) {
     servicesSearchInput.addEventListener("input", (e) => {
@@ -2538,6 +2505,7 @@ function switchView(viewName, preselectedClientId = null) {
   const viewOverview = document.getElementById("view-overview");
   const viewClients = document.getElementById("view-clients");
   const viewServices = document.getElementById("view-services");
+  const viewPlanned = document.getElementById("view-planned");
   const viewVendanges = document.getElementById("view-vendanges");
   const viewPalissage = document.getElementById("view-palissage");
   const viewClientHistory = document.getElementById("view-client-history");
@@ -2567,7 +2535,7 @@ function switchView(viewName, preselectedClientId = null) {
   });
 
   // Masquer toutes les vues
-  [viewOverview, viewClients, viewServices, viewVendanges, viewPalissage, viewClientHistory, viewCalendar].forEach(v => {
+  [viewOverview, viewClients, viewServices, viewPlanned, viewVendanges, viewPalissage, viewClientHistory, viewCalendar].forEach(v => {
     if (v) {
       v.style.display = "none";
       v.classList.remove("active");
@@ -2604,42 +2572,15 @@ function switchView(viewName, preselectedClientId = null) {
     if (navServices) navServices.classList.add("active");
     if (mNavServices) mNavServices.classList.add("active");
 
-    // Activer l'onglet Catalogue Prestations
-    servicesActiveSubtab = "catalog";
-    const tabBtnCatalog = document.getElementById("tab-btn-catalog");
-    const tabBtnPlanned = document.getElementById("tab-btn-planned");
-    if (tabBtnCatalog) tabBtnCatalog.classList.add("active");
-    if (tabBtnPlanned) tabBtnPlanned.classList.remove("active");
-    const catContent = document.getElementById("services-catalog-tab-content");
-    const planContent = document.getElementById("services-planned-tab-content");
-    if (catContent) catContent.style.display = "block";
-    if (planContent) planContent.style.display = "none";
-    const searchWrapper = document.getElementById("services-search-wrapper");
-    if (searchWrapper) searchWrapper.style.display = "block";
-
     renderServicesView();
   } else if (viewName === "planned") {
-    if (viewServices) {
-      viewServices.style.display = "flex";
-      viewServices.classList.add("active");
+    if (viewPlanned) {
+      viewPlanned.style.display = "flex";
+      viewPlanned.classList.add("active");
     }
     if (navPlanned) navPlanned.classList.add("active");
 
-    // Activer l'onglet Travaux à faire & Planification
-    servicesActiveSubtab = "planned";
-    const tabBtnCatalog = document.getElementById("tab-btn-catalog");
-    const tabBtnPlanned = document.getElementById("tab-btn-planned");
-    if (tabBtnPlanned) tabBtnPlanned.classList.add("active");
-    if (tabBtnCatalog) tabBtnCatalog.classList.remove("active");
-    const catContent = document.getElementById("services-catalog-tab-content");
-    const planContent = document.getElementById("services-planned-tab-content");
-    if (catContent) catContent.style.display = "none";
-    if (planContent) planContent.style.display = "block";
-    const searchWrapper = document.getElementById("services-search-wrapper");
-    if (searchWrapper) searchWrapper.style.display = "none";
-
-    renderPlannedWorks();
-    renderServicesKPIs();
+    renderPlannedWorksView();
   } else if (viewName === "vendanges") {
     if (viewVendanges) {
       viewVendanges.style.display = "flex";
@@ -4461,6 +4402,7 @@ function renderAll() {
   renderTable();
   renderClientsView();
   renderServicesView();
+  renderPlannedWorksView();
   renderVendangesView();
   renderPalissageView();
   if (typeof populateClientHistoryClientSelect === "function") {
@@ -5482,7 +5424,6 @@ function populateTaskSelects() {
 function renderServicesView() {
   renderServicesKPIs();
   renderServices();
-  renderPlannedWorks();
 }
 
 function renderServicesKPIs() {
@@ -5491,17 +5432,13 @@ function renderServicesKPIs() {
   const surfaceCount = services.filter(s => s.rateType === "surface").length;
   const fixedCount = services.filter(s => s.rateType === "fixed").length;
   const kiloCount = services.filter(s => s.rateType === "kilo").length;
-  const plannedCount = plannedWorks.length;
 
   setElemText("services-total-count", total);
   setElemText("services-hourly-count", hourlyCount);
   setElemText("services-surface-count", surfaceCount);
   setElemText("services-fixed-count", fixedCount);
-  setElemText("services-planned-count", plannedCount);
-  setElemText("sidebar-planned-count", plannedCount);
-
-  setElemText("count-tab-catalog", total);
-  setElemText("count-tab-planned", plannedCount);
+  setElemText("services-kilo-count", kiloCount);
+  setElemText("sidebar-services-count", total);
 
   // Update Dropdown Category Options with dynamic counts
   const catSelect = document.getElementById("services-filter-category");
@@ -5533,6 +5470,34 @@ function renderServicesKPIs() {
     const currentRateVal = servicesRateTypeFilter || "all";
     rateSelect.innerHTML = rates.map(r => `<option value="${escapeHTML(r.val)}" ${r.val === currentRateVal ? "selected" : ""}>${escapeHTML(r.label)} (${r.count})</option>`).join("");
   }
+}
+
+function renderPlannedWorksKPIs() {
+  const total = (plannedWorks || []).length;
+  const uniqueClients = new Set((plannedWorks || []).map(w => w.clientId || w.clientName).filter(Boolean)).size;
+
+  let totalSurface = 0;
+  let assignedCount = 0;
+  (plannedWorks || []).forEach(w => {
+    const q = typeof w.quantity === "number" ? w.quantity : parseFloat(w.quantity);
+    if (!isNaN(q) && q > 0) {
+      totalSurface += q;
+    }
+    if (w.worker && w.worker !== "Non assigné") {
+      assignedCount++;
+    }
+  });
+
+  setElemText("planned-kpi-total", total);
+  setElemText("planned-kpi-clients", uniqueClients);
+  setElemText("planned-kpi-surface", `${totalSurface.toFixed(4)} ha`);
+  setElemText("planned-kpi-assigned", assignedCount);
+  setElemText("sidebar-planned-count", total);
+}
+
+function renderPlannedWorksView() {
+  renderPlannedWorksKPIs();
+  renderPlannedWorks();
 }
 
 function updateServicesFilterResetBtn() {
@@ -5700,15 +5665,38 @@ function renderPlannedWorks() {
   const emptyState = document.getElementById("planned-works-empty");
   if (!tbody) return;
 
-  if (plannedWorks.length === 0) {
+  let list = plannedWorks || [];
+  if (plannedSearchFilter) {
+    list = list.filter(w => {
+      const matchClient = (w.clientName || "").toLowerCase().includes(plannedSearchFilter);
+      const matchParcel = (w.parcel || "").toLowerCase().includes(plannedSearchFilter);
+      const matchService = (w.service || "").toLowerCase().includes(plannedSearchFilter);
+      const matchWorker = (w.worker || "").toLowerCase().includes(plannedSearchFilter);
+      const matchNotes = (w.notes || "").toLowerCase().includes(plannedSearchFilter);
+      return matchClient || matchParcel || matchService || matchWorker || matchNotes;
+    });
+  }
+
+  if (list.length === 0) {
     tbody.innerHTML = "";
-    if (emptyState) emptyState.style.display = "flex";
+    if (emptyState) {
+      emptyState.style.display = "flex";
+      const emptyTitle = emptyState.querySelector("h3");
+      const emptyDesc = emptyState.querySelector("p");
+      if (plannedSearchFilter && plannedWorks.length > 0) {
+        if (emptyTitle) emptyTitle.textContent = "Aucun travail trouvé";
+        if (emptyDesc) emptyDesc.textContent = `Aucun travail ne correspond à votre recherche « ${plannedSearchFilter} ».`;
+      } else {
+        if (emptyTitle) emptyTitle.textContent = "Aucun travail à faire en attente";
+        if (emptyDesc) emptyDesc.textContent = "Tous les travaux sont à jour ou déjà consignés dans le journal des interventions.";
+      }
+    }
     return;
   }
 
   if (emptyState) emptyState.style.display = "none";
 
-  tbody.innerHTML = plannedWorks.map(w => {
+  tbody.innerHTML = list.map(w => {
     const formatted = formatDateDisplay(w.date);
     return `
       <tr>
@@ -6533,7 +6521,7 @@ function handleCreatePlannedSubmit(e) {
 
   savePlannedWorks();
   closePlannedModal();
-  renderServicesView();
+  renderPlannedWorksView();
   if (typeof renderPalissageKPIs === "function") renderPalissageKPIs();
   if (typeof renderVendangesKPIs === "function") renderVendangesKPIs();
 
@@ -6549,7 +6537,7 @@ window.deletePlannedWork = function(id) {
     plannedWorks = plannedWorks.filter(w => w.id !== id);
     savePlannedWorksLocally();
     deletePlannedWorkFromSupabase(id);
-    renderServicesView();
+    renderPlannedWorksView();
     if (typeof renderPalissageKPIs === "function") renderPalissageKPIs();
     if (typeof renderVendangesKPIs === "function") renderVendangesKPIs();
     showToast("Travail planifié supprimé.", "info");
