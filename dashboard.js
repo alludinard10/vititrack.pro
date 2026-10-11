@@ -1673,11 +1673,15 @@ async function syncInterventionStatusToSupabase(id, newStatus) {
 async function deleteInterventionFromSupabase(id) {
   if (!window.supabaseClient || !window.isSupabaseOnline) return;
   try {
-    await window.supabaseClient
+    const userId = getAuthUserId();
+    let query = window.supabaseClient
       .from("interventions")
       .delete()
-      .eq("id", id)
-      .eq("user_id", getAuthUserId());
+      .eq("id", id);
+    if (userId) {
+      query = query.eq("user_id", userId);
+    }
+    await query;
   } catch (err) {
     console.warn("Notice suppression intervention Supabase :", err);
   }
@@ -5161,14 +5165,63 @@ window.toggleInterventionStatus = function(id) {
 };
 
 window.deleteIntervention = function(id, fromClientId = null) {
-  const index = interventions.findIndex(i => i.id === id);
-  if (index === -1) return;
+  if (id === undefined || id === null || id === "") return;
+  const targetIdStr = String(id).trim();
 
-  if (confirm(`Supprimer définitivement l'intervention #${id} ?`)) {
+  // Recherche dans les interventions du tableau de bord (ETV / prestataire)
+  const index = interventions.findIndex(i => i && (String(i.id) === targetIdStr || String(i.id).trim() === targetIdStr));
+  if (index === -1) {
+    // Si l'intervention est dans le mode exploitation
+    if (typeof window.deleteExploitationIntervention === "function" && typeof VitiExpState !== "undefined" && Array.isArray(VitiExpState.interventions) && VitiExpState.interventions.some(i => i && String(i.id).trim() === targetIdStr)) {
+      return window.deleteExploitationIntervention(id);
+    }
+    console.warn(`[VitiTrack] Intervention introuvable pour suppression : ${id}`);
+    return;
+  }
+
+  const item = interventions[index];
+  const itemLabel = item?.id ? `#${item.id}` : "";
+  const clientName = item?.client ? ` (${item.client})` : "";
+
+  if (confirm(`Confirmez-vous la suppression définitive de l'intervention ${itemLabel}${clientName} ?`)) {
+    const deletedId = item.id;
     interventions.splice(index, 1);
     saveInterventionsLocally();
-    deleteInterventionFromSupabase(id);
+    deleteInterventionFromSupabase(deletedId);
+
+    // Nettoyer les liaisons éventuelles dans vendanges & palissage
+    let harvestChanged = false;
+    (harvestWorks || []).forEach(h => {
+      if (h.interventionId && (String(h.interventionId) === String(deletedId) || String(h.interventionId).trim() === targetIdStr)) {
+        h.interventionId = null;
+        harvestChanged = true;
+      }
+      if (h.leafInterventionId && (String(h.leafInterventionId) === String(deletedId) || String(h.leafInterventionId).trim() === targetIdStr)) {
+        h.leafInterventionId = null;
+        harvestChanged = true;
+      }
+      if (h.haulInterventionId && (String(h.haulInterventionId) === String(deletedId) || String(h.haulInterventionId).trim() === targetIdStr)) {
+        h.haulInterventionId = null;
+        harvestChanged = true;
+      }
+    });
+    if (harvestChanged) {
+      saveHarvestWorks();
+    }
+
+    let palissageChanged = false;
+    (palissageWorks || []).forEach(p => {
+      if (p.passage3InterventionId && (String(p.passage3InterventionId) === String(deletedId) || String(p.passage3InterventionId).trim() === targetIdStr)) {
+        p.passage3InterventionId = null;
+        palissageChanged = true;
+      }
+    });
+    if (palissageChanged) {
+      savePalissageWorks();
+    }
+
     renderAll();
+
     const cId = fromClientId || (typeof activeDossierClientId !== "undefined" ? activeDossierClientId : null);
     if (cId) {
       const dossierModal = document.getElementById("client-dossier-modal");
@@ -5176,7 +5229,12 @@ window.deleteIntervention = function(id, fromClientId = null) {
         populateDossierContent(cId);
       }
     }
-    showToast(`Intervention #${id} supprimée`, "info");
+
+    if (typeof updateClientHistoryData === "function" && typeof clientHistorySelectedClientId !== "undefined" && clientHistorySelectedClientId) {
+      updateClientHistoryData();
+    }
+
+    showToast(`Intervention ${itemLabel} supprimée avec succès`, "info");
   }
 };
 
