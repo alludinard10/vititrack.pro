@@ -7762,6 +7762,7 @@ function openAccountModal() {
   const emailEl = document.getElementById("account-modal-email");
   const domainEl = document.getElementById("account-modal-domain");
   const roleEl = document.getElementById("account-modal-role");
+  const currPwdInput = document.getElementById("account-current-password");
   const newPwdInput = document.getElementById("account-new-password");
   const confPwdInput = document.getElementById("account-confirm-password");
   const alertEl = document.getElementById("account-pwd-alert");
@@ -7771,6 +7772,10 @@ function openAccountModal() {
   if (domainEl) domainEl.textContent = user ? (user.domainName || user.ownerDomain || "Domaine Viticole") : "Domaine Viticole";
   if (roleEl) roleEl.textContent = user ? (user.role || (user.isTeamMember ? "Collaborateur" : "Gérant Exploitant")) : "Gérant Exploitant";
 
+  if (currPwdInput) {
+    currPwdInput.value = "";
+    currPwdInput.style.borderColor = "";
+  }
   if (newPwdInput) newPwdInput.value = "";
   if (confPwdInput) confPwdInput.value = "";
   if (alertEl) {
@@ -7791,9 +7796,23 @@ function closeAccountModal() {
   unlockBodyScroll();
 }
 
+// Déclenchement d'un e-mail de réinitialisation pour l'utilisateur actuellement connecté
+async function triggerCurrentAccountResetEmail(btnEl = null) {
+  const user = getAuthUser();
+  const email = user ? (user.email || "").trim() : "";
+  if (!email || !email.includes("@")) {
+    showToast("Adresse e-mail introuvable pour ce compte.", "warning");
+    return;
+  }
+  if (confirm(`Envoyer un e-mail officiel de réinitialisation de mot de passe à votre adresse (${email}) ?`)) {
+    await sendMemberPasswordReset(email, btnEl);
+  }
+}
+
 async function handleAccountPasswordChange(e) {
   if (e) e.preventDefault();
   const alertEl = document.getElementById("account-pwd-alert");
+  const currPwdInput = document.getElementById("account-current-password");
   const newPwdInput = document.getElementById("account-new-password");
   const confPwdInput = document.getElementById("account-confirm-password");
   const btn = document.getElementById("btn-submit-account-pwd");
@@ -7805,20 +7824,25 @@ async function handleAccountPasswordChange(e) {
       alertEl.style.background = isError ? "rgba(239, 68, 68, 0.15)" : "rgba(82, 183, 136, 0.15)";
       alertEl.style.border = isError ? "1px solid rgba(239, 68, 68, 0.3)" : "1px solid rgba(82, 183, 136, 0.3)";
       alertEl.style.color = isError ? "#fca5a5" : "#a7f3d0";
-      alertEl.textContent = msg;
+      alertEl.innerHTML = msg;
     }
   };
 
+  if (currPwdInput) currPwdInput.style.borderColor = "";
+
+  const currPwd = currPwdInput ? currPwdInput.value : "";
   const newPwd = newPwdInput ? newPwdInput.value : "";
   const confPwd = confPwdInput ? confPwdInput.value : "";
 
   if (!newPwd || newPwd.length < 6) {
-    showModalAlert("Le mot de passe doit comporter au moins 6 caractères.", true);
+    showModalAlert("Le nouveau mot de passe doit comporter au moins 6 caractères.", true);
+    if (newPwdInput) newPwdInput.focus();
     return;
   }
 
   if (newPwd !== confPwd) {
-    showModalAlert("Les deux mots de passe ne correspondent pas.", true);
+    showModalAlert("Les deux nouveaux mots de passe ne correspondent pas.", true);
+    if (confPwdInput) confPwdInput.focus();
     return;
   }
 
@@ -7828,24 +7852,109 @@ async function handleAccountPasswordChange(e) {
     return;
   }
 
+  // Vérification de la session active
+  let session = null;
+  try {
+    const { data: sessionData } = await sb.auth.getSession();
+    session = sessionData ? sessionData.session : null;
+  } catch (err) {
+    console.warn("Notice getSession :", err);
+  }
+
+  if (!session || !session.user) {
+    // Tentative de rafraîchissement automatique
+    try {
+      const { data: refreshData } = await sb.auth.refreshSession();
+      session = refreshData ? refreshData.session : null;
+    } catch (e) {}
+  }
+
+  if (!session || !session.user) {
+    showModalAlert("⚠️ Votre session d'authentification a expiré. Veuillez vous reconnecter pour modifier votre mot de passe.", true);
+    return;
+  }
+
+  const userEmail = session.user.email;
+
   if (btn) btn.disabled = true;
   if (btnText) btnText.textContent = "⏳ Mise à jour en cours...";
 
   try {
-    const { error } = await sb.auth.updateUser({
-      password: newPwd
-    });
+    // ÉTAPE 1 : Si le mot de passe actuel a été saisi, réauthentifier directement auprès de Supabase
+    if (currPwd) {
+      const { error: signInErr } = await sb.auth.signInWithPassword({
+        email: userEmail,
+        password: currPwd
+      });
 
-    if (error) {
-      showModalAlert(`❌ Erreur : ${error.message}`, true);
+      if (signInErr) {
+        showModalAlert("❌ Le mot de passe actuel saisi est incorrect.", true);
+        if (currPwdInput) {
+          currPwdInput.focus();
+          currPwdInput.style.borderColor = "#ef4444";
+        }
+        if (btn) btn.disabled = false;
+        if (btnText) btnText.textContent = "🔒 Enregistrer mon nouveau mot de passe";
+        return;
+      }
+    }
+
+    // ÉTAPE 2 : Mise à jour du mot de passe avec supabase.auth.updateUser()
+    let updateResult = null;
+    if (currPwd) {
+      // Tentative avec currentPassword selon version SDK, fallback transparent si non supporté
+      try {
+        updateResult = await sb.auth.updateUser({
+          password: newPwd,
+          currentPassword: currPwd
+        });
+      } catch (sdkErr) {
+        updateResult = await sb.auth.updateUser({ password: newPwd });
+      }
+      if (updateResult && updateResult.error && /unknown|currentPassword/i.test(updateResult.error.message)) {
+        updateResult = await sb.auth.updateUser({ password: newPwd });
+      }
+    } else {
+      updateResult = await sb.auth.updateUser({
+        password: newPwd
+      });
+    }
+
+    const { data: updateData, error: updateErr } = updateResult || {};
+
+    if (updateErr) {
+      const isReauthRequired = (updateErr.status === 422 || updateErr.status === 400 || updateErr.status === 403) &&
+        (/reauthenticat/i.test(updateErr.message) || /current.*password/i.test(updateErr.message) || /session/i.test(updateErr.message) || updateErr.code === "reauthentication_needed");
+
+      if (isReauthRequired) {
+        showModalAlert("🔐 <strong>Réauthentification requise :</strong> Pour des raisons de sécurité, Supabase demande la confirmation de votre mot de passe actuel car votre session a plus de 24h.<br><br>👉 Veuillez renseigner le champ <strong>« Mot de passe actuel »</strong> ci-dessus puis cliquer à nouveau sur <em>Enregistrer</em>.", true);
+        if (currPwdInput) {
+          currPwdInput.focus();
+          currPwdInput.style.borderColor = "#52b788";
+        }
+        if (btn) btn.disabled = false;
+        if (btnText) btnText.textContent = "🔒 Enregistrer mon nouveau mot de passe";
+        return;
+      }
+
+      if (/different from/i.test(updateErr.message)) {
+        showModalAlert("❌ Le nouveau mot de passe doit être différent de l'ancien mot de passe.", true);
+      } else if (/at least 6/i.test(updateErr.message)) {
+        showModalAlert("❌ Le mot de passe doit comporter au moins 6 caractères.", true);
+      } else {
+        showModalAlert(`❌ Erreur Supabase : ${updateErr.message}`, true);
+      }
+
       if (btn) btn.disabled = false;
       if (btnText) btnText.textContent = "🔒 Enregistrer mon nouveau mot de passe";
       return;
     }
 
-    showModalAlert("✅ Votre mot de passe personnel a été mis à jour avec succès !", false);
-    showToast("🎉 Votre mot de passe a été mis à jour avec succès dans Supabase Auth.", "success");
+    // ÉTAPE 3 : Succès
+    showModalAlert("✅ Votre mot de passe a été mis à jour avec succès dans Supabase Auth !", false);
+    showToast("🎉 Votre mot de passe personnel a été mis à jour avec succès dans Supabase.", "success");
 
+    if (currPwdInput) currPwdInput.value = "";
     if (newPwdInput) newPwdInput.value = "";
     if (confPwdInput) confPwdInput.value = "";
 
@@ -7853,7 +7962,7 @@ async function handleAccountPasswordChange(e) {
       closeAccountModal();
       if (btn) btn.disabled = false;
       if (btnText) btnText.textContent = "🔒 Enregistrer mon nouveau mot de passe";
-    }, 1200);
+    }, 1400);
   } catch (err) {
     showModalAlert(`❌ Erreur : ${err.message || err}`, true);
     if (btn) btn.disabled = false;
@@ -15671,4 +15780,5 @@ window.sendMemberPasswordReset = sendMemberPasswordReset;
 window.triggerMemberResetEmail = triggerMemberResetEmail;
 window.triggerMemberResetEmailFromModal = triggerMemberResetEmailFromModal;
 window.adminUpdateMemberPassword = adminUpdateMemberPassword;
+window.triggerCurrentAccountResetEmail = triggerCurrentAccountResetEmail;
 

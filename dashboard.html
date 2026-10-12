@@ -5380,6 +5380,18 @@
             </p>
 
             <form id="form-account-password" onsubmit="handleAccountPasswordChange(event)" novalidate>
+              <div class="form-group" style="margin-bottom: 0.85rem;" id="group-account-current-password">
+                <label for="account-current-password" class="form-label" style="display: flex; justify-content: space-between; align-items: center;">
+                  <span>Mot de passe actuel</span>
+                  <span style="font-size: 0.74rem; color: #95a89e;">(requis si votre session a plus de 24h)</span>
+                </label>
+                <div class="input-with-icon" style="position: relative;">
+                  <span class="input-icon">🔑</span>
+                  <input type="password" id="account-current-password" class="epure-input" placeholder="••••••••••••" autocomplete="current-password" style="padding-right: 2.5rem; width: 100%;">
+                  <button type="button" onclick="togglePasswordVisibility('account-current-password', this)" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #95a89e;" title="Afficher/masquer">👁️</button>
+                </div>
+              </div>
+
               <div class="form-group" style="margin-bottom: 0.85rem;">
                 <label for="account-new-password" class="form-label">
                   <span>Nouveau mot de passe (6 car. min)</span> <span class="required">*</span>
@@ -5402,11 +5414,17 @@
                 </div>
               </div>
 
-              <div id="account-pwd-alert" style="display: none; padding: 0.65rem 0.85rem; border-radius: 8px; font-size: 0.82rem; margin-bottom: 0.85rem;"></div>
+              <div id="account-pwd-alert" style="display: none; padding: 0.65rem 0.85rem; border-radius: 8px; font-size: 0.82rem; margin-bottom: 0.85rem; line-height: 1.4;"></div>
 
               <button type="submit" class="btn btn-primary btn-glow" id="btn-submit-account-pwd" style="width: 100%; justify-content: center;">
                 <span id="btn-account-pwd-text">🔒 Enregistrer mon nouveau mot de passe</span>
               </button>
+
+              <div style="margin-top: 0.85rem; text-align: center;">
+                <button type="button" class="btn btn-ghost btn-xs" id="btn-account-forgot-pwd" onclick="triggerCurrentAccountResetEmail(this)" style="font-size: 0.76rem; color: #52b788; text-decoration: underline;">
+                  ✉️ Mot de passe actuel oublié ? M'envoyer un e-mail de réinitialisation
+                </button>
+              </div>
             </form>
           </div>
         </div>

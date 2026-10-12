@@ -437,10 +437,47 @@ it("L'URL de redirection pointe vers login.html et le mode réinitialisation est
   assert(loginHtmlContent.includes("PASSWORD_RECOVERY"), "login.html écoute l'événement Supabase PASSWORD_RECOVERY");
 });
 
+console.log("\n📋 13. Test : Gestion de la réauthentification dans « Mon compte » avec updateUser()");
+it("La saisie du mot de passe actuel réauthentifie la session et permet à updateUser() de réussir", () => {
+  // Simuler une connexion de l'utilisateur
+  const { data: loginData } = auth.signInWithPassword({
+    email: "gerant@domaineludinard.fr",
+    password: "AdminPassword2026!",
+  });
+  assert(loginData.session, "Session active obtenue");
+
+  // Cas A : Mot de passe actuel incorrect
+  const { error: badAuthErr } = auth.signInWithPassword({
+    email: "gerant@domaineludinard.fr",
+    password: "WrongPassword999",
+  });
+  assert(badAuthErr !== null, "Un mauvais mot de passe actuel doit être rejeté");
+
+  // Cas B : Réauthentification avec le bon mot de passe actuel
+  const { error: goodAuthErr } = auth.signInWithPassword({
+    email: "gerant@domaineludinard.fr",
+    password: "AdminPassword2026!",
+  });
+  assert.strictEqual(goodAuthErr, null, "La réauthentification avec le bon mot de passe réussit");
+
+  // Cas C : updateUser() avec nouveau mot de passe
+  const { data: updateRes, error: updateErr } = auth.updateUser(loginData.session.access_token, {
+    password: "BrandNewGerantPassword2026!"
+  });
+  assert.strictEqual(updateErr, null, "updateUser() met à jour le mot de passe");
+
+  // Cas D : Connexion avec le nouveau mot de passe
+  const { data: newLogin, error: newLoginErr } = auth.signInWithPassword({
+    email: "gerant@domaineludinard.fr",
+    password: "BrandNewGerantPassword2026!",
+  });
+  assert.strictEqual(newLoginErr, null, "Le nouveau mot de passe est immédiatement fonctionnel");
+});
+
 console.log("\n==========================================================================");
 console.log(`📊 RÉSULTAT FINAL DES TESTS : ${passedTests}/${totalTests} PASSÉS`);
 if (failedTests === 0) {
-  console.log("🎉 TOUS LES 12 TESTS SONT VALIDÉS AVEC SUCCÈS !");
+  console.log("🎉 TOUS LES 13 TESTS SONT VALIDÉS AVEC SUCCÈS !");
   console.log("==========================================================================\n");
 } else {
   console.error(`❌ ${failedTests} TEST(S) ÉCHOUÉ(S) !`);
