@@ -628,7 +628,10 @@
 
     function checkRecoveryMode() {
       const hash = window.location.hash || "";
-      if (hash.includes("type=recovery") || (hash.includes("access_token=") && hash.includes("type=recovery"))) {
+      const search = window.location.search || "";
+      if (hash.includes("type=recovery") || 
+          (hash.includes("access_token=") && hash.includes("type=recovery")) ||
+          search.includes("type=recovery")) {
         showRecoveryPanel();
       }
     }
@@ -695,23 +698,84 @@
       }
     });
 
-    // Forgot password alert
-    document.getElementById("link-forgot-pwd")?.addEventListener("click", (e) => {
+    // Forgot password alert avec protection anti-double clic et cooldown 60s
+    document.getElementById("link-forgot-pwd")?.addEventListener("click", async (e) => {
       e.preventDefault();
-      const email = document.getElementById("login-email").value.trim();
-      if (!email) {
-        showAlert("Veuillez renseigner votre e-mail pour réinitialiser le mot de passe.", "error");
+      const emailInput = document.getElementById("login-email");
+      const email = emailInput ? emailInput.value.trim().toLowerCase() : "";
+      if (!email || !email.includes("@")) {
+        showAlert("Veuillez renseigner votre adresse e-mail dans le champ ci-dessus pour réinitialiser votre mot de passe.", "error");
+        if (emailInput) emailInput.focus();
         return;
       }
-      if (window.supabaseClient) {
-        const redirectUrl = window.location.origin
-          ? (window.location.origin + window.location.pathname)
-          : "https://vititrack.pro/login.html";
-        window.supabaseClient.auth.resetPasswordForEmail(email, { redirectTo: redirectUrl })
-          .then(() => showAlert(`Un e-mail officiel de réinitialisation a été envoyé à ${email}.`, "success"))
-          .catch((err) => showAlert(`Erreur lors de l'envoi de l'e-mail : ${err.message || err}`, "error"));
-      } else {
-        showAlert(`Simulation : un e-mail a été envoyé à ${email}.`, "success");
+
+      // 1. Délai de 60 secondes entre deux demandes pour la même adresse e-mail
+      const COOLDOWN_MS = 60 * 1000;
+      const cooldownKey = `vititrack_reset_cooldown_${email}`;
+      const lastSent = parseInt(localStorage.getItem(cooldownKey) || "0", 10);
+      const elapsed = Date.now() - lastSent;
+      if (elapsed < COOLDOWN_MS) {
+        const remainingSec = Math.ceil((COOLDOWN_MS - elapsed) / 1000);
+        showAlert(`⏳ Veuillez patienter ${remainingSec} seconde${remainingSec > 1 ? 's' : ''} avant de demander un nouvel e-mail pour cette adresse.`, "error");
+        return;
+      }
+
+      // 2. Protection contre les doubles clics et demandes simultanées
+      const linkEl = document.getElementById("link-forgot-pwd");
+      if (linkEl && linkEl.dataset.sending === "true") return;
+      let originalText = "";
+      if (linkEl) {
+        linkEl.dataset.sending = "true";
+        linkEl.style.pointerEvents = "none";
+        linkEl.style.opacity = "0.6";
+        originalText = linkEl.textContent;
+        linkEl.textContent = "⏳ Envoi en cours...";
+      }
+
+      try {
+        if (window.supabaseClient) {
+          const redirectUrl = (window.location.origin && window.location.pathname)
+            ? (window.location.origin + window.location.pathname)
+            : "https://vititrack-pro.vercel.app/login.html";
+
+          const { error } = await window.supabaseClient.auth.resetPasswordForEmail(email, { redirectTo: redirectUrl });
+
+          if (error) {
+            const isRateLimit = (error.status === 429) ||
+                                (error.message && /rate limit/i.test(error.message)) ||
+                                (error.code === "over_email_send_rate_limit");
+
+            if (isRateLimit) {
+              showAlert("⏳ Limite d'envoi atteinte : Supabase restreint temporairement l'envoi d'e-mails pour cette adresse afin d'éviter le spam. Veuillez patienter quelques minutes avant de renouveler votre demande.", "error");
+            } else {
+              showAlert(`Erreur lors de l'envoi de l'e-mail : ${error.message || error}`, "error");
+            }
+            return;
+          }
+
+          // Succès : mémorisation du délai de 60 secondes
+          localStorage.setItem(cooldownKey, Date.now().toString());
+          showAlert(`✉️ Un e-mail officiel de réinitialisation a été envoyé à ${email}. Pensez à vérifier vos courriers indésirables (spams).`, "success");
+        } else {
+          localStorage.setItem(cooldownKey, Date.now().toString());
+          showAlert(`Simulation : un e-mail a été envoyé à ${email}.`, "success");
+        }
+      } catch (err) {
+        const isRateLimit = (err?.status === 429) ||
+                            (err?.message && /rate limit/i.test(err.message)) ||
+                            (err?.code === "over_email_send_rate_limit");
+        if (isRateLimit) {
+          showAlert("⏳ Limite d'envoi atteinte : Supabase restreint temporairement l'envoi d'e-mails. Veuillez patienter quelques minutes.", "error");
+        } else {
+          showAlert(`Erreur lors de l'envoi de l'e-mail : ${err.message || err}`, "error");
+        }
+      } finally {
+        if (linkEl) {
+          delete linkEl.dataset.sending;
+          linkEl.style.pointerEvents = "";
+          linkEl.style.opacity = "";
+          linkEl.textContent = originalText;
+        }
       }
     });
 

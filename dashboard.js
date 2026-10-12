@@ -6733,7 +6733,7 @@ function escapeHTML(str) {
   }[tag] || tag));
 }
 
-function showToast(message, type = "success") {
+function showToast(message, type = "success", duration = 3500) {
   const container = document.getElementById("toast-container");
   if (!container) return;
 
@@ -6750,7 +6750,7 @@ function showToast(message, type = "success") {
     setTimeout(() => {
       if (toast.parentElement) toast.parentElement.removeChild(toast);
     }, 300);
-  }, 3500);
+  }, duration);
 }
 
 // ==================== AUTHENTICATION & SESSION ====================
@@ -7358,7 +7358,7 @@ function renderTeamList() {
             <button type="button" class="btn btn-outline btn-xs" onclick="copyMemberAccess('${escapeHTML(user.id)}')" title="Copier les identifiants pour lui envoyer par SMS ou WhatsApp" style="border-color: rgba(82, 183, 136, 0.4); color: #52b788;">
               📲 Accès terrain
             </button>
-            <button type="button" class="btn btn-outline btn-xs" onclick="triggerMemberResetEmail('${escapeHTML(user.id)}')" title="Envoyer un e-mail officiel de réinitialisation de mot de passe" style="border-color: rgba(82, 183, 136, 0.4); color: #52b788;">
+            <button type="button" class="btn btn-outline btn-xs" onclick="triggerMemberResetEmail('${escapeHTML(user.id)}', this)" title="Envoyer un e-mail officiel de réinitialisation de mot de passe" style="border-color: rgba(82, 183, 136, 0.4); color: #52b788;">
               ✉️ Réinitialiser
             </button>
           ` : ''}
@@ -7595,57 +7595,114 @@ function closeTeamMemberModal() {
   }
 }
 
+// Registre des requêtes en cours pour bloquer les doubles clics et envois simultanés
+const inProgressPasswordResets = new Set();
+
 // Envoi d'un e-mail officiel de réinitialisation Supabase Auth
-async function sendMemberPasswordReset(email) {
+async function sendMemberPasswordReset(email, triggerBtn = null) {
   if (!email || !email.includes("@")) {
     showToast("Adresse e-mail invalide pour la réinitialisation.", "warning");
     return;
   }
+  const cleanEmail = email.trim().toLowerCase();
+
+  // 1. Protection contre les doubles clics et requêtes simultanées
+  if (inProgressPasswordResets.has(cleanEmail)) {
+    showToast("⏳ Une demande d'envoi est déjà en cours pour cette adresse...", "warning");
+    return;
+  }
+
+  // 2. Cooldown obligatoire de 60 secondes entre deux demandes pour la même adresse
+  const COOLDOWN_MS = 60 * 1000;
+  const cooldownKey = `vititrack_reset_cooldown_${cleanEmail}`;
+  const lastSent = parseInt(localStorage.getItem(cooldownKey) || "0", 10);
+  const elapsed = Date.now() - lastSent;
+  if (elapsed < COOLDOWN_MS) {
+    const remainingSec = Math.ceil((COOLDOWN_MS - elapsed) / 1000);
+    showToast(`⏳ Veuillez patienter ${remainingSec} seconde${remainingSec > 1 ? 's' : ''} avant de demander un nouvel e-mail pour cette adresse.`, "warning", 5000);
+    return;
+  }
+
   const sb = window.supabaseClient;
   if (!sb) {
     showToast("Service d'authentification indisponible.", "error");
     return;
   }
 
-  const redirectUrl = window.location.origin
+  // Verrouillage de la requête et désactivation du bouton déclencheur
+  inProgressPasswordResets.add(cleanEmail);
+  let originalBtnHtml = "";
+  if (triggerBtn) {
+    originalBtnHtml = triggerBtn.innerHTML;
+    triggerBtn.disabled = true;
+    triggerBtn.innerHTML = "⏳ Envoi en cours...";
+    triggerBtn.style.opacity = "0.7";
+  }
+
+  const redirectUrl = (window.location.origin && window.location.pathname)
     ? (window.location.origin + window.location.pathname.replace("dashboard.html", "login.html"))
-    : "https://vititrack.pro/login.html";
+    : "https://vititrack-pro.vercel.app/login.html";
 
   try {
-    const { error } = await sb.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
+    const { error } = await sb.auth.resetPasswordForEmail(cleanEmail, {
       redirectTo: redirectUrl
     });
 
     if (error) {
-      showToast(`❌ Erreur réinitialisation : ${error.message}`, "error");
+      const isRateLimit = (error.status === 429) ||
+                          (error.message && /rate limit/i.test(error.message)) ||
+                          (error.code === "over_email_send_rate_limit");
+
+      if (isRateLimit) {
+        showToast("⏳ Limite d'envoi atteinte : Supabase restreint temporairement les e-mails pour éviter le spam. Veuillez patienter quelques minutes avant de renouveler la demande.<br><br>💡 Conseil : Vous pouvez également modifier ou attribuer directement un mot de passe ou code PIN à ce collaborateur ci-dessous sans passer par l'e-mail.", "warning", 8000);
+      } else {
+        showToast(`❌ Erreur réinitialisation : ${error.message}`, "error", 6000);
+      }
       return;
     }
 
-    showToast(`✉️ Un e-mail de réinitialisation sécurisé a été envoyé à ${email}.`, "success");
+    // Succès : mémorisation du timestamp pour le cooldown de 60 secondes
+    localStorage.setItem(cooldownKey, Date.now().toString());
+    showToast(`✉️ Un e-mail de réinitialisation sécurisé a été envoyé à ${cleanEmail}. Pensez à vérifier le dossier spams.`, "success", 6000);
   } catch (err) {
-    showToast(`❌ Erreur : ${err.message || err}`, "error");
+    const isRateLimit = (err?.status === 429) ||
+                        (err?.message && /rate limit/i.test(err.message)) ||
+                        (err?.code === "over_email_send_rate_limit");
+    if (isRateLimit) {
+      showToast("⏳ Limite d'envoi atteinte : Supabase restreint temporairement les e-mails. Veuillez patienter quelques minutes.<br><br>💡 Conseil : Vous pouvez également lui définir un mot de passe ou code PIN ci-dessous.", "warning", 8000);
+    } else {
+      showToast(`❌ Erreur : ${err.message || err}`, "error", 6000);
+    }
+  } finally {
+    inProgressPasswordResets.delete(cleanEmail);
+    if (triggerBtn) {
+      triggerBtn.disabled = false;
+      triggerBtn.innerHTML = originalBtnHtml;
+      triggerBtn.style.opacity = "";
+    }
   }
 }
 
-function triggerMemberResetEmail(memberId) {
+function triggerMemberResetEmail(memberId, btnEl = null) {
   const member = (teamUsers || []).find(u => u.id === memberId);
   if (!member || !member.email) {
     showToast("Ce collaborateur ne possède pas d'adresse e-mail renseignée.", "warning");
     return;
   }
   if (confirm(`Envoyer un e-mail de réinitialisation de mot de passe à « ${member.name} » (${member.email}) ?`)) {
-    sendMemberPasswordReset(member.email);
+    sendMemberPasswordReset(member.email, btnEl);
   }
 }
 
-function triggerMemberResetEmailFromModal() {
+function triggerMemberResetEmailFromModal(btnEl = null) {
   const emailInput = document.getElementById("input-member-email");
   const email = emailInput ? emailInput.value.trim() : "";
   if (!email) {
     showToast("Veuillez d'abord renseigner l'adresse e-mail du collaborateur.", "warning");
     return;
   }
-  sendMemberPasswordReset(email);
+  const btn = btnEl || document.getElementById("btn-member-reset-email");
+  sendMemberPasswordReset(email, btn);
 }
 
 // Modification sécurisée d'un mot de passe collaborateur par l'administrateur (Edge Function serveur)

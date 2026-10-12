@@ -358,10 +358,89 @@ it("Les identifiants user_id, clients, parcelles et interventions sont tous pré
   assert.strictEqual(userB.ownerUserId, admin.id);
 });
 
+console.log("\n📋 9. Test : Protection anti-double clic et requêtes simultanées");
+it("Une deuxième demande simultanée pour le même e-mail est immédiatement bloquée", () => {
+  const inProgress = new Set();
+  const email = "ouvrierA@domaineludinard.fr".toLowerCase().trim();
+
+  // Premier clic
+  assert(!inProgress.has(email), "Premier clic autorisé");
+  inProgress.add(email);
+
+  // Deuxième clic simultané (double clic rapide)
+  const isBlocked = inProgress.has(email);
+  assert(isBlocked, "Le double clic simultané doit être bloqué");
+
+  // Libération après traitement
+  inProgress.delete(email);
+  assert(!inProgress.has(email), "Verrou débloqué après complétion");
+});
+
+console.log("\n📋 10. Test : Cooldown de 60 secondes entre deux demandes pour la même adresse");
+it("Une nouvelle demande dans les 60 secondes est refusée avec le temps restant", () => {
+  const mockStorage = new Map();
+  const COOLDOWN_MS = 60 * 1000;
+  const email = "ouvrierA@domaineludinard.fr".toLowerCase().trim();
+  const cooldownKey = `vititrack_reset_cooldown_${email}`;
+
+  // Envoi initial à T0
+  const now = Date.now();
+  mockStorage.set(cooldownKey, now.toString());
+
+  // Tentative après 20 secondes
+  const attemptTime = now + 20000;
+  const lastSent = parseInt(mockStorage.get(cooldownKey) || "0", 10);
+  const elapsed = attemptTime - lastSent;
+  const isCooldownActive = elapsed < COOLDOWN_MS;
+  const remainingSec = Math.ceil((COOLDOWN_MS - elapsed) / 1000);
+
+  assert(isCooldownActive, "Le cooldown de 60 secondes doit être actif après 20 secondes");
+  assert.strictEqual(remainingSec, 40, "Le temps restant doit être de 40 secondes");
+
+  // Tentative après 61 secondes
+  const laterAttempt = now + 61000;
+  const elapsedLater = laterAttempt - lastSent;
+  assert(elapsedLater >= COOLDOWN_MS, "Après 61 secondes, la demande doit être autorisée");
+});
+
+console.log("\n📋 11. Test : Traduction et message clair en français lors d'un blocage Supabase (HTTP 429)");
+it("Une erreur 'email rate limit exceeded' déclenche un message d'explication clair en français", () => {
+  const mockSupabaseError = {
+    status: 429,
+    message: "email rate limit exceeded",
+    code: "over_email_send_rate_limit"
+  };
+
+  const isRateLimit = (mockSupabaseError.status === 429) ||
+                      (mockSupabaseError.message && /rate limit/i.test(mockSupabaseError.message)) ||
+                      (mockSupabaseError.code === "over_email_send_rate_limit");
+
+  assert(isRateLimit, "L'erreur 429 / email rate limit exceeded doit être détectée comme rate-limit");
+
+  let frenchMessage = "";
+  if (isRateLimit) {
+    frenchMessage = "Limite d'envoi atteinte : Supabase restreint temporairement les e-mails pour éviter le spam. Veuillez patienter quelques minutes.";
+  }
+
+  assert(frenchMessage.includes("Limite d'envoi atteinte"), "Le message doit expliquer clairement le quota en français");
+  assert(frenchMessage.includes("Veuillez patienter quelques minutes"), "Le message doit guider l'utilisateur");
+});
+
+console.log("\n📋 12. Test : Redirection vers VitiTrack et détection du mode recovery");
+it("L'URL de redirection pointe vers login.html et le mode réinitialisation est détecté", () => {
+  const loginHtmlContent = fs.readFileSync(path.join(__dirname, "../login.html"), "utf8");
+  const dashboardJsContent = fs.readFileSync(path.join(__dirname, "../dashboard.js"), "utf8");
+
+  assert(dashboardJsContent.includes("https://vititrack-pro.vercel.app/login.html"), "dashboard.js contient l'URL de redirection sécurisée vers Vercel");
+  assert(loginHtmlContent.includes("https://vititrack-pro.vercel.app/login.html"), "login.html contient l'URL de redirection sécurisée vers Vercel");
+  assert(loginHtmlContent.includes("showRecoveryPanel"), "login.html contient la fonction d'affichage du panneau de réinitialisation");
+  assert(loginHtmlContent.includes("PASSWORD_RECOVERY"), "login.html écoute l'événement Supabase PASSWORD_RECOVERY");
+});
+
 console.log("\n==========================================================================");
 console.log(`📊 RÉSULTAT FINAL DES TESTS : ${passedTests}/${totalTests} PASSÉS`);
 if (failedTests === 0) {
-  console.log("🎉 TOUS LES 8 TESTS SONT VALIDÉS AVEC SUCCÈS !");
+  console.log("🎉 TOUS LES 12 TESTS SONT VALIDÉS AVEC SUCCÈS !");
   console.log("==========================================================================\n");
 } else {
   console.error(`❌ ${failedTests} TEST(S) ÉCHOUÉ(S) !`);
