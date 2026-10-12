@@ -7328,10 +7328,10 @@ function renderTeamList() {
               <a href="tel:${escapeHTML(user.phone)}" class="team-contact-link">${escapeHTML(user.phone)}</a>
             </div>
           ` : ''}
-          ${user.password ? `
-            <div class="team-contact-line" style="background: rgba(82, 183, 136, 0.12); border: 1px solid rgba(82, 183, 136, 0.25); border-radius: var(--radius-sm); padding: 3px 7px; font-size: 0.74rem; display: inline-flex; align-items: center; gap: 0.35rem; color: #a7f3d0; margin-top: 0.2rem;">
-              <span>🔑 Mot de passe :</span>
-              <strong style="letter-spacing: 0.5px;">${escapeHTML(user.password)}</strong>
+          ${user.email ? `
+            <div class="team-contact-line" style="background: rgba(82, 183, 136, 0.10); border: 1px solid rgba(82, 183, 136, 0.22); border-radius: var(--radius-sm); padding: 3px 7px; font-size: 0.74rem; display: inline-flex; align-items: center; gap: 0.35rem; color: #a7f3d0; margin-top: 0.2rem;">
+              <span>🔐 Accès :</span>
+              <span>Supabase Auth individuel</span>
             </div>
           ` : ''}
           ${(!user.email && !user.phone) ? `
@@ -7357,6 +7357,9 @@ function renderTeamList() {
           ${user.email ? `
             <button type="button" class="btn btn-outline btn-xs" onclick="copyMemberAccess('${escapeHTML(user.id)}')" title="Copier les identifiants pour lui envoyer par SMS ou WhatsApp" style="border-color: rgba(82, 183, 136, 0.4); color: #52b788;">
               📲 Accès terrain
+            </button>
+            <button type="button" class="btn btn-outline btn-xs" onclick="triggerMemberResetEmail('${escapeHTML(user.id)}')" title="Envoyer un e-mail officiel de réinitialisation de mot de passe" style="border-color: rgba(82, 183, 136, 0.4); color: #52b788;">
+              ✉️ Réinitialiser
             </button>
           ` : ''}
           <button type="button" class="btn btn-outline btn-xs" onclick="openEditTeamMemberModal('${escapeHTML(user.id)}')" title="Modifier cet utilisateur">
@@ -7402,7 +7405,7 @@ function copyMemberAccess(userId) {
 Exploitation : ${domainName}
 Collaborateur : ${user.name} (${user.role})
 Identifiant (E-mail) : ${user.email || 'Non renseigné'}
-Mot de passe / PIN : ${user.password || "Défini à l'activation"}
+Mot de passe : Géré individuellement par Supabase Auth (ou lien de réinitialisation reçu par e-mail)
 Connexion directe : ${loginUrl}
 
 Connectez-vous depuis votre smartphone pour saisir vos chantiers et interventions directement dans les parcelles.`;
@@ -7456,7 +7459,7 @@ function syncGlobalTeamDirectory() {
       directory = [];
     }
 
-    // Filtrer les entrées de ce domaine pour les réécrire fraîches
+    // Filtrer les entrées de ce domaine pour les réécrire fraîches (sans mot de passe)
     directory = directory.filter(entry => entry.ownerUserId !== ownerUserId);
 
     (teamUsers || []).forEach(member => {
@@ -7467,7 +7470,6 @@ function syncGlobalTeamDirectory() {
           role: member.role,
           roleCategory: member.roleCategory || getRoleCategory(member.role),
           email: member.email.trim().toLowerCase(),
-          password: member.password || "",
           canViewDashboard: member.canViewDashboard !== false,
           ownerUserId: ownerUserId,
           ownerDomain: ownerDomain,
@@ -7485,43 +7487,11 @@ function syncGlobalTeamDirectory() {
 // Synchronisation d'un collaborateur vers Supabase Auth (Création de compte Cloud immédiate)
 async function syncTeamUserToSupabaseAuth(member) {
   if (!member || !member.email) return;
-  const authUser = getAuthUser();
-  const ownerUserId = (authUser && authUser.isTeamMember && authUser.ownerUserId)
-    ? authUser.ownerUserId
-    : ((authUser && authUser.id && authUser.id.includes("-")) ? authUser.id : null);
-  if (!ownerUserId) return;
-
-  const ownerDomain = (authUser && authUser.isTeamMember && authUser.ownerDomain)
-    ? authUser.ownerDomain
-    : ((authUser && (authUser.domainName || authUser.name)) || "");
-
-  const ownerEmail = (authUser && authUser.isTeamMember && authUser.ownerEmail)
-    ? authUser.ownerEmail
-    : ((authUser && authUser.email) || "");
-
   const memberPassword = (member.password && member.password.trim()) || "";
   if (!memberPassword) return;
 
   try {
-    if (typeof window.upsertConfirmedUser === "function") {
-      await window.upsertConfirmedUser(member.email, memberPassword, {
-        full_name: member.name,
-        role: member.role || "Tractoriste / Chauffeur d'engins",
-        role_category: member.roleCategory || getRoleCategory(member.role),
-        is_team_member: true,
-        can_view_dashboard: member.canViewDashboard !== false,
-        owner_user_id: ownerUserId,
-        owner_domain: ownerDomain,
-        owner_email: ownerEmail,
-        status: member.status || "Actif",
-        phone: member.phone || "",
-        certifications: member.certifications || "",
-        notes: member.notes || "",
-        member_id: member.id,
-        plain_password: memberPassword
-      });
-      console.log(`🍇 [VitiTrack Pro] Compte Supabase synchronisé pour : ${member.name} (${member.email})`);
-    }
+    await adminUpdateMemberPassword(member.id, member.email, memberPassword, member);
   } catch (err) {
     console.warn("⚠️ [VitiTrack Pro] Erreur syncTeamUserToSupabaseAuth :", err);
   }
@@ -7536,7 +7506,8 @@ function openAddTeamMemberModal() {
 
   const pwdInput = document.getElementById("input-member-password");
   if (pwdInput) {
-    pwdInput.value = Math.floor(100000 + Math.random() * 900000).toString();
+    pwdInput.value = "";
+    pwdInput.placeholder = "Code PIN ou mot de passe initial (optionnel, 6 car. min)";
   }
 
   const accessSelect = document.getElementById("input-member-can-view-dashboard");
@@ -7591,7 +7562,10 @@ function openEditTeamMemberModal(userId) {
   if (statusSelect) statusSelect.value = user.status || "Actif";
   if (accessSelect) accessSelect.value = user.canViewDashboard !== false ? "true" : "false";
   if (emailInput) emailInput.value = user.email || "";
-  if (pwdInput) pwdInput.value = user.password || "";
+  if (pwdInput) {
+    pwdInput.value = "";
+    pwdInput.placeholder = "Laisser vide pour conserver le mot de passe actuel";
+  }
   if (phoneInput) phoneInput.value = user.phone || "";
   if (certInput) certInput.value = user.certifications || "";
   if (notesInput) notesInput.value = user.notes || "";
@@ -7618,6 +7592,227 @@ function closeTeamMemberModal() {
     modal.classList.remove("open");
     modal.setAttribute("aria-hidden", "true");
     unlockBodyScroll();
+  }
+}
+
+// Envoi d'un e-mail officiel de réinitialisation Supabase Auth
+async function sendMemberPasswordReset(email) {
+  if (!email || !email.includes("@")) {
+    showToast("Adresse e-mail invalide pour la réinitialisation.", "warning");
+    return;
+  }
+  const sb = window.supabaseClient;
+  if (!sb) {
+    showToast("Service d'authentification indisponible.", "error");
+    return;
+  }
+
+  const redirectUrl = window.location.origin
+    ? (window.location.origin + window.location.pathname.replace("dashboard.html", "login.html"))
+    : "https://vititrack.pro/login.html";
+
+  try {
+    const { error } = await sb.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
+      redirectTo: redirectUrl
+    });
+
+    if (error) {
+      showToast(`❌ Erreur réinitialisation : ${error.message}`, "error");
+      return;
+    }
+
+    showToast(`✉️ Un e-mail de réinitialisation sécurisé a été envoyé à ${email}.`, "success");
+  } catch (err) {
+    showToast(`❌ Erreur : ${err.message || err}`, "error");
+  }
+}
+
+function triggerMemberResetEmail(memberId) {
+  const member = (teamUsers || []).find(u => u.id === memberId);
+  if (!member || !member.email) {
+    showToast("Ce collaborateur ne possède pas d'adresse e-mail renseignée.", "warning");
+    return;
+  }
+  if (confirm(`Envoyer un e-mail de réinitialisation de mot de passe à « ${member.name} » (${member.email}) ?`)) {
+    sendMemberPasswordReset(member.email);
+  }
+}
+
+function triggerMemberResetEmailFromModal() {
+  const emailInput = document.getElementById("input-member-email");
+  const email = emailInput ? emailInput.value.trim() : "";
+  if (!email) {
+    showToast("Veuillez d'abord renseigner l'adresse e-mail du collaborateur.", "warning");
+    return;
+  }
+  sendMemberPasswordReset(email);
+}
+
+// Modification sécurisée d'un mot de passe collaborateur par l'administrateur (Edge Function serveur)
+async function adminUpdateMemberPassword(memberId, memberEmail, newPassword, extra = {}) {
+  if (!newPassword || newPassword.trim().length < 6) {
+    showToast("Le mot de passe doit comporter au moins 6 caractères.", "warning");
+    return false;
+  }
+
+  const sb = window.supabaseClient;
+  if (!sb) {
+    showToast("Service Supabase non connecté.", "warning");
+    return false;
+  }
+
+  try {
+    const { data, error } = await sb.functions.invoke("admin-update-user-password", {
+      body: {
+        targetUserId: memberId && memberId.includes("-") ? memberId : undefined,
+        targetEmail: memberEmail,
+        newPassword: newPassword.trim(),
+        createIfNotFound: extra.isNewUser === true,
+        fullName: extra.name,
+        role: extra.role,
+        roleCategory: extra.roleCategory,
+        canViewDashboard: extra.canViewDashboard,
+        phone: extra.phone,
+        certifications: extra.certifications,
+        notes: extra.notes
+      }
+    });
+
+    if (error) {
+      console.warn("Notice admin-update-user-password :", error);
+      // Fallback informatif si l'Edge Function n'est pas encore déployée
+      showToast(`ℹ️ Mot de passe enregistré. Note : Utilisez le bouton "✉️ Envoyer un e-mail de réinitialisation" pour que le collaborateur définisse son propre mot de passe directement.`, "info");
+      return false;
+    }
+
+    if (data && data.success) {
+      showToast(`🔐 Mot de passe de ${memberEmail} mis à jour dans Supabase Auth !`, "success");
+      return true;
+    }
+  } catch (err) {
+    console.warn("Erreur adminUpdateMemberPassword :", err);
+    return false;
+  }
+}
+
+// ==================== MODAL MON COMPTE & SÉCURITÉ ====================
+function openAccountModal() {
+  const user = getAuthUser();
+  const modal = document.getElementById("modal-account");
+  if (!modal) return;
+
+  const nameEl = document.getElementById("account-modal-fullname");
+  const emailEl = document.getElementById("account-modal-email");
+  const domainEl = document.getElementById("account-modal-domain");
+  const roleEl = document.getElementById("account-modal-role");
+  const newPwdInput = document.getElementById("account-new-password");
+  const confPwdInput = document.getElementById("account-confirm-password");
+  const alertEl = document.getElementById("account-pwd-alert");
+
+  if (nameEl) nameEl.textContent = user ? (user.fullName || user.name || "Exploitant") : "Exploitant";
+  if (emailEl) emailEl.textContent = user ? (user.email || "Non renseigné") : "Non renseigné";
+  if (domainEl) domainEl.textContent = user ? (user.domainName || user.ownerDomain || "Domaine Viticole") : "Domaine Viticole";
+  if (roleEl) roleEl.textContent = user ? (user.role || (user.isTeamMember ? "Collaborateur" : "Gérant Exploitant")) : "Gérant Exploitant";
+
+  if (newPwdInput) newPwdInput.value = "";
+  if (confPwdInput) confPwdInput.value = "";
+  if (alertEl) {
+    alertEl.style.display = "none";
+    alertEl.textContent = "";
+  }
+
+  modal.classList.add("open");
+  modal.setAttribute("aria-hidden", "false");
+  lockBodyScroll();
+}
+
+function closeAccountModal() {
+  const modal = document.getElementById("modal-account");
+  if (!modal) return;
+  modal.classList.remove("open");
+  modal.setAttribute("aria-hidden", "true");
+  unlockBodyScroll();
+}
+
+async function handleAccountPasswordChange(e) {
+  if (e) e.preventDefault();
+  const alertEl = document.getElementById("account-pwd-alert");
+  const newPwdInput = document.getElementById("account-new-password");
+  const confPwdInput = document.getElementById("account-confirm-password");
+  const btn = document.getElementById("btn-submit-account-pwd");
+  const btnText = document.getElementById("btn-account-pwd-text");
+
+  const showModalAlert = (msg, isError) => {
+    if (alertEl) {
+      alertEl.style.display = "block";
+      alertEl.style.background = isError ? "rgba(239, 68, 68, 0.15)" : "rgba(82, 183, 136, 0.15)";
+      alertEl.style.border = isError ? "1px solid rgba(239, 68, 68, 0.3)" : "1px solid rgba(82, 183, 136, 0.3)";
+      alertEl.style.color = isError ? "#fca5a5" : "#a7f3d0";
+      alertEl.textContent = msg;
+    }
+  };
+
+  const newPwd = newPwdInput ? newPwdInput.value : "";
+  const confPwd = confPwdInput ? confPwdInput.value : "";
+
+  if (!newPwd || newPwd.length < 6) {
+    showModalAlert("Le mot de passe doit comporter au moins 6 caractères.", true);
+    return;
+  }
+
+  if (newPwd !== confPwd) {
+    showModalAlert("Les deux mots de passe ne correspondent pas.", true);
+    return;
+  }
+
+  const sb = window.supabaseClient;
+  if (!sb) {
+    showModalAlert("Service d'authentification Supabase indisponible.", true);
+    return;
+  }
+
+  if (btn) btn.disabled = true;
+  if (btnText) btnText.textContent = "⏳ Mise à jour en cours...";
+
+  try {
+    const { error } = await sb.auth.updateUser({
+      password: newPwd
+    });
+
+    if (error) {
+      showModalAlert(`❌ Erreur : ${error.message}`, true);
+      if (btn) btn.disabled = false;
+      if (btnText) btnText.textContent = "🔒 Enregistrer mon nouveau mot de passe";
+      return;
+    }
+
+    showModalAlert("✅ Votre mot de passe personnel a été mis à jour avec succès !", false);
+    showToast("🎉 Votre mot de passe a été mis à jour avec succès dans Supabase Auth.", "success");
+
+    if (newPwdInput) newPwdInput.value = "";
+    if (confPwdInput) confPwdInput.value = "";
+
+    setTimeout(() => {
+      closeAccountModal();
+      if (btn) btn.disabled = false;
+      if (btnText) btnText.textContent = "🔒 Enregistrer mon nouveau mot de passe";
+    }, 1200);
+  } catch (err) {
+    showModalAlert(`❌ Erreur : ${err.message || err}`, true);
+    if (btn) btn.disabled = false;
+    if (btnText) btnText.textContent = "🔒 Enregistrer mon nouveau mot de passe";
+  }
+}
+
+function togglePasswordVisibility(inputId, btnEl) {
+  const input = document.getElementById(inputId);
+  if (!input) return;
+  if (input.type === "password") {
+    input.type = "text";
+    if (btnEl) btnEl.textContent = "🙈";
+  } else {
+    input.type = "password";
+    if (btnEl) btnEl.textContent = "👁️";
   }
 }
 
@@ -7656,19 +7851,35 @@ function handleTeamMemberFormSubmit(e) {
     // Modification d'un utilisateur existant
     const idx = (teamUsers || []).findIndex(u => u.id === id);
     if (idx !== -1) {
+      const prev = teamUsers[idx];
       teamUsers[idx] = {
-        ...teamUsers[idx],
+        ...prev,
         name,
         role,
         roleCategory,
         status,
         canViewDashboard,
         email,
-        password,
         phone,
         certifications,
         notes
       };
+      // Supprime tout mot de passe en clair du stockage local
+      delete teamUsers[idx].password;
+
+      // Si un mot de passe ou code PIN a été renseigné lors de la modification :
+      if (password) {
+        adminUpdateMemberPassword(id, email, password, {
+          name,
+          role,
+          roleCategory,
+          canViewDashboard,
+          phone,
+          certifications,
+          notes
+        });
+      }
+
       showToast(`Utilisateur « ${name} » mis à jour !`, "success");
     }
   } else {
@@ -7681,13 +7892,27 @@ function handleTeamMemberFormSubmit(e) {
       status,
       canViewDashboard,
       email,
-      password,
       phone,
       certifications,
       notes,
       color: roleColors[roleCategory] || "#2d6a4f"
     };
     teamUsers.push(newMember);
+
+    // Si mot de passe / PIN renseigné : provisionnement sur Supabase Auth
+    if (password && email) {
+      adminUpdateMemberPassword(newMember.id, email, password, {
+        name,
+        role,
+        roleCategory,
+        canViewDashboard,
+        phone,
+        certifications,
+        notes,
+        isNewUser: true
+      });
+    }
+
     showToast(`Utilisateur « ${name} » ajouté à l'équipe !`, "success");
   }
 
@@ -15379,3 +15604,14 @@ window.navigateCalendar = navigateCalendar;
 window.countCalendarEventsForDate = countCalendarEventsForDate;
 window.getAllCalendarEvents = getAllCalendarEvents;
 window.getFilteredCalendarEvents = getFilteredCalendarEvents;
+
+// Window Exports for Account & Team Password Security
+window.openAccountModal = openAccountModal;
+window.closeAccountModal = closeAccountModal;
+window.handleAccountPasswordChange = handleAccountPasswordChange;
+window.togglePasswordVisibility = togglePasswordVisibility;
+window.sendMemberPasswordReset = sendMemberPasswordReset;
+window.triggerMemberResetEmail = triggerMemberResetEmail;
+window.triggerMemberResetEmailFromModal = triggerMemberResetEmailFromModal;
+window.adminUpdateMemberPassword = adminUpdateMemberPassword;
+

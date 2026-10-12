@@ -293,10 +293,10 @@
 
       <div class="sidebar-footer">
         <div class="sidebar-user-block">
-          <div class="sidebar-user-avatar">🍇</div>
-          <div class="sidebar-user-info">
+          <div class="sidebar-user-avatar" onclick="openAccountModal()" style="cursor: pointer;" title="Gérer mon compte & mot de passe">🍇</div>
+          <div class="sidebar-user-info" onclick="openAccountModal()" style="cursor: pointer;" title="Gérer mon compte & mot de passe">
             <span class="sidebar-user-name" id="sidebar-user-name">Domaine Viticole</span>
-            <span class="sidebar-user-status"><span class="status-indicator online"></span> Connecté (Gérant)</span>
+            <span class="sidebar-user-status"><span class="status-indicator online"></span> Connecté (Gérant) • 👤 Mon compte</span>
           </div>
           <button type="button" class="btn-sidebar-logout" id="sidebar-logout-btn" title="Se déconnecter">🚪</button>
         </div>
@@ -364,18 +364,18 @@
             <span class="btn-icon">👥</span>
             <span class="btn-text-desktop" id="topbar-team-text">Équipe (0)</span>
           </button>
-          <div class="user-topbar-profile" id="user-topbar-profile">
+          <div class="user-topbar-profile" id="user-topbar-profile" onclick="openAccountModal()" style="cursor: pointer;" title="Gérer mon compte & mot de passe">
             <span class="user-topbar-avatar" title="Profil connecté">👤</span>
             <span class="user-topbar-name" id="user-topbar-name">Domaine Viticole</span>
-            <button type="button" class="btn-topbar-switch" onclick="openActivitySettingsModal()" title="Modifier le type d'activité (Prestation / Exploitation / Les deux)">
+            <button type="button" class="btn-topbar-switch" onclick="event.stopPropagation(); openAccountModal();" id="btn-topbar-account" title="Mon compte & mot de passe">
+              <span class="btn-text-desktop">👤 Mon compte</span>
+              <span class="btn-text-mobile">👤</span>
+            </button>
+            <button type="button" class="btn-topbar-switch" onclick="event.stopPropagation(); openActivitySettingsModal();" title="Modifier le type d'activité (Prestation / Exploitation / Les deux)">
               <span class="btn-text-desktop">⚙️ Activité</span>
               <span class="btn-text-mobile">⚙️</span>
             </button>
-            <a href="login.html" class="btn-topbar-switch" id="btn-topbar-switch" title="Changer de compte ou s'inscrire">
-              <span class="btn-text-desktop">🔄 Compte</span>
-              <span class="btn-text-mobile">🔄</span>
-            </a>
-            <button type="button" class="btn-topbar-logout" id="btn-topbar-logout" title="Déconnexion de l'espace">
+            <button type="button" class="btn-topbar-logout" id="btn-topbar-logout" onclick="event.stopPropagation(); handleLogout();" title="Déconnexion de l'espace">
               <span class="btn-text-desktop">🚪 Déconnexion</span>
               <span class="btn-text-mobile">🚪</span>
             </button>
@@ -4442,30 +4442,43 @@
               </div>
             </div>
 
-            <div class="form-row">
-              <div class="form-group flex-1">
-                <label for="input-member-email" class="form-label">
-                  <span>E-mail de connexion</span>
-                  <span class="required-star">*</span>
-                </label>
-                <div class="input-with-icon">
-                  <span class="input-icon">✉️</span>
-                  <input type="email" id="input-member-email" required placeholder="collaborateur@gmail.com">
-                </div>
-                <span class="form-hint">Sert d'identifiant de connexion pour le salarié.</span>
+            <div class="form-group">
+              <label for="input-member-email" class="form-label">
+                <span>E-mail de connexion du collaborateur</span>
+                <span class="required-star">*</span>
+              </label>
+              <div class="input-with-icon">
+                <span class="input-icon">✉️</span>
+                <input type="email" id="input-member-email" required placeholder="collaborateur@gmail.com">
               </div>
+              <span class="form-hint">Identifiant individuel pour la connexion Supabase Auth du salarié.</span>
+            </div>
 
-              <div class="form-group flex-1">
-                <label for="input-member-password" class="form-label">
-                  <span>Mot de passe ou Code PIN</span>
-                  <span class="required-star">*</span>
+            <!-- Bloc Gestion Sécurité & Mot de Passe Collaborateur -->
+            <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(82, 183, 136, 0.25); border-radius: 10px; padding: 1rem; margin-bottom: 0.75rem;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">
+                <div style="display: flex; align-items: center; gap: 0.4rem; font-weight: 600; color: #fff; font-size: 0.88rem;">
+                  <span>🔐</span>
+                  <span>Sécurité & Accès individuel</span>
+                </div>
+                <button type="button" class="btn btn-outline btn-xs" id="btn-member-reset-email" onclick="triggerMemberResetEmailFromModal()" title="Envoyer un e-mail officiel de réinitialisation" style="border-color: rgba(82, 183, 136, 0.4); color: #52b788;">
+                  ✉️ Envoyer un e-mail de réinitialisation
+                </button>
+              </div>
+              <p style="margin: 0 0 0.75rem 0; font-size: 0.76rem; color: #95a89e; line-height: 1.35;">
+                Chaque collaborateur gère son propre mot de passe via Supabase Auth. Vous pouvez lui envoyer un e-mail sécurisé de réinitialisation ou définir un mot de passe/PIN provisoire ci-dessous.
+              </p>
+
+              <div class="form-group" style="margin-bottom: 0;">
+                <label for="input-member-password" class="form-label" style="font-size: 0.82rem;">
+                  <span>Définir un mot de passe ou Code PIN provisoire (6 car. min)</span>
                 </label>
                 <div class="input-with-icon" style="position: relative;">
                   <span class="input-icon">🔒</span>
-                  <input type="text" id="input-member-password" required placeholder="Ex: PIN 6 chiffres ou mot de passe" style="padding-right: 2.4rem;">
+                  <input type="text" id="input-member-password" placeholder="Laisser vide pour conserver le mot de passe actuel" style="padding-right: 2.4rem;">
                   <button type="button" onclick="generateMemberPin()" title="Générer un code PIN rapide" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; font-size: 0.95rem; cursor: pointer; color: #52b788;">⚡</button>
                 </div>
-                <span class="form-hint">Code pour se connecter dans les parcelles.</span>
+                <span class="form-hint" style="font-size: 0.72rem;">Mis à jour de façon sécurisée côté serveur sans exposer de clé administrateur.</span>
               </div>
             </div>
 
@@ -5317,6 +5330,96 @@
           </div>
         </label>
       </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL MON COMPTE & SÉCURITÉ ==================== -->
+  <div class="modal-overlay" id="modal-account" aria-hidden="true" role="dialog" aria-modal="true">
+    <div class="modal-dialog" style="max-width: 580px;">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div class="modal-header-icon epure-header-icon" style="background: rgba(82, 183, 136, 0.2); color: #52b788;">
+            👤
+          </div>
+          <div>
+            <h3 class="modal-title">Mon Compte & Sécurité</h3>
+            <p class="modal-subtitle">Gérez vos informations personnelles et votre mot de passe Supabase Auth</p>
+          </div>
+          <button type="button" class="modal-close-btn" onclick="closeAccountModal()" aria-label="Fermer">✕</button>
+        </div>
+
+        <div class="modal-body" style="padding: 1.5rem; display: flex; flex-direction: column; gap: 1.25rem;">
+          <!-- Récapitulatif profil -->
+          <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 1.1rem; display: flex; flex-direction: column; gap: 0.6rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255, 255, 255, 0.06); padding-bottom: 0.5rem;">
+              <span style="font-size: 0.85rem; color: var(--color-text-secondary, #95a89e);">Utilisateur :</span>
+              <strong style="color: #fff; font-size: 0.95rem;" id="account-modal-fullname">Exploitant</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255, 255, 255, 0.06); padding-bottom: 0.5rem;">
+              <span style="font-size: 0.85rem; color: var(--color-text-secondary, #95a89e);">Adresse e-mail :</span>
+              <span style="color: #52b788; font-weight: 600; font-size: 0.9rem;" id="account-modal-email">email@domaine.fr</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255, 255, 255, 0.06); padding-bottom: 0.5rem;">
+              <span style="font-size: 0.85rem; color: var(--color-text-secondary, #95a89e);">Domaine / Exploitation :</span>
+              <span style="color: #fff; font-size: 0.9rem;" id="account-modal-domain">Domaine Viticole</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 0.85rem; color: var(--color-text-secondary, #95a89e);">Rôle & Accès :</span>
+              <span class="badge" id="account-modal-role" style="background: rgba(82, 183, 136, 0.15); color: #52b788; padding: 3px 8px; border-radius: 6px; font-size: 0.8rem; font-weight: 600;">Gérant Exploitant</span>
+            </div>
+          </div>
+
+          <!-- Section Modification Mot de Passe -->
+          <div style="background: rgba(82, 183, 136, 0.06); border: 1px solid rgba(82, 183, 136, 0.2); border-radius: 12px; padding: 1.25rem;">
+            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem;">
+              <span style="font-size: 1.1rem;">🔒</span>
+              <h4 style="margin: 0; color: #fff; font-size: 1rem; font-weight: 700;">Modifier mon mot de passe</h4>
+            </div>
+            <p style="margin: 0 0 1rem 0; font-size: 0.8rem; color: #95a89e; line-height: 1.4;">
+              Cette modification s'applique <strong>uniquement à votre propre compte</strong> via Supabase Auth. Vos collègues et les autres utilisateurs ne sont pas affectés.
+            </p>
+
+            <form id="form-account-password" onsubmit="handleAccountPasswordChange(event)" novalidate>
+              <div class="form-group" style="margin-bottom: 0.85rem;">
+                <label for="account-new-password" class="form-label">
+                  <span>Nouveau mot de passe (6 car. min)</span> <span class="required">*</span>
+                </label>
+                <div class="input-with-icon" style="position: relative;">
+                  <span class="input-icon">🔑</span>
+                  <input type="password" id="account-new-password" class="epure-input" placeholder="••••••••••••" minlength="6" required autocomplete="new-password" style="padding-right: 2.5rem; width: 100%;">
+                  <button type="button" onclick="togglePasswordVisibility('account-new-password', this)" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #95a89e;" title="Afficher/masquer">👁️</button>
+                </div>
+              </div>
+
+              <div class="form-group" style="margin-bottom: 1.1rem;">
+                <label for="account-confirm-password" class="form-label">
+                  <span>Confirmer le nouveau mot de passe</span> <span class="required">*</span>
+                </label>
+                <div class="input-with-icon" style="position: relative;">
+                  <span class="input-icon">🔑</span>
+                  <input type="password" id="account-confirm-password" class="epure-input" placeholder="••••••••••••" minlength="6" required autocomplete="new-password" style="padding-right: 2.5rem; width: 100%;">
+                  <button type="button" onclick="togglePasswordVisibility('account-confirm-password', this)" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #95a89e;" title="Afficher/masquer">👁️</button>
+                </div>
+              </div>
+
+              <div id="account-pwd-alert" style="display: none; padding: 0.65rem 0.85rem; border-radius: 8px; font-size: 0.82rem; margin-bottom: 0.85rem;"></div>
+
+              <button type="submit" class="btn btn-primary btn-glow" id="btn-submit-account-pwd" style="width: 100%; justify-content: center;">
+                <span id="btn-account-pwd-text">🔒 Enregistrer mon nouveau mot de passe</span>
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center;">
+          <button type="button" class="btn btn-outline btn-sm text-danger" onclick="handleLogout()" title="Se déconnecter de la session">
+            🚪 Déconnexion
+          </button>
+          <button type="button" class="btn btn-ghost" onclick="closeAccountModal()">Fermer</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- ==================== MODAL EXPLOITATION 1 : AJOUT / ÉDITION DE PARCELLE ==================== -->
   <div class="modal-overlay" id="modal-exp-parcelle" aria-hidden="true" role="dialog" aria-modal="true">

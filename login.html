@@ -499,6 +499,38 @@
         </form>
       </div>
 
+      <!-- PANNEAU 3 : RÉINITIALISER LE MOT DE PASSE -->
+      <div class="auth-panel" id="panel-recovery" role="tabpanel" style="display: none;">
+        <div style="text-align: center; margin-bottom: 1.25rem;">
+          <div style="font-size: 2.2rem; margin-bottom: 0.5rem;">🔐</div>
+          <h2 style="font-size: 1.25rem; font-weight: 700; color: #fff; margin: 0 0 0.35rem 0;">Nouveau mot de passe</h2>
+          <p style="font-size: 0.85rem; color: #95a89e; margin: 0;">Définissez votre nouveau mot de passe individuel pour accéder à votre espace VitiTrack.</p>
+        </div>
+
+        <form id="form-recovery" class="login-form">
+          <div class="login-field">
+            <label for="recovery-password">Nouveau mot de passe (6 caractères minimum) *</label>
+            <div class="login-input-wrap">
+              <span class="login-input-icon">🔒</span>
+              <input type="password" id="recovery-password" class="login-input" placeholder="••••••••••••" minlength="6" required autocomplete="new-password">
+              <button type="button" class="btn-toggle-pwd" id="btn-toggle-rec-pwd" aria-label="Afficher le mot de passe">👁️</button>
+            </div>
+          </div>
+
+          <div class="login-field">
+            <label for="recovery-password-confirm">Confirmez votre nouveau mot de passe *</label>
+            <div class="login-input-wrap">
+              <span class="login-input-icon">🔒</span>
+              <input type="password" id="recovery-password-confirm" class="login-input" placeholder="••••••••••••" minlength="6" required autocomplete="new-password">
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-glow btn-login-submit" id="btn-submit-recovery">
+            <span id="btn-recovery-text">💾 Enregistrer et me connecter</span>
+          </button>
+        </form>
+      </div>
+
       <div class="login-footer-security">
         <span>🔒 Chiffrement Supabase Auth SSL 256-bit • Données Viticoles Sécurisées</span>
       </div>
@@ -578,6 +610,90 @@
     }
     setupPasswordToggle("btn-toggle-login-pwd", "login-password");
     setupPasswordToggle("btn-toggle-reg-pwd", "reg-password");
+    setupPasswordToggle("btn-toggle-rec-pwd", "recovery-password");
+
+    // Détection du mode réinitialisation de mot de passe (Lien envoyé par e-mail)
+    function showRecoveryPanel() {
+      if (panelLogin) panelLogin.classList.remove("active");
+      if (panelRegister) panelRegister.classList.remove("active");
+      const authTabs = document.querySelector(".auth-tabs");
+      if (authTabs) authTabs.style.display = "none";
+      const recPanel = document.getElementById("panel-recovery");
+      if (recPanel) {
+        recPanel.style.display = "block";
+        recPanel.classList.add("active");
+      }
+      showAlert("🔐 Veuillez choisir votre nouveau mot de passe ci-dessous.", "info");
+    }
+
+    function checkRecoveryMode() {
+      const hash = window.location.hash || "";
+      if (hash.includes("type=recovery") || (hash.includes("access_token=") && hash.includes("type=recovery"))) {
+        showRecoveryPanel();
+      }
+    }
+
+    if (window.supabaseClient && window.supabaseClient.auth) {
+      window.supabaseClient.auth.onAuthStateChange((event) => {
+        if (event === "PASSWORD_RECOVERY") {
+          showRecoveryPanel();
+        }
+      });
+    }
+
+    checkRecoveryMode();
+
+    // SUBMIT : RÉINITIALISER LE MOT DE PASSE (Récupération de compte)
+    document.getElementById("form-recovery")?.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      hideAlert();
+
+      const pwd = document.getElementById("recovery-password").value;
+      const conf = document.getElementById("recovery-password-confirm").value;
+      const btn = document.getElementById("btn-submit-recovery");
+      const btnText = document.getElementById("btn-recovery-text");
+
+      if (!pwd || pwd.length < 6) {
+        showAlert("Le mot de passe doit comporter au moins 6 caractères.", "error");
+        return;
+      }
+      if (pwd !== conf) {
+        showAlert("Les mots de passe ne correspondent pas.", "error");
+        return;
+      }
+
+      btn.disabled = true;
+      btnText.textContent = "⏳ Mise à jour en cours...";
+
+      try {
+        if (!window.supabaseClient) {
+          showAlert("Service d'authentification indisponible.", "error");
+          btn.disabled = false;
+          btnText.textContent = "💾 Enregistrer et me connecter";
+          return;
+        }
+
+        const { data, error } = await window.supabaseClient.auth.updateUser({
+          password: pwd
+        });
+
+        if (error) {
+          showAlert(`❌ Erreur : ${error.message}`, "error");
+          btn.disabled = false;
+          btnText.textContent = "💾 Enregistrer et me connecter";
+          return;
+        }
+
+        showAlert("🎉 Votre mot de passe a été mis à jour avec succès ! Redirection vers votre tableau de bord...", "success");
+        setTimeout(() => {
+          window.location.href = "dashboard.html";
+        }, 1200);
+      } catch (err) {
+        showAlert(`❌ Erreur : ${err.message || err}`, "error");
+        btn.disabled = false;
+        btnText.textContent = "💾 Enregistrer et me connecter";
+      }
+    });
 
     // Forgot password alert
     document.getElementById("link-forgot-pwd")?.addEventListener("click", (e) => {
@@ -588,9 +704,12 @@
         return;
       }
       if (window.supabaseClient) {
-        window.supabaseClient.auth.resetPasswordForEmail(email)
-          .then(() => showAlert(`Un e-mail de réinitialisation a été envoyé à ${email}.`, "success"))
-          .catch(() => showAlert("Impossible d'envoyer l'e-mail de réinitialisation.", "error"));
+        const redirectUrl = window.location.origin
+          ? (window.location.origin + window.location.pathname)
+          : "https://vititrack.pro/login.html";
+        window.supabaseClient.auth.resetPasswordForEmail(email, { redirectTo: redirectUrl })
+          .then(() => showAlert(`Un e-mail officiel de réinitialisation a été envoyé à ${email}.`, "success"))
+          .catch((err) => showAlert(`Erreur lors de l'envoi de l'e-mail : ${err.message || err}`, "error"));
       } else {
         showAlert(`Simulation : un e-mail a été envoyé à ${email}.`, "success");
       }
@@ -614,64 +733,6 @@
       } else {
         window.location.href = "dashboard.html";
       }
-    }
-
-    // Recherche de profil collaborateur / tractoriste rattaché à un compte gérant
-    function findTeamMember(email, password) {
-      if (!email) return null;
-      const emailLower = email.toLowerCase().trim();
-      const pwdTrim = (password || "").trim();
-
-      // 1. Recherche dans le répertoire d'équipe partagé
-      try {
-        const rawDir = localStorage.getItem("vititrack_global_team_directory");
-        if (rawDir) {
-          const directory = JSON.parse(rawDir);
-          const member = Array.isArray(directory)
-            ? directory.find(m => (m.email || "").toLowerCase().trim() === emailLower)
-            : (directory && directory[emailLower] ? directory[emailLower] : null);
-          if (member) {
-            if (member.password && member.password.trim() === pwdTrim) {
-              return {
-                ...member,
-                canViewDashboard: member.canViewDashboard !== undefined ? (member.canViewDashboard === true || member.canViewDashboard === "true") : false
-              };
-            }
-          }
-        }
-      } catch (e) {}
-
-      // 2. Recherche dans toutes les partitions locales vititrack_team_users_v3_*
-      try {
-        for (let i = 0; i < localStorage.length; i++) {
-          const key = localStorage.key(i);
-          if (key && key.startsWith("vititrack_team_users_v3_")) {
-            const users = JSON.parse(localStorage.getItem(key));
-            if (Array.isArray(users)) {
-              const found = users.find(u => (u.email || "").toLowerCase().trim() === emailLower);
-              if (found) {
-                if (found.password && found.password.trim() === pwdTrim) {
-                  const ownerUserId = key.replace("vititrack_team_users_v3_", "");
-                  return {
-                    memberId: found.id,
-                    name: found.name,
-                    role: found.role,
-                    roleCategory: found.roleCategory || "tractoriste",
-                    email: found.email,
-                    password: found.password,
-                    canViewDashboard: found.canViewDashboard !== undefined ? (found.canViewDashboard === true || found.canViewDashboard === "true") : false,
-                    ownerUserId: found.ownerUserId || ownerUserId,
-                    ownerDomain: found.ownerDomain || "Domaine Viticole",
-                    ownerEmail: found.ownerEmail || ""
-                  };
-                }
-              }
-            }
-          }
-        }
-      } catch (err) {}
-
-      return null;
     }
 
 
