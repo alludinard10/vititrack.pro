@@ -783,6 +783,12 @@
     function finishLogin(userObj) {
       try {
         localStorage.setItem("vititrack_auth_user", JSON.stringify(userObj));
+        if (userObj.activity_type) {
+          localStorage.setItem("vititrack_activity_type", userObj.activity_type);
+        }
+        if (userObj.active_mode) {
+          localStorage.setItem("vititrack_active_mode", userObj.active_mode);
+        }
       } catch (err) {}
 
       const urlParams = new URLSearchParams(window.location.search);

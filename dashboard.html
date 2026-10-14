@@ -5449,15 +5449,18 @@
           <div style="width: 40px; height: 40px; border-radius: 10px; background: rgba(82, 183, 136, 0.15); display: flex; align-items: center; justify-content: center; font-size: 1.3rem;">🔄</div>
           <div>
             <h3 style="margin: 0; font-size: 1.25rem; font-weight: 700; color: #fff;">Type d'Activité VitiTrack</h3>
-            <p style="margin: 0; font-size: 0.82rem; color: #95a89e;">Ajustez vos environnements actifs à tout moment</p>
+            <p style="margin: 0; font-size: 0.82rem; color: #95a89e;">Ajustez vos univers actifs à tout moment</p>
           </div>
         </div>
         <button type="button" class="modal-close-btn" onclick="closeActivitySettingsModal()" aria-label="Fermer">✕</button>
       </div>
 
-      <div style="display: flex; flex-direction: column; gap: 0.85rem;">
-        <label style="display: flex; align-items: flex-start; gap: 0.85rem; padding: 0.95rem; border-radius: 12px; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(82, 183, 136, 0.2); cursor: pointer;">
-          <input type="radio" name="activity-setting-choice" value="prestation" style="margin-top: 0.25rem;">
+      <!-- Zone d'alerte permissions explicite -->
+      <div id="activity-settings-alert" style="display: none; padding: 0.85rem 1rem; border-radius: 10px; font-size: 0.85rem; line-height: 1.4; border: 1px solid rgba(239, 68, 68, 0.35); background: rgba(239, 68, 68, 0.12); color: #fca5a5;"></div>
+
+      <div style="display: flex; flex-direction: column; gap: 0.85rem;" id="activity-settings-options-list">
+        <label class="activity-setting-label" onclick="selectActivityOption('prestation')" style="display: flex; align-items: flex-start; gap: 0.85rem; padding: 0.95rem; border-radius: 12px; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(82, 183, 136, 0.2); cursor: pointer; transition: all 0.2s ease;">
+          <input type="radio" name="activity-setting-choice" id="activity-choice-prestation" value="prestation" onchange="handleActivityChoiceChange('prestation')" style="margin-top: 0.25rem;">
           <div>
             <strong style="color: #fff; font-size: 0.95rem;">🚜 Mode Prestation uniquement</strong>
             <p style="margin: 0.25rem 0 0 0; font-size: 0.82rem; color: #95a89e;">
@@ -5466,8 +5469,8 @@
           </div>
         </label>
 
-        <label style="display: flex; align-items: flex-start; gap: 0.85rem; padding: 0.95rem; border-radius: 12px; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(199, 125, 255, 0.25); cursor: pointer;">
-          <input type="radio" name="activity-setting-choice" value="exploitation" style="margin-top: 0.25rem;">
+        <label class="activity-setting-label" onclick="selectActivityOption('exploitation')" style="display: flex; align-items: flex-start; gap: 0.85rem; padding: 0.95rem; border-radius: 12px; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(199, 125, 255, 0.25); cursor: pointer; transition: all 0.2s ease;">
+          <input type="radio" name="activity-setting-choice" id="activity-choice-exploitation" value="exploitation" onchange="handleActivityChoiceChange('exploitation')" style="margin-top: 0.25rem;">
           <div>
             <strong style="color: #fff; font-size: 0.95rem;">🍇 Mode Exploitation uniquement</strong>
             <p style="margin: 0.25rem 0 0 0; font-size: 0.82rem; color: #95a89e;">
@@ -5476,8 +5479,8 @@
           </div>
         </label>
 
-        <label style="display: flex; align-items: flex-start; gap: 0.85rem; padding: 0.95rem; border-radius: 12px; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(233, 196, 106, 0.3); cursor: pointer;">
-          <input type="radio" name="activity-setting-choice" value="both" style="margin-top: 0.25rem;">
+        <label class="activity-setting-label" onclick="selectActivityOption('both')" style="display: flex; align-items: flex-start; gap: 0.85rem; padding: 0.95rem; border-radius: 12px; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(233, 196, 106, 0.3); cursor: pointer; transition: all 0.2s ease;">
+          <input type="radio" name="activity-setting-choice" id="activity-choice-both" value="both" onchange="handleActivityChoiceChange('both')" style="margin-top: 0.25rem;">
           <div>
             <strong style="color: #fff; font-size: 0.95rem;">🚜 ＋ 🍇 Les deux (Prestation & Exploitation)</strong>
             <p style="margin: 0.25rem 0 0 0; font-size: 0.82rem; color: #95a89e;">
@@ -5485,6 +5488,16 @@
             </p>
           </div>
         </label>
+      </div>
+
+      <div style="display: flex; gap: 0.75rem; margin-top: 0.5rem;">
+        <button type="button" class="btn btn-ghost btn-sm" onclick="closeActivitySettingsModal()" style="flex: 1; justify-content: center;">
+          Annuler
+        </button>
+        <button type="button" class="btn btn-primary btn-sm btn-glow" id="btn-save-activity-setting" onclick="applyActivitySettingsChoice()" style="flex: 2; justify-content: center; font-weight: 700;">
+          <span>Enregistrer et appliquer</span>
+          <span>➔</span>
+        </button>
       </div>
     </div>
   </div>

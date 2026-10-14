@@ -596,7 +596,8 @@ async function initDashboard() {
 
   try {
     applyDashboardPermissions();
-    if (!canCurrentUserViewDashboard()) {
+    const savedMode = localStorage.getItem("vititrack_active_mode") || (window.VitiEnvState && window.VitiEnvState.activeMode);
+    if (!canCurrentUserViewDashboard() && savedMode !== "exploitation") {
       switchView("interventions");
     }
   } catch (e) {
@@ -6847,6 +6848,12 @@ async function checkAuthUser() {
   };
 
   localStorage.setItem("vititrack_auth_user", JSON.stringify(user));
+  if (user.activity_type) {
+    localStorage.setItem("vititrack_activity_type", user.activity_type);
+  }
+  if (user.active_mode) {
+    localStorage.setItem("vititrack_active_mode", user.active_mode);
+  }
   currentAuthUser = user;
   updateUserInterface(user);
   return user;
