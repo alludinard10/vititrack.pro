@@ -228,58 +228,69 @@
           </a>
         </div>
 
-        <!-- NAVIGATION 2 : MODE EXPLOITATION VITICOLE (10 Vues Dédiées) -->
+        <!-- NAVIGATION 2 : MODE EXPLOITATION VITICOLE (8 Rubriques Unifiées) -->
         <div id="sidebar-nav-exploitation">
           <div class="nav-section-title">EXPLOITATION DU DOMAINE</div>
-          <a href="javascript:void(0)" class="nav-item active" data-exp-view="dashboard" id="exp-nav-dashboard">
+          
+          <!-- 1. Tableau de bord -->
+          <a href="javascript:void(0)" class="nav-item active" data-exp-view="dashboard" id="exp-nav-dashboard" title="Tableau de bord de pilotage du domaine">
             <span class="nav-icon">📊</span>
             <span class="nav-label">Tableau de bord</span>
           </a>
-          <a href="javascript:void(0)" class="nav-item" data-exp-view="parcelles" id="exp-nav-parcelles" title="Parcelles propres du domaine">
+
+          <!-- 2. Mes parcelles -->
+          <a href="javascript:void(0)" class="nav-item" data-exp-view="parcelles" id="exp-nav-parcelles" title="Mes parcelles propres et cadastre">
             <span class="nav-icon">🌿</span>
-            <span class="nav-label">Parcelles</span>
+            <span class="nav-label">Mes parcelles</span>
             <span class="nav-badge" id="sidebar-exp-parcelles-count">0</span>
           </a>
-          <a href="javascript:void(0)" class="nav-item" data-exp-view="travaux" id="exp-nav-travaux" title="Chantiers et travaux de la campagne">
-            <span class="nav-icon">🚜</span>
-            <span class="nav-label">Travaux</span>
+
+          <!-- 3. Travaux à faire -->
+          <a href="javascript:void(0)" class="nav-item" data-exp-view="travaux" id="exp-nav-travaux" title="Travaux culturels et chantiers à réaliser">
+            <span class="nav-icon">📋</span>
+            <span class="nav-label">Travaux à faire</span>
             <span class="nav-badge" id="sidebar-exp-travaux-count">0</span>
           </a>
-          <a href="javascript:void(0)" class="nav-item" data-exp-view="intervention" id="exp-nav-intervention" title="Saisir un travail cultural sur le domaine">
-            <span class="nav-icon">＋</span>
-            <span class="nav-label">Nouvelle intervention</span>
+
+          <!-- 4. Planification -->
+          <a href="javascript:void(0)" class="nav-item" data-exp-view="planification" id="exp-nav-planification" title="Planning des chantiers par jour et par semaine">
+            <span class="nav-icon">📅</span>
+            <span class="nav-label">Planification</span>
+            <span class="nav-badge" id="sidebar-exp-planification-count">0</span>
           </a>
-          <a href="javascript:void(0)" class="nav-item" data-exp-view="equipe" id="exp-nav-equipe" title="Équipe et main d'œuvre interne">
+
+          <!-- 5. Interventions -->
+          <a href="javascript:void(0)" class="nav-item" data-exp-view="interventions" id="exp-nav-interventions" title="Saisie rapide terrain et chantiers du jour">
+            <span class="nav-icon">🚜</span>
+            <span class="nav-label">Interventions</span>
+            <span class="nav-badge" id="sidebar-exp-interventions-count">0</span>
+          </a>
+
+          <!-- 6. Équipes -->
+          <a href="javascript:void(0)" class="nav-item" data-exp-view="equipes" id="exp-nav-equipes" title="Équipes et salariés du domaine">
             <span class="nav-icon">👥</span>
-            <span class="nav-label">Équipe</span>
+            <span class="nav-label">Équipes</span>
             <span class="nav-badge" id="sidebar-exp-equipe-count">0</span>
           </a>
-          <a href="javascript:void(0)" class="nav-item" data-exp-view="materiel" id="exp-nav-materiel" title="Parc machines et engins viticoles">
-            <span class="nav-icon">🚜</span>
-            <span class="nav-label">Matériel</span>
-            <span class="nav-badge" id="sidebar-exp-materiel-count">0</span>
+
+          <!-- 7. Historique -->
+          <a href="javascript:void(0)" class="nav-item" data-exp-view="historique" id="exp-nav-historique" title="Historique et journal des travaux réalisés">
+            <span class="nav-icon">📜</span>
+            <span class="nav-label">Historique</span>
+            <span class="nav-badge" id="sidebar-exp-historique-count">0</span>
           </a>
-          <a href="javascript:void(0)" class="nav-item" data-exp-view="intrants" id="exp-nav-intrants" title="Stock intrants, phyto et engrais">
-            <span class="nav-icon">📦</span>
-            <span class="nav-label">Intrants</span>
-            <span class="nav-badge" id="sidebar-exp-intrants-count">0</span>
-          </a>
-          <a href="javascript:void(0)" class="nav-item" data-exp-view="vendanges" id="exp-nav-vendanges" title="Vendanges et récoltes du domaine">
-            <span class="nav-icon">🍇</span>
-            <span class="nav-label">Vendanges</span>
-            <span class="nav-badge" id="sidebar-exp-vendanges-count">0</span>
-          </a>
-          <a href="javascript:void(0)" class="nav-item" data-exp-view="couts" id="exp-nav-couts" title="Coûts de revient et marges">
-            <span class="nav-icon">💰</span>
-            <span class="nav-label">Coûts</span>
-            <span class="nav-badge">Phase 3</span>
-          </a>
-          <a href="javascript:void(0)" class="nav-item" data-exp-view="parametres" id="exp-nav-parametres" title="Paramètres du domaine et type d'activité">
-            <span class="nav-icon">⚙️</span>
-            <span class="nav-label">Paramètres</span>
+
+          <!-- 8. Analyses -->
+          <a href="javascript:void(0)" class="nav-item" data-exp-view="analyses" id="exp-nav-analyses" title="Analyses économiques, rendements, coûts et matériel">
+            <span class="nav-icon">📈</span>
+            <span class="nav-label">Analyses</span>
           </a>
 
           <div class="nav-section-title">OUTILS DOMAINE</div>
+          <a href="javascript:void(0)" class="nav-item" data-exp-view="parametres" id="exp-nav-parametres" title="Paramètres du domaine">
+            <span class="nav-icon">⚙️</span>
+            <span class="nav-label">Paramètres</span>
+          </a>
           <a href="javascript:void(0)" class="nav-item" onclick="openActivitySettingsModal()" title="Modifier mon type d'activité">
             <span class="nav-icon">🔄</span>
             <span class="nav-label">Type d'activité</span>
@@ -2387,15 +2398,18 @@
                 <p class="view-subheading">Suivi en direct des travaux, parcelles à faire, coûts engagés et rendements.</p>
               </div>
               <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center;">
-                <button type="button" class="btn btn-exp-primary btn-md" onclick="switchExploitationView('intervention')" style="font-weight: 800; font-size: 0.95rem; box-shadow: 0 4px 14px rgba(123, 44, 191, 0.45);">
-                  <span class="btn-icon">＋</span>
-                  <span>Nouvelle intervention</span>
+                <button type="button" class="btn btn-exp-primary btn-md" onclick="switchExploitationView('interventions')" style="font-weight: 800; font-size: 0.95rem; box-shadow: 0 4px 14px rgba(123, 44, 191, 0.45);">
+                  <span class="btn-icon">🚜</span>
+                  <span>Saisir intervention</span>
+                </button>
+                <button type="button" class="btn btn-outline btn-sm" onclick="switchExploitationView('planification')" title="Consulter le planning">
+                  <span>📅 Planification</span>
+                </button>
+                <button type="button" class="btn btn-outline btn-sm" onclick="switchExploitationView('travaux')" title="Consulter les travaux à faire">
+                  <span>📋 Travaux à faire</span>
                 </button>
                 <button type="button" class="btn btn-outline btn-sm" onclick="switchExploitationView('parcelles')" title="Consulter le parcellaire du domaine">
                   <span>🌿 Parcelles</span>
-                </button>
-                <button type="button" class="btn btn-outline btn-sm" onclick="switchExploitationView('travaux')" title="Consulter les travaux">
-                  <span>🚜 Travaux</span>
                 </button>
               </div>
             </div>
@@ -2716,9 +2730,74 @@
           </div>
 
           <!-- ------------------------------------------------------------------
-               VUE EXPLOITATION 4 : SAISIE D'INTERVENTION TERRAIN (< 30s)
+               VUE EXPLOITATION 4 : PLANIFICATION DES TRAVAUX & CHANTIERS (RUBRIQUE 4)
                ------------------------------------------------------------------ -->
-          <div class="app-view exp-view" id="view-exp-intervention" style="display: none;">
+          <div class="app-view exp-view" id="view-exp-planification" style="display: none;">
+            <div class="view-header" style="flex-wrap: wrap; gap: 1rem; align-items: center; justify-content: space-between;">
+              <div>
+                <div class="exp-view-badge">📅 GESTION OPÉRATIONNELLE DU VIGNOBLE</div>
+                <h1 class="view-heading">Planification des Chantiers & Missions</h1>
+                <p class="view-subheading">Organisation des travaux du domaine par jour et par semaine, affectation des équipes et des matériels.</p>
+              </div>
+              <div class="services-view-actions" style="display: flex; gap: 0.65rem; align-items: center; flex-wrap: wrap;">
+                <div class="planning-view-toggle" style="display: inline-flex; background: rgba(0,0,0,0.3); border: 1px solid rgba(82, 183, 136, 0.2); border-radius: 8px; padding: 2px;">
+                  <button type="button" class="btn btn-xs active" id="exp-plan-toggle-week" onclick="toggleExploitationPlanningView('week')" style="border-radius: 6px; padding: 0.35rem 0.75rem; font-weight: 700;">Vue Semaine</button>
+                  <button type="button" class="btn btn-xs btn-outline" id="exp-plan-toggle-day" onclick="toggleExploitationPlanningView('day')" style="border-radius: 6px; padding: 0.35rem 0.75rem; font-weight: 700; border: none;">Vue Jour</button>
+                </div>
+                <button type="button" class="btn btn-exp-primary btn-sm" onclick="openExploitationPlanModal()">
+                  <span class="btn-icon">＋</span>
+                  <span>Planifier un chantier</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Bandeau préparatoire Étape 4 (Opérationnel) -->
+            <div class="exp-card" style="margin-bottom: 1.5rem; padding: 1.25rem 1.5rem; background: linear-gradient(135deg, rgba(123, 44, 191, 0.12), rgba(82, 183, 136, 0.08)); border: 1px solid rgba(199, 125, 255, 0.25);">
+              <div style="display: flex; align-items: flex-start; gap: 1rem; flex-wrap: wrap;">
+                <div style="font-size: 1.85rem; line-height: 1;">📌</div>
+                <div style="flex: 1; min-width: 260px;">
+                  <h4 style="font-size: 1.05rem; font-weight: 800; color: #fff; margin: 0 0 0.35rem 0;">Planning Opérationnel du Domaine</h4>
+                  <p style="font-size: 0.88rem; color: #b7c7be; margin: 0; line-height: 1.5;">
+                    Cette interface vous permet d'organiser vos chantiers du lundi au samedi, d'affecter vos équipes aux parcelles sélectionnées dans <strong style="color: #c77dff;">Travaux à faire</strong> et d'émettre des consignes. Le module complet de dispatching automatique sera finalisé lors de l'Étape 4.
+                  </p>
+                </div>
+                <div style="display: flex; gap: 0.5rem; align-items: center;">
+                  <button type="button" class="btn btn-outline btn-xs" onclick="switchExploitationView('travaux')" title="Consulter les travaux restant à réaliser">
+                    📋 Voir travaux à faire
+                  </button>
+                  <button type="button" class="btn btn-exp-primary btn-xs" onclick="switchExploitationView('interventions')" title="Saisir directement une intervention réalisée">
+                    🚜 Saisir une intervention
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Barre de navigation temporelle de la semaine -->
+            <div class="exp-planning-timeline-bar" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem; background: rgba(17, 25, 22, 0.85); padding: 0.85rem 1.25rem; border-radius: 12px; border: 1px solid rgba(82, 183, 136, 0.18);">
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <button type="button" class="btn btn-outline btn-xs" onclick="navigateExploitationPlanning(-1)" title="Semaine précédente">◀ Précédente</button>
+                <button type="button" class="btn btn-outline btn-xs" onclick="navigateExploitationPlanning(0)" title="Revenir à la semaine en cours">Aujourd'hui</button>
+                <button type="button" class="btn btn-outline btn-xs" onclick="navigateExploitationPlanning(1)" title="Semaine suivante">Suivante ▶</button>
+                <span id="exp-planning-period-label" style="font-size: 0.95rem; font-weight: 800; color: #fff; margin-left: 0.5rem;">Semaine en cours</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <span style="font-size: 0.82rem; color: #95a89e;">Filtre équipe :</span>
+                <select id="exp-planning-filter-team" class="form-select-simple" style="padding: 0.3rem 0.65rem; font-size: 0.82rem;" onchange="renderPlanificationView()">
+                  <option value="all">Toutes les équipes</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Grille Hebdomadaire (Lundi à Samedi) -->
+            <div class="exp-planning-week-grid" id="exp-planning-week-container">
+              <!-- Rendu dynamique via renderPlanificationView() -->
+            </div>
+          </div>
+
+          <!-- ------------------------------------------------------------------
+               VUE EXPLOITATION 5 : SAISIE D'INTERVENTION TERRAIN (RUBRIQUE 5)
+               ------------------------------------------------------------------ -->
+          <div class="app-view exp-view" id="view-exp-interventions" style="display: none;">
             <div class="view-header">
               <div>
                 <div style="display: flex; align-items: center; gap: 0.65rem; margin-bottom: 0.35rem;">
@@ -2893,14 +2972,14 @@
           </div>
 
           <!-- ------------------------------------------------------------------
-               VUE EXPLOITATION 5 : ÉQUIPE DU DOMAINE
+               VUE EXPLOITATION 6 : ÉQUIPES DU DOMAINE (RUBRIQUE 6)
                ------------------------------------------------------------------ -->
           <div class="app-view exp-view" id="view-exp-equipe" style="display: none;">
             <div class="view-header">
               <div>
                 <div class="exp-view-badge">👥 RESSOURCES HUMAINES</div>
-                <h1 class="view-heading">Équipe & Salariés du Domaine</h1>
-                <p class="view-subheading">Gestion des collaborateurs internes, tractoristes et saisonniers (taux horaires, qualifications, habilitations).</p>
+                <h1 class="view-heading">Équipes & Salariés du Domaine</h1>
+                <p class="view-subheading">Gestion des équipes terrain, chefs d'équipe, tractoristes et salariés viticoles.</p>
               </div>
               <div class="services-view-actions">
                 <button type="button" class="btn btn-exp-primary btn-sm" onclick="openAddWorkerModal()">
@@ -2910,15 +2989,99 @@
               </div>
             </div>
 
+            <!-- Bandeau préparatoire Équipes & Chefs d'Équipe (Étape 2) -->
+            <div class="exp-card" style="margin-bottom: 1.5rem; padding: 1.25rem 1.5rem; background: linear-gradient(135deg, rgba(82, 183, 136, 0.1), rgba(123, 44, 191, 0.08)); border: 1px solid rgba(82, 183, 136, 0.25);">
+              <div style="display: flex; align-items: flex-start; gap: 1rem; flex-wrap: wrap;">
+                <div style="font-size: 1.85rem; line-height: 1;">👥</div>
+                <div style="flex: 1; min-width: 260px;">
+                  <h4 style="font-size: 1.05rem; font-weight: 800; color: #fff; margin: 0 0 0.35rem 0;">Organisation des Équipes & Chefs d'Équipe</h4>
+                  <p style="font-size: 0.88rem; color: #b7c7be; margin: 0; line-height: 1.5;">
+                    Ce module permettra d'organiser vos salariés en équipes dédiées (ex: <em>Équipe Taille</em>, <em>Équipe Travail du Sol</em>), de désigner un chef d'équipe responsable et de leur affecter directement les missions du planning. Retrouvez ci-dessous l'ensemble des salariés et collaborateurs actifs du domaine.
+                  </p>
+                </div>
+              </div>
+            </div>
+
             <div id="exp-workers-cards-container" class="exp-cards-grid">
               <!-- Rendu dynamique via renderWorkersView() -->
             </div>
           </div>
 
           <!-- ------------------------------------------------------------------
-               VUE EXPLOITATION 6 : PARC MATÉRIEL & ENGINS
+               VUE EXPLOITATION 7 : HISTORIQUE DES INTERVENTIONS (RUBRIQUE 7)
                ------------------------------------------------------------------ -->
-          <div class="app-view exp-view" id="view-exp-materiel" style="display: none;">
+          <div class="app-view exp-view" id="view-exp-historique" style="display: none;">
+            <div class="view-header" style="flex-wrap: wrap; gap: 1rem; align-items: center; justify-content: space-between;">
+              <div>
+                <div class="exp-view-badge">📜 JOURNAL DE CULTURE DU DOMAINE</div>
+                <h1 class="view-heading">Historique des Interventions Réalisées</h1>
+                <p class="view-subheading">Registre chronologique complet des chantiers réalisés sur les parcelles du domaine.</p>
+              </div>
+              <div class="services-view-actions" style="display: flex; gap: 0.65rem; align-items: center; flex-wrap: wrap;">
+                <button type="button" class="btn btn-exp-primary btn-sm" onclick="switchExploitationView('interventions')">
+                  <span class="btn-icon">🚜</span>
+                  <span>Saisir une intervention</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Barre de recherche et filtres de l'historique -->
+            <div class="exp-card" style="margin-bottom: 1.25rem; padding: 1rem 1.25rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem;">
+              <div style="display: flex; align-items: center; gap: 0.75rem; flex: 1; min-width: 260px;">
+                <div class="services-search-wrapper" style="flex: 1; max-width: 380px;">
+                  <span class="search-icon">🔍</span>
+                  <input type="text" id="exp-historique-search-input" placeholder="Rechercher par parcelle, travail, intervenant..." oninput="handleHistoriqueSearch(this.value)">
+                </div>
+                <select id="exp-historique-filter-task" class="form-select-simple" style="font-size: 0.85rem;" onchange="handleHistoriqueFilterChange()">
+                  <option value="all">Tous les travaux</option>
+                </select>
+                <select id="exp-historique-filter-parcelle" class="form-select-simple" style="font-size: 0.85rem;" onchange="handleHistoriqueFilterChange()">
+                  <option value="all">Toutes les parcelles</option>
+                </select>
+              </div>
+              <div style="font-size: 0.85rem; color: #95a89e;">
+                <span id="exp-historique-count-badge" style="font-weight: 700; color: #fff;">0</span> intervention(s) répertoriée(s)
+              </div>
+            </div>
+
+            <!-- Tableau de l'Historique -->
+            <div class="table-card">
+              <div id="exp-historique-table-container">
+                <!-- Rendu dynamique via renderHistoriqueView() -->
+              </div>
+            </div>
+          </div>
+
+          <!-- ------------------------------------------------------------------
+               VUE EXPLOITATION 8 : ANALYSES & PILOTAGE DU DOMAINE (RUBRIQUE 8)
+               ------------------------------------------------------------------ -->
+          <div class="app-view exp-view" id="view-exp-analyses" style="display: none;">
+            <div class="view-header" style="flex-wrap: wrap; gap: 1rem; align-items: center; justify-content: space-between;">
+              <div>
+                <div class="exp-view-badge">📈 ANALYSES DU DOMAINE</div>
+                <h1 class="view-heading">Analyses, Rentabilité & Ressources</h1>
+                <p class="view-subheading">Suivi analytique global : coûts de revient (€/ha), rendements vendanges (kg/ha), matériel et stocks d'intrants.</p>
+              </div>
+            </div>
+
+            <!-- Barre d'onglets Analyses & Ressources -->
+            <div class="exp-analyses-tabs-bar" style="display: flex; gap: 0.5rem; border-bottom: 1px solid rgba(82, 183, 136, 0.2); margin-bottom: 1.5rem; flex-wrap: wrap; padding-bottom: 0.5rem;">
+              <button type="button" class="btn btn-sm btn-outline active exp-analysis-tab-btn" data-analysis-tab="couts" onclick="switchAnalysisTab('couts')">
+                💰 Coûts de Revient
+              </button>
+              <button type="button" class="btn btn-sm btn-outline exp-analysis-tab-btn" data-analysis-tab="vendanges" onclick="switchAnalysisTab('vendanges')">
+                🍇 Vendanges & Rendements
+              </button>
+              <button type="button" class="btn btn-sm btn-outline exp-analysis-tab-btn" data-analysis-tab="materiel" onclick="switchAnalysisTab('materiel')">
+                🚜 Parc Matériel
+              </button>
+              <button type="button" class="btn btn-sm btn-outline exp-analysis-tab-btn" data-analysis-tab="intrants" onclick="switchAnalysisTab('intrants')">
+                📦 Intrants & Phyto
+              </button>
+            </div>
+
+            <!-- SOUS-PANNEAU 3 : PARC MATÉRIEL & ENGINS -->
+            <div class="exp-analysis-panel" id="view-exp-materiel" style="display: none;">
             <div class="view-header">
               <div>
                 <div class="exp-view-badge">🚜 PARC MATÉRIEL</div>
@@ -2938,15 +3101,12 @@
             </div>
           </div>
 
-          <!-- ------------------------------------------------------------------
-               VUE EXPLOITATION 7 : INTRANTS & PRODUITS PHYTOSANITAIRES
-               ------------------------------------------------------------------ -->
-          <div class="app-view exp-view" id="view-exp-intrants" style="display: none;">
-            <div class="view-header">
+          <!-- SOUS-PANNEAU 4 : INTRANTS & FOURNITURES -->
+          <div class="exp-analysis-panel" id="view-exp-intrants" style="display: none;">
+            <div class="view-header" style="padding-top: 0.5rem;">
               <div>
-                <div class="exp-view-badge">📦 STOCKS & PRODUITS</div>
-                <h1 class="view-heading">Intrants & Fournitures Viticoles</h1>
-                <p class="view-subheading">Gestion des stocks de produits de protection, amendements, engrais et fournitures de palissage.</p>
+                <h2 style="font-size: 1.25rem; font-weight: 800; color: #fff; margin: 0 0 0.25rem 0;">Intrants & Fournitures Viticoles</h2>
+                <p class="view-subheading" style="margin: 0;">Gestion des stocks de produits de protection, amendements, engrais et fournitures de palissage.</p>
               </div>
               <div class="services-view-actions">
                 <button type="button" class="btn btn-exp-primary btn-sm" onclick="openAddInputModal()">
@@ -2961,15 +3121,12 @@
             </div>
           </div>
 
-          <!-- ------------------------------------------------------------------
-               VUE EXPLOITATION 8 : VENDANGES, RENDEMENT & COÛT AU KG (PHASE 6)
-               ------------------------------------------------------------------ -->
-          <div class="app-view exp-view" id="view-exp-vendanges" style="display: none;">
-            <div class="view-header">
+          <!-- SOUS-PANNEAU 2 : VENDANGES & RENDEMENTS -->
+          <div class="exp-analysis-panel" id="view-exp-vendanges" style="display: none;">
+            <div class="view-header" style="padding-top: 0.5rem;">
               <div>
-                <div class="exp-view-badge">🍇 VENDANGES & RENDEMENTS</div>
-                <h1 class="view-heading">Vendanges, Rendement & Coût au Kilo</h1>
-                <p class="view-subheading">Suivi des pesées réelles par parcelle, calcul des rendements (kg/ha) et valorisation du coût de revient du raisin.</p>
+                <h2 style="font-size: 1.25rem; font-weight: 800; color: #fff; margin: 0 0 0.25rem 0;">Vendanges, Rendement & Coût au Kilo</h2>
+                <p class="view-subheading" style="margin: 0;">Suivi des pesées réelles par parcelle, calcul des rendements (kg/ha) et valorisation du coût de revient du raisin.</p>
               </div>
               <div class="services-view-actions">
                 <button type="button" class="btn btn-outline btn-sm" onclick="exportHarvestsCSV()" title="Exporter les données vendanges en CSV">
@@ -3074,15 +3231,12 @@
             </div>
           </div>
 
-          <!-- ------------------------------------------------------------------
-               VUE EXPLOITATION 9 : COÛTS DE REVIENT & RENTABILITÉ (PHASE 5)
-               ------------------------------------------------------------------ -->
-          <div class="app-view exp-view" id="view-exp-couts" style="display: none;">
-            <div class="view-header">
+          <!-- SOUS-PANNEAU 1 : COÛTS DE REVIENT & RENTABILITÉ (Actif par défaut) -->
+          <div class="exp-analysis-panel" id="view-exp-couts" style="display: block;">
+            <div class="view-header" style="padding-top: 0.5rem;">
               <div>
-                <div class="exp-view-badge">💰 ANALYSE ÉCONOMIQUE & COÛT DE REVIENT</div>
-                <h1 class="view-heading">Coûts de Revient & Rentabilité Parcellaire</h1>
-                <p class="view-subheading">Calculs automatiques à partir des interventions terrain (main-d'œuvre, mécanisation, intrants) et charges directes.</p>
+                <h2 style="font-size: 1.25rem; font-weight: 800; color: #fff; margin: 0 0 0.25rem 0;">Coûts de Revient & Rentabilité Parcellaire</h2>
+                <p class="view-subheading" style="margin: 0;">Calculs automatiques à partir des interventions terrain (main-d'œuvre, mécanisation, intrants) et charges directes.</p>
               </div>
               <div class="services-view-actions">
                 <button type="button" class="btn btn-exp-primary btn-sm" onclick="openAddExternalCostModal()">
@@ -3185,9 +3339,11 @@
               </div>
             </div>
           </div>
+          <!-- FIN VUE EXPLOITATION 8 : ANALYSES -->
+          </div>
 
           <!-- ------------------------------------------------------------------
-               VUE EXPLOITATION 10 : PARAMÈTRES DU DOMAINE
+               VUE EXPLOITATION : PARAMÈTRES DU DOMAINE (OUTILS DOMAINE)
                ------------------------------------------------------------------ -->
           <div class="app-view exp-view" id="view-exp-parametres" style="display: none;">
             <div class="view-header">
