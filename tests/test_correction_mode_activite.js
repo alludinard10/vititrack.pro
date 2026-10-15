@@ -290,6 +290,7 @@ async function runTests() {
 
     assert.strictEqual(prestaContainer.style.display, 'block', '#prestation-views-container doit être affiché');
     assert.strictEqual(sidebarPresta.style.display, 'flex', '#sidebar-nav-prestation doit être affiché');
+    assert.strictEqual(sidebarPresta.style.flexDirection, 'column', '#sidebar-nav-prestation doit impérativement être vertical (flex-direction: column)');
     assert.strictEqual(expContainer.style.display, 'none', '#exploitation-views-container doit être masqué');
     assert.strictEqual(sidebarExp.style.display, 'none', '#sidebar-nav-exploitation doit être masqué');
     assert.strictEqual(localStorageMock.getItem('vititrack_activity_type'), 'prestation');
