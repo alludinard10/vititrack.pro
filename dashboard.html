@@ -2836,55 +2836,91 @@
               <div class="services-view-actions" style="display: flex; gap: 0.65rem; align-items: center; flex-wrap: wrap;">
                 <div class="planning-view-toggle" style="display: inline-flex; background: rgba(0,0,0,0.3); border: 1px solid rgba(82, 183, 136, 0.2); border-radius: 8px; padding: 2px;">
                   <button type="button" class="btn btn-xs active" id="exp-plan-toggle-week" onclick="toggleExploitationPlanningView('week')" style="border-radius: 6px; padding: 0.35rem 0.75rem; font-weight: 700;">Vue Semaine</button>
-                  <button type="button" class="btn btn-xs btn-outline" id="exp-plan-toggle-day" onclick="toggleExploitationPlanningView('day')" style="border-radius: 6px; padding: 0.35rem 0.75rem; font-weight: 700; border: none;">Vue Jour</button>
+                  <button type="button" class="btn btn-xs btn-outline" id="exp-plan-toggle-month" onclick="toggleExploitationPlanningView('month')" style="border-radius: 6px; padding: 0.35rem 0.75rem; font-weight: 700; border: none;">Vue Mois</button>
                 </div>
-                <button type="button" class="btn btn-exp-primary btn-sm" onclick="openExploitationPlanModal()">
+                <button type="button" class="btn btn-exp-primary btn-sm" id="btn-exp-open-plan-modal" onclick="openExploitationPlanModal()">
                   <span class="btn-icon">＋</span>
-                  <span>Planifier un chantier</span>
+                  <span>Planifier un travail</span>
                 </button>
               </div>
             </div>
 
-            <!-- Bandeau préparatoire Étape 4 (Opérationnel) -->
-            <div class="exp-card" style="margin-bottom: 1.5rem; padding: 1.25rem 1.5rem; background: linear-gradient(135deg, rgba(123, 44, 191, 0.12), rgba(82, 183, 136, 0.08)); border: 1px solid rgba(199, 125, 255, 0.25);">
-              <div style="display: flex; align-items: flex-start; gap: 1rem; flex-wrap: wrap;">
-                <div style="font-size: 1.85rem; line-height: 1;">📌</div>
-                <div style="flex: 1; min-width: 260px;">
-                  <h4 style="font-size: 1.05rem; font-weight: 800; color: #fff; margin: 0 0 0.35rem 0;">Planning Opérationnel du Domaine</h4>
-                  <p style="font-size: 0.88rem; color: #b7c7be; margin: 0; line-height: 1.5;">
-                    Cette interface vous permet d'organiser vos chantiers du lundi au samedi, d'affecter vos équipes aux parcelles sélectionnées dans <strong style="color: #c77dff;">Travaux à faire</strong> et d'émettre des consignes. Le module complet de dispatching automatique sera finalisé lors de l'Étape 4.
-                  </p>
+            <!-- Synthèse KPIs du Planning -->
+            <div class="exp-cards-grid" style="margin-bottom: 1.25rem; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.75rem;">
+              <div class="exp-card" style="padding: 1rem 1.15rem;">
+                <div class="exp-card-header">
+                  <span class="exp-card-title">Chantiers Programmés</span>
+                  <span class="exp-card-badge" style="background: rgba(123, 44, 191, 0.25); color: #c77dff;">Planning</span>
                 </div>
-                <div style="display: flex; gap: 0.5rem; align-items: center;">
-                  <button type="button" class="btn btn-outline btn-xs" onclick="switchExploitationView('travaux')" title="Consulter les travaux restant à réaliser">
-                    📋 Voir travaux à faire
-                  </button>
-                  <button type="button" class="btn btn-exp-primary btn-xs" onclick="switchExploitationView('interventions')" title="Saisir directement une intervention réalisée">
-                    🚜 Saisir une intervention
-                  </button>
+                <div style="font-size: 1.65rem; font-weight: 800; color: #fff; font-family: var(--font-heading); margin: 0.25rem 0;" id="exp-plan-kpi-count">0</div>
+                <div style="font-size: 0.8rem; color: #95a89e;" id="exp-plan-kpi-count-sub">sur la période sélectionnée</div>
+              </div>
+              <div class="exp-card" style="padding: 1rem 1.15rem;">
+                <div class="exp-card-header">
+                  <span class="exp-card-title">Surface Prévue</span>
+                  <span class="exp-card-badge" style="background: rgba(82, 183, 136, 0.2); color: #52b788;">Hectares</span>
                 </div>
+                <div style="font-size: 1.65rem; font-weight: 800; color: #52b788; font-family: var(--font-heading); margin: 0.25rem 0;" id="exp-plan-kpi-surface">0.0000 ha</div>
+                <div style="font-size: 0.8rem; color: #95a89e;" id="exp-plan-kpi-surface-sub">surface cumulée unique</div>
+              </div>
+              <div class="exp-card" style="padding: 1rem 1.15rem;">
+                <div class="exp-card-header">
+                  <span class="exp-card-title">Parcelles au Planning</span>
+                  <span class="exp-card-badge" style="background: rgba(45, 106, 79, 0.3); color: #74c69d;">Parcellaire</span>
+                </div>
+                <div style="font-size: 1.65rem; font-weight: 800; color: #fff; font-family: var(--font-heading); margin: 0.25rem 0;" id="exp-plan-kpi-parcelles">0</div>
+                <div style="font-size: 0.8rem; color: #95a89e;" id="exp-plan-kpi-parcelles-sub">parcelles concernées</div>
+              </div>
+              <div class="exp-card" style="padding: 1rem 1.15rem;">
+                <div class="exp-card-header">
+                  <span class="exp-card-title">Équipes & Salariés</span>
+                  <span class="exp-card-badge" style="background: rgba(255, 183, 3, 0.2); color: #ffb703;">Ressources</span>
+                </div>
+                <div style="font-size: 1.65rem; font-weight: 800; color: #fff; font-family: var(--font-heading); margin: 0.25rem 0;" id="exp-plan-kpi-workers">0</div>
+                <div style="font-size: 0.8rem; color: #95a89e;" id="exp-plan-kpi-workers-sub">mobilisés sur la période</div>
               </div>
             </div>
 
-            <!-- Barre de navigation temporelle de la semaine -->
+            <!-- Barre de navigation temporelle & Filtres multi-critères -->
             <div class="exp-planning-timeline-bar" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem; background: rgba(17, 25, 22, 0.85); padding: 0.85rem 1.25rem; border-radius: 12px; border: 1px solid rgba(82, 183, 136, 0.18);">
-              <div style="display: flex; align-items: center; gap: 0.5rem;">
-                <button type="button" class="btn btn-outline btn-xs" onclick="navigateExploitationPlanning(-1)" title="Semaine précédente">◀ Précédente</button>
-                <button type="button" class="btn btn-outline btn-xs" onclick="navigateExploitationPlanning(0)" title="Revenir à la semaine en cours">Aujourd'hui</button>
-                <button type="button" class="btn btn-outline btn-xs" onclick="navigateExploitationPlanning(1)" title="Semaine suivante">Suivante ▶</button>
-                <span id="exp-planning-period-label" style="font-size: 0.95rem; font-weight: 800; color: #fff; margin-left: 0.5rem;">Semaine en cours</span>
+              <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                <button type="button" class="btn btn-outline btn-xs" onclick="navigateExploitationPlanning(-1)" title="Période précédente">◀ Précédente</button>
+                <button type="button" class="btn btn-outline btn-xs" onclick="navigateExploitationPlanning(0)" title="Revenir à aujourd'hui">Aujourd'hui</button>
+                <button type="button" class="btn btn-outline btn-xs" onclick="navigateExploitationPlanning(1)" title="Période suivante">Suivante ▶</button>
+                <span id="exp-planning-period-label" style="font-size: 0.95rem; font-weight: 800; color: #fff; margin-left: 0.5rem;">Cette semaine</span>
               </div>
-              <div style="display: flex; align-items: center; gap: 0.75rem;">
-                <span style="font-size: 0.82rem; color: #95a89e;">Filtre équipe :</span>
+              <div style="display: flex; align-items: center; gap: 0.65rem; flex-wrap: wrap;">
+                <!-- Filtre Équipe -->
                 <select id="exp-planning-filter-team" class="form-select-simple" style="padding: 0.3rem 0.65rem; font-size: 0.82rem;" onchange="renderPlanificationView()">
                   <option value="all">Toutes les équipes</option>
+                </select>
+                <!-- Filtre Salarié -->
+                <select id="exp-planning-filter-worker" class="form-select-simple" style="padding: 0.3rem 0.65rem; font-size: 0.82rem;" onchange="renderPlanificationView()">
+                  <option value="all">Tous les salariés</option>
+                </select>
+                <!-- Filtre Travail -->
+                <select id="exp-planning-filter-task" class="form-select-simple" style="padding: 0.3rem 0.65rem; font-size: 0.82rem;" onchange="renderPlanificationView()">
+                  <option value="all">Tous les travaux</option>
+                </select>
+                <!-- Filtre Statut -->
+                <select id="exp-planning-filter-status" class="form-select-simple" style="padding: 0.3rem 0.65rem; font-size: 0.82rem;" onchange="renderPlanificationView()">
+                  <option value="all">Tous les statuts</option>
+                  <option value="planned">Prévue</option>
+                  <option value="confirmed">Confirmée</option>
+                  <option value="postponed">Reportée</option>
+                  <option value="cancelled">Annulée</option>
                 </select>
               </div>
             </div>
 
-            <!-- Grille Hebdomadaire (Lundi à Samedi) -->
+            <!-- Grille Hebdomadaire (Lundi au Dimanche — 7 jours) -->
             <div class="exp-planning-week-grid" id="exp-planning-week-container">
               <!-- Rendu dynamique via renderPlanificationView() -->
+            </div>
+
+            <!-- Grille Mensuelle (Calendrier Mois) -->
+            <div class="exp-planning-month-grid" id="exp-planning-month-container" style="display: none;">
+              <!-- Rendu dynamique via renderMonthPlanningView() -->
             </div>
           </div>
 
@@ -6502,10 +6538,10 @@
             </button>
           </div>
           <div style="display: flex; gap: 0.5rem;">
-            <button type="button" class="btn btn-outline btn-sm" onclick="openPlanificationNotice()">
-              🗓️ Planifier (Étape 4)
+            <button type="button" class="btn btn-exp-primary btn-sm" onclick="planJobFromDetails()">
+              🗓️ Planifier ce chantier
             </button>
-            <button type="button" class="btn btn-exp-primary btn-sm" onclick="closeJobDetailsModal()">
+            <button type="button" class="btn btn-outline btn-sm" onclick="closeJobDetailsModal()">
               Fermer
             </button>
           </div>
@@ -6514,43 +6550,231 @@
     </div>
   </div>
 
-  <!-- ==================== MODALE INFORMATION PLANIFICATION (PRÉPARATION ÉTAPE 4) ==================== -->
-  <div class="modal-overlay" id="modal-exp-planification-notice" aria-hidden="true" role="dialog" aria-modal="true">
-    <div class="modal-dialog" style="max-width: 520px;">
+  <!-- ==================== MODAL EXPLOITATION : PLANIFIER UN TRAVAIL VITICOLE (ÉTAPE 4) ==================== -->
+  <div class="modal-overlay" id="modal-exp-planification" aria-hidden="true" role="dialog" aria-modal="true">
+    <div class="modal-dialog" style="max-width: 760px;">
       <div class="modal-content">
         <div class="modal-header">
-          <div class="modal-header-icon epure-header-icon" style="background: rgba(199, 125, 255, 0.2); color: #c77dff;">
+          <div class="modal-header-icon epure-header-icon" style="background: rgba(123, 44, 191, 0.2); color: #c77dff;">
             🗓️
           </div>
           <div>
-            <h3 class="modal-title">Module Planification</h3>
-            <p class="modal-subtitle">Fonctionnalité prévue pour l'Étape 4</p>
+            <h3 class="modal-title" id="exp-plan-modal-title">Planifier un travail viticole</h3>
+            <p class="modal-subtitle">Organisez l'intervention, sélectionnez les parcelles et affectez vos équipes</p>
           </div>
-          <button type="button" class="modal-close-btn" onclick="closePlanificationNotice()" aria-label="Fermer">✕</button>
+          <button type="button" class="modal-close-btn" onclick="closeExploitationPlanModal()" aria-label="Fermer">✕</button>
         </div>
-        <div class="modal-body" style="padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem; color: #cbd5e1; font-size: 0.9rem; line-height: 1.5;">
-          <p>
-            Vous êtes actuellement à <strong>l'Étape 3 : Travaux à faire & passages multiples</strong>.
-          </p>
-          <div style="background: rgba(123, 44, 191, 0.12); border: 1px solid rgba(199, 125, 255, 0.3); border-radius: 8px; padding: 1rem;">
-            <h4 style="margin: 0 0 0.4rem 0; color: #c77dff; font-size: 0.95rem;">🚀 Prochaine étape : Planification (Étape 4)</h4>
-            <p style="margin: 0; font-size: 0.85rem; color: #e5ece8;">
-              Le moteur complet de planification permettra :
-            </p>
-            <ul style="margin: 0.5rem 0 0 1rem; padding: 0; font-size: 0.83rem; color: #95a89e;">
-              <li>L'assignation des travaux aux équipes et tractoristes</li>
-              <li>L'affectation du matériel et des engins</li>
-              <li>Le calendrier prévisionnel des chantiers</li>
-              <li>La bascule automatique vers les chantiers réalisés</li>
-            </ul>
+
+        <form id="form-exp-planification" onsubmit="event.preventDefault(); saveExploitationPlan();">
+          <input type="hidden" id="exp-plan-edit-id" value="">
+          <input type="hidden" id="exp-plan-selected-group-id" value="">
+          <div class="modal-body" style="padding: 1.5rem; display: flex; flex-direction: column; gap: 1.25rem; max-height: calc(85vh - 140px); overflow-y: auto;">
+
+            <!-- Bloc 1 : Travail à réaliser & Passage -->
+            <div class="form-section-box" style="background: rgba(0,0,0,0.2); border: 1px solid rgba(82, 183, 136, 0.2); border-radius: 10px; padding: 1.15rem;">
+              <div style="font-weight: 800; color: #fff; font-size: 0.92rem; margin-bottom: 0.85rem; display: flex; align-items: center; gap: 0.5rem;">
+                <span>1. Choix du travail</span>
+                <span class="required">*</span>
+              </div>
+              <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 0.85rem;">
+                <div class="form-group" style="margin: 0;">
+                  <label for="exp-plan-job-source" class="form-label" style="font-size: 0.82rem;">Chantier issu de « Travaux à faire »</label>
+                  <select id="exp-plan-job-source" class="form-select-simple" onchange="onPlanJobSourceChange(this.value)" style="width: 100%;">
+                    <option value="">— Sélectionner un travail enregistré —</option>
+                  </select>
+                </div>
+                <div class="form-group" style="margin: 0;">
+                  <label for="exp-plan-passage" class="form-label" style="font-size: 0.82rem;">Passage N°</label>
+                  <select id="exp-plan-passage" class="form-select-simple" style="width: 100%;">
+                    <option value="1">Passage 1</option>
+                    <option value="2">Passage 2</option>
+                    <option value="3">Passage 3</option>
+                    <option value="4">Passage 4</option>
+                  </select>
+                </div>
+              </div>
+              <div id="exp-plan-custom-task-wrap" style="display: none; margin-top: 0.75rem;">
+                <label for="exp-plan-task-id" class="form-label" style="font-size: 0.82rem;">Opération viticole du catalogue</label>
+                <select id="exp-plan-task-id" class="form-select-simple" style="width: 100%;">
+                  <!-- Populated dynamically -->
+                </select>
+              </div>
+            </div>
+
+            <!-- Bloc 2 : Parcelles concernées & Calcul surface -->
+            <div class="form-section-box" style="background: rgba(0,0,0,0.2); border: 1px solid rgba(82, 183, 136, 0.2); border-radius: 10px; padding: 1.15rem;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem; flex-wrap: wrap; gap: 0.5rem;">
+                <div style="font-weight: 800; color: #fff; font-size: 0.92rem; display: flex; align-items: center; gap: 0.5rem;">
+                  <span>2. Parcelles à planifier</span>
+                  <span class="required">*</span>
+                </div>
+                <div style="display: flex; gap: 0.4rem;">
+                  <button type="button" class="btn btn-outline btn-xs" onclick="toggleAllPlanParcelles(true)">Tout cocher</button>
+                  <button type="button" class="btn btn-outline btn-xs" onclick="toggleAllPlanParcelles(false)">Tout décocher</button>
+                </div>
+              </div>
+
+              <!-- Champ recherche de parcelles -->
+              <input type="text" id="exp-plan-parcelle-search" class="epure-input" placeholder="🔍 Filtrer les parcelles (nom, commune, cépage)..." oninput="filterPlanParcellesList(this.value)" style="margin-bottom: 0.75rem; font-size: 0.85rem; padding: 0.45rem 0.75rem;">
+
+              <!-- Checklist parcelles -->
+              <div id="exp-plan-parcelles-checklist" style="max-height: 180px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.4rem; padding: 0.5rem; background: rgba(0,0,0,0.25); border-radius: 8px; border: 1px solid rgba(82, 183, 136, 0.12);">
+                <!-- Dynamic parcel checkboxes -->
+              </div>
+
+              <!-- Surface totale en temps réel -->
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.85rem; padding: 0.65rem 0.85rem; background: rgba(82, 183, 136, 0.12); border-radius: 8px; border: 1px solid rgba(82, 183, 136, 0.25);">
+                <span style="font-size: 0.85rem; color: #b7c7be;" id="exp-plan-parcelles-count-badge">0 parcelle(s) sélectionnée(s)</span>
+                <span style="font-size: 0.95rem; font-weight: 800; color: #52b788; font-family: var(--font-heading);" id="exp-plan-surface-badge">Surface prévue : 0.0000 ha</span>
+              </div>
+            </div>
+
+            <!-- Bloc 3 : Date, Période & Horaires -->
+            <div class="form-section-box" style="background: rgba(0,0,0,0.2); border: 1px solid rgba(82, 183, 136, 0.2); border-radius: 10px; padding: 1.15rem;">
+              <div style="font-weight: 800; color: #fff; font-size: 0.92rem; margin-bottom: 0.85rem; display: flex; align-items: center; gap: 0.5rem;">
+                <span>3. Date & Période</span>
+                <span class="required">*</span>
+              </div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem;">
+                <div class="form-group" style="margin: 0;">
+                  <label for="exp-plan-start-date" class="form-label" style="font-size: 0.82rem;">Date de début <span class="required">*</span></label>
+                  <input type="date" id="exp-plan-start-date" class="epure-input" onchange="onPlanStartDateChange(this.value)" required>
+                </div>
+                <div class="form-group" style="margin: 0;">
+                  <label for="exp-plan-end-date" class="form-label" style="font-size: 0.82rem;">Date de fin (chantier multi-jours)</label>
+                  <input type="date" id="exp-plan-end-date" class="epure-input" onchange="onPlanDatesChange()" required>
+                </div>
+              </div>
+              <div style="font-size: 0.78rem; color: #95a89e; margin-top: 0.45rem;" id="exp-plan-duration-hint">
+                ℹ️ Chantier sur 1 jour — La surface est comptabilisée une seule fois sans double comptage.
+              </div>
+
+              <!-- Horaires facultatifs -->
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem; margin-top: 0.75rem;">
+                <div class="form-group" style="margin: 0;">
+                  <label for="exp-plan-start-time" class="form-label" style="font-size: 0.82rem;">Heure début (facultatif)</label>
+                  <input type="time" id="exp-plan-start-time" class="epure-input">
+                </div>
+                <div class="form-group" style="margin: 0;">
+                  <label for="exp-plan-end-time" class="form-label" style="font-size: 0.82rem;">Heure fin (facultatif)</label>
+                  <input type="time" id="exp-plan-end-time" class="epure-input">
+                </div>
+              </div>
+            </div>
+
+            <!-- Bloc 4 : Affectation Équipes & Salariés -->
+            <div class="form-section-box" style="background: rgba(0,0,0,0.2); border: 1px solid rgba(82, 183, 136, 0.2); border-radius: 10px; padding: 1.15rem;">
+              <div style="font-weight: 800; color: #fff; font-size: 0.92rem; margin-bottom: 0.85rem; display: flex; align-items: center; justify-content: space-between;">
+                <span>4. Affectation Équipes & Salariés</span>
+                <span style="font-size: 0.75rem; color: #95a89e;">Étape 2 intégrée</span>
+              </div>
+              
+              <!-- Équipes -->
+              <div style="margin-bottom: 0.85rem;">
+                <label class="form-label" style="font-size: 0.82rem; margin-bottom: 0.35rem;">Équipe(s) affectée(s) :</label>
+                <div id="exp-plan-teams-container" style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                  <!-- Dynamic teams chips with checkboxes -->
+                </div>
+              </div>
+
+              <!-- Salariés individuels / Chauffeurs / Ouvriers -->
+              <div>
+                <label class="form-label" style="font-size: 0.82rem; margin-bottom: 0.35rem;">Salarié(s) individuel(s) mobilisé(s) :</label>
+                <div id="exp-plan-workers-container" style="max-height: 140px; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 0.4rem; padding: 0.5rem; background: rgba(0,0,0,0.25); border-radius: 8px; border: 1px solid rgba(82, 183, 136, 0.12);">
+                  <!-- Dynamic workers checkboxes -->
+                </div>
+              </div>
+            </div>
+
+            <!-- Bloc 5 : Statut, Priorité & Consignes -->
+            <div class="form-section-box" style="background: rgba(0,0,0,0.2); border: 1px solid rgba(82, 183, 136, 0.2); border-radius: 10px; padding: 1.15rem;">
+              <div style="font-weight: 800; color: #fff; font-size: 0.92rem; margin-bottom: 0.85rem;">
+                5. Statut, Priorité & Consignes
+              </div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem; margin-bottom: 0.85rem;">
+                <div class="form-group" style="margin: 0;">
+                  <label for="exp-plan-status" class="form-label" style="font-size: 0.82rem;">Statut de planification</label>
+                  <select id="exp-plan-status" class="form-select-simple" style="width: 100%;">
+                    <option value="planned">Prévue</option>
+                    <option value="confirmed">Confirmée</option>
+                    <option value="postponed">Reportée</option>
+                    <option value="cancelled">Annulée</option>
+                  </select>
+                </div>
+                <div class="form-group" style="margin: 0;">
+                  <label for="exp-plan-priority" class="form-label" style="font-size: 0.82rem;">Priorité</label>
+                  <select id="exp-plan-priority" class="form-select-simple" style="width: 100%;">
+                    <option value="normale" selected>Normale</option>
+                    <option value="basse">Basse</option>
+                    <option value="haute">Haute</option>
+                    <option value="urgente">Urgente</option>
+                  </select>
+                </div>
+              </div>
+              <div class="form-group" style="margin: 0;">
+                <label for="exp-plan-notes" class="form-label" style="font-size: 0.82rem;">Consignes particulières pour le chef d'équipe & tractoristes</label>
+                <textarea id="exp-plan-notes" class="epure-input" rows="2" placeholder="Ex: Hauteur de rognage 1,15 m, débuter par les parcelles en pente le matin, matériel attelé sur John Deere 5075V..."></textarea>
+              </div>
+            </div>
+
+            <!-- Boîte d'Avertissement des Conflits Détectés (Section 7) -->
+            <div id="exp-plan-conflicts-box" style="display: none; background: rgba(255, 183, 3, 0.12); border: 1px solid rgba(255, 183, 3, 0.4); border-radius: 8px; padding: 0.85rem 1rem;">
+              <div style="display: flex; align-items: flex-start; gap: 0.65rem;">
+                <span style="font-size: 1.25rem;">⚠️</span>
+                <div style="flex: 1;">
+                  <strong style="color: #ffb703; font-size: 0.88rem;">Alertes & Conflits d'organisation détectés :</strong>
+                  <ul id="exp-plan-conflicts-list" style="margin: 0.35rem 0 0 1rem; padding: 0; font-size: 0.82rem; color: #f1f5f9;">
+                  </ul>
+                  <div style="font-size: 0.75rem; color: #cbd5e1; margin-top: 0.35rem;">
+                    * Il s'agit d'un avertissement organisationnel : vous pouvez valider si cette superposition est intentionnelle.
+                  </div>
+                </div>
+              </div>
+            </div>
+
           </div>
-          <p style="font-size: 0.84rem; color: #95a89e; margin: 0;">
-            Tous les travaux et passages que vous enregistrez ici sont conservés et seront immédiatement sélectionnables dans le module Planification dès son déploiement.
-          </p>
+
+          <div class="modal-footer" style="padding: 1rem 1.5rem; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(82, 183, 136, 0.15);">
+            <button type="button" class="btn btn-outline btn-sm" id="btn-delete-exp-plan" onclick="deleteCurrentPlanification()" style="display: none; color: #f87171; border-color: rgba(248, 113, 113, 0.3);">
+              🗑️ Supprimer
+            </button>
+            <div style="display: flex; gap: 0.65rem; margin-left: auto;">
+              <button type="button" class="btn btn-outline btn-sm" onclick="closeExploitationPlanModal()">Annuler</button>
+              <button type="submit" class="btn btn-exp-primary btn-sm" id="btn-submit-exp-plan">
+                💾 Valider la planification
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL EXPLOITATION : DÉTAIL D'UNE JOURNÉE (VUE MOIS) ==================== -->
+  <div class="modal-overlay" id="modal-exp-day-detail" aria-hidden="true" role="dialog" aria-modal="true">
+    <div class="modal-dialog" style="max-width: 600px;">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div class="modal-header-icon epure-header-icon" style="background: rgba(82, 183, 136, 0.2); color: #52b788;">
+            📅
+          </div>
+          <div>
+            <h3 class="modal-title" id="exp-day-detail-title">Chantiers du Jour</h3>
+            <p class="modal-subtitle" id="exp-day-detail-subtitle">Consultez et organisez les chantiers programmés</p>
+          </div>
+          <button type="button" class="modal-close-btn" onclick="closeDayDetailModal()" aria-label="Fermer">✕</button>
         </div>
-        <div class="modal-footer" style="padding: 1rem 1.5rem; display: flex; justify-content: flex-end; border-top: 1px solid rgba(82, 183, 136, 0.15);">
-          <button type="button" class="btn btn-exp-primary btn-sm" onclick="closePlanificationNotice()">
-            Compris
+        <div class="modal-body" style="padding: 1.25rem 1.5rem; max-height: calc(80vh - 120px); overflow-y: auto;">
+          <div id="exp-day-detail-list" style="display: flex; flex-direction: column; gap: 0.75rem;">
+            <!-- Rendered dynamically -->
+          </div>
+        </div>
+        <div class="modal-footer" style="padding: 0.85rem 1.5rem; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(82, 183, 136, 0.15);">
+          <button type="button" class="btn btn-exp-primary btn-sm" id="btn-day-detail-add" onclick="openPlanModalForDay()">
+            ＋ Planifier ce jour
+          </button>
+          <button type="button" class="btn btn-outline btn-sm" onclick="closeDayDetailModal()">
+            Fermer
           </button>
         </div>
       </div>
