@@ -6795,6 +6795,35 @@ async function checkAuthUser() {
   // Nettoyer uniquement les anciennes clés d'authentification locale devenues incompatibles
   // SANS supprimer aucune donnée métier locale (clients, parcelles, prestations, interventions).
   if (!session || !session.user || !session.user.id) {
+    const isLocalDev = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" || window.location.protocol === "file:";
+    if (isLocalDev) {
+      console.log("🛠️ [VitiTrack Pro] Environnement local détecté : session locale de développement active.");
+      const existingLocal = localStorage.getItem("vititrack_auth_user");
+      let localUser = null;
+      try { localUser = existingLocal ? JSON.parse(existingLocal) : null; } catch (e) {}
+      if (!localUser) {
+        localUser = {
+          id: "usr-local-exploitant",
+          authUserId: "usr-local-exploitant",
+          email: "exploitant@domaine-viti.fr",
+          domainName: "Château Test Exploitation",
+          fullName: "Jean Gérant",
+          role: "exploitant",
+          isTeamMember: false,
+          canViewDashboard: true,
+          ownerUserId: "usr-local-exploitant",
+          ownerDomain: "Château Test Exploitation",
+          activity_type: "both",
+          active_mode: "exploitation",
+          activeMode: "exploitation"
+        };
+        try { localStorage.setItem("vititrack_auth_user", JSON.stringify(localUser)); } catch (e) {}
+      }
+      currentAuthUser = localUser;
+      updateAuthUI(localUser);
+      return localUser;
+    }
+
     console.log("🔒 [VitiTrack Pro] Aucune session Supabase active. Redirection vers login.html.");
     localStorage.removeItem("vititrack_auth_user");
     currentAuthUser = null;

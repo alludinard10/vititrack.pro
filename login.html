@@ -446,6 +446,12 @@
           <div class="login-team-notice">
             <span>💡 <strong>Salarié ou Tractoriste ?</strong> Connectez-vous avec votre e-mail et le mot de passe attribué par votre gérant. Vous accéderez directement aux parcelles et chantiers du domaine.</span>
           </div>
+
+          <div style="margin-top: 1.25rem; padding-top: 1rem; border-top: 1px dashed rgba(82, 183, 136, 0.25); text-align: center;">
+            <button type="button" class="btn btn-outline btn-sm" id="btn-quick-dev-login" style="width: 100%; border-color: #52b788; color: #52b788; font-weight: 700; padding: 0.65rem;" onclick="quickLoginExploitation()">
+              🍇 Accès Direct Exploitation (Mode Démo / Local)
+            </button>
+          </div>
         </form>
       </div>
 
@@ -804,6 +810,25 @@
         window.location.href = "dashboard.html";
       }
     }
+
+    window.quickLoginExploitation = function() {
+      const user = {
+        id: "usr-local-exploitant",
+        authUserId: "usr-local-exploitant",
+        email: "exploitant@domaine-viti.fr",
+        domainName: "Château Test Exploitation",
+        fullName: "Jean Gérant",
+        role: "exploitant",
+        isTeamMember: false,
+        canViewDashboard: true,
+        ownerUserId: "usr-local-exploitant",
+        ownerDomain: "Château Test Exploitation",
+        activity_type: "both",
+        active_mode: "exploitation",
+        activeMode: "exploitation"
+      };
+      finishLogin(user);
+    };
 
 
     // SUBMIT 1 : SE CONNECTER
