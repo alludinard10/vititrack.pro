@@ -853,12 +853,60 @@
 
         if (data && data.user) {
           const meta = data.user.user_metadata || {};
-          const isTeamMember = meta.is_team_member || !!meta.owner_user_id;
+          const appMeta = data.user.app_metadata || {};
+          const cleanEmail = (data.user.email || email).trim().toLowerCase();
 
-          if (isTeamMember) {
-            const targetDomain = meta.owner_domain || "Domaine Viticole";
-            const targetName = meta.full_name || data.user.email;
-            showAlert(`🚜 Bonjour ${targetName} ! Connexion au compte de votre domaine (${targetDomain})...`, "success");
+          let isTeamMember = meta.is_team_member || !!meta.owner_user_id || appMeta.is_team_member || !!appMeta.owner_user_id;
+          let ownerUserId = appMeta.owner_user_id || meta.owner_user_id || null;
+          let targetDomain = meta.owner_domain || appMeta.owner_domain || null;
+          let targetName = meta.full_name || appMeta.full_name || data.user.email;
+          let userRole = appMeta.role || meta.role || "Tractoriste / Chauffeur d'engins";
+          let canViewDashboard = appMeta.can_view_dashboard !== undefined 
+            ? (appMeta.can_view_dashboard === true || appMeta.can_view_dashboard === "true")
+            : (meta.can_view_dashboard !== undefined ? (meta.can_view_dashboard === true || meta.can_view_dashboard === "true") : false);
+
+          // Vérification relationnelle Supabase : table team_memberships
+          if (!isTeamMember && sb) {
+            try {
+              const { data: tm } = await sb
+                .from("team_memberships")
+                .select("owner_user_id, role, can_view_dashboard, status")
+                .or(`member_user_id.eq.${data.user.id},invited_email.eq.${cleanEmail}`)
+                .maybeSingle();
+
+              if (tm && tm.owner_user_id && tm.owner_user_id !== data.user.id) {
+                isTeamMember = true;
+                ownerUserId = tm.owner_user_id;
+                if (tm.role) userRole = tm.role;
+                if (tm.can_view_dashboard !== undefined) canViewDashboard = tm.can_view_dashboard;
+              }
+            } catch (tmErr) {
+              console.warn("Notice vérification team_memberships login :", tmErr);
+            }
+          }
+
+          // Vérification locale : annuaire global d'équipe (localStorage)
+          if (!isTeamMember) {
+            try {
+              const dir = JSON.parse(localStorage.getItem("vititrack_global_team_directory") || "[]");
+              const entry = (dir || []).find(e => 
+                (e.email && e.email.toLowerCase() === cleanEmail) || 
+                (e.memberId && e.memberId === data.user.id)
+              );
+              if (entry && entry.ownerUserId && entry.ownerUserId !== data.user.id) {
+                isTeamMember = true;
+                ownerUserId = entry.ownerUserId;
+                if (entry.ownerDomain) targetDomain = entry.ownerDomain;
+                if (entry.role) userRole = entry.role;
+                if (entry.name) targetName = entry.name;
+                if (entry.canViewDashboard !== undefined) canViewDashboard = entry.canViewDashboard;
+              }
+            } catch (e) {}
+          }
+
+          if (isTeamMember && ownerUserId) {
+            const finalDomain = targetDomain || "Domaine Viticole";
+            showAlert(`🚜 Bonjour ${targetName} ! Connexion au compte de votre domaine (${finalDomain})...`, "success");
             setTimeout(() => {
               finishLogin({
                 id: data.user.id,
@@ -866,14 +914,16 @@
                 memberId: meta.member_id || data.user.id,
                 email: data.user.email,
                 fullName: targetName,
-                role: meta.role || "Tractoriste / Chauffeur d'engins",
-                roleCategory: meta.role_category || "tractoriste",
-                canViewDashboard: meta.can_view_dashboard !== undefined ? (meta.can_view_dashboard === true || meta.can_view_dashboard === "true") : false,
+                role: userRole,
+                roleCategory: meta.role_category || getRoleCategory(userRole),
+                canViewDashboard: canViewDashboard,
                 isTeamMember: true,
-                ownerUserId: meta.owner_user_id,
-                ownerDomain: targetDomain,
-                ownerEmail: meta.owner_email || "",
-                domainName: targetDomain,
+                ownerUserId: ownerUserId,
+                ownerDomain: finalDomain,
+                ownerEmail: meta.owner_email || appMeta.owner_email || "",
+                domainName: finalDomain,
+                activity_type: meta.activity_type || meta.activityType,
+                active_mode: meta.active_mode || meta.activeMode,
                 loggedInAt: new Date().toISOString()
               });
             }, 600);

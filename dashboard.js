@@ -31,8 +31,8 @@ function getAuthUserId() {
   if (!user) return null;
 
   // Si collaborateur / salarié rattaché à un gérant propriétaire :
-  // utilise toujours l'UUID vérifié côté serveur du propriétaire
-  if (user.isTeamMember && user.ownerUserId && user.ownerUserId.includes("-")) {
+  // utilise toujours l'identifiant du gérant propriétaire pour accéder aux clients, parcelles et chantiers du domaine
+  if (user.isTeamMember && user.ownerUserId) {
     return user.ownerUserId;
   }
 
@@ -44,6 +44,8 @@ function getAuthUserId() {
   if (user.id && user.id.includes("-")) {
     return user.id;
   }
+  if (user.authUserId) return user.authUserId;
+  if (user.id) return user.id;
 
   return null;
 }
@@ -6789,33 +6791,38 @@ async function checkAuthUser() {
   }
 
   const authUserId = session.user.id;
-  const userEmail = session.user.email || "";
+  const userEmail = (session.user.email || "").toLowerCase();
   const meta = session.user.user_metadata || {};
+  const appMeta = session.user.app_metadata || {};
 
-  // 6. Pour les salariés, utiliser uniquement un rattachement propriétaire vérifié côté serveur.
-  // Ne jamais accorder un accès sur la seule base de métadonnées modifiables par l'utilisateur (user_metadata).
+  // Vérification multi-sources robuste du rattachement collaborateur -> gérant du domaine
   let isVerifiedTeamMember = false;
   let verifiedOwnerUserId = null;
   let canViewDashboard = true;
   let userRole = meta.role || "Gérant Exploitant";
+  let ownerDomain = meta.owner_domain || appMeta.owner_domain || null;
+  let ownerEmail = meta.owner_email || appMeta.owner_email || null;
 
-  // A) Vérification serveur via app_metadata (non altérable par l'utilisateur)
-  if (session.user.app_metadata && session.user.app_metadata.owner_user_id) {
+  // A) Source 1 : app_metadata (côté serveur / Edge Function)
+  if (appMeta.owner_user_id && appMeta.owner_user_id !== authUserId) {
     isVerifiedTeamMember = true;
-    verifiedOwnerUserId = session.user.app_metadata.owner_user_id;
-    canViewDashboard = session.user.app_metadata.can_view_dashboard !== false;
-    userRole = session.user.app_metadata.role || userRole;
-  } else {
-    // B) Vérification serveur via table relationnelle team_memberships (protégée par RLS côté serveur)
+    verifiedOwnerUserId = appMeta.owner_user_id;
+    canViewDashboard = appMeta.can_view_dashboard !== false;
+    userRole = appMeta.role || userRole;
+    if (appMeta.owner_domain) ownerDomain = appMeta.owner_domain;
+    if (appMeta.owner_email) ownerEmail = appMeta.owner_email;
+  }
+
+  // B) Source 2 : Table relationnelle team_memberships (Supabase)
+  if (!isVerifiedTeamMember && sb) {
     try {
       const { data: membership } = await sb
         .from("team_memberships")
         .select("owner_user_id, role, can_view_dashboard, status")
-        .eq("member_user_id", authUserId)
-        .eq("status", "accepted")
+        .or(`member_user_id.eq.${authUserId},invited_email.eq.${userEmail}`)
         .maybeSingle();
 
-      if (membership && membership.owner_user_id) {
+      if (membership && membership.owner_user_id && membership.owner_user_id !== authUserId) {
         isVerifiedTeamMember = true;
         verifiedOwnerUserId = membership.owner_user_id;
         canViewDashboard = membership.can_view_dashboard !== false;
@@ -6826,22 +6833,67 @@ async function checkAuthUser() {
     }
   }
 
-  // 5. Pour le compte propriétaire, utiliser directement session.user.id comme identifiant
+  // C) Source 3 : user_metadata de Supabase Auth
+  if (!isVerifiedTeamMember && meta.owner_user_id && meta.owner_user_id !== authUserId) {
+    isVerifiedTeamMember = true;
+    verifiedOwnerUserId = meta.owner_user_id;
+    canViewDashboard = meta.can_view_dashboard !== false;
+    userRole = meta.role || userRole;
+    if (meta.owner_domain) ownerDomain = meta.owner_domain;
+    if (meta.owner_email) ownerEmail = meta.owner_email;
+  }
+
+  // D) Source 4 : Session locale validée lors de la connexion (login.html)
+  if (!isVerifiedTeamMember) {
+    try {
+      const cached = JSON.parse(localStorage.getItem("vititrack_auth_user") || "null");
+      if (cached && (cached.isTeamMember || cached.ownerUserId) && cached.ownerUserId && cached.ownerUserId !== authUserId) {
+        isVerifiedTeamMember = true;
+        verifiedOwnerUserId = cached.ownerUserId;
+        canViewDashboard = cached.canViewDashboard !== false;
+        userRole = cached.role || userRole;
+        if (cached.ownerDomain) ownerDomain = cached.ownerDomain;
+        if (cached.ownerEmail) ownerEmail = cached.ownerEmail;
+      }
+    } catch (e) {}
+  }
+
+  // E) Source 5 : Annuaire global d'équipe (localStorage vititrack_global_team_directory)
+  if (!isVerifiedTeamMember) {
+    try {
+      const dir = JSON.parse(localStorage.getItem("vititrack_global_team_directory") || "[]");
+      const entry = (dir || []).find(e => 
+        (e.email && e.email.toLowerCase() === userEmail) ||
+        (e.memberId && (e.memberId === authUserId || e.memberId === meta.member_id))
+      );
+      if (entry && entry.ownerUserId && entry.ownerUserId !== authUserId) {
+        isVerifiedTeamMember = true;
+        verifiedOwnerUserId = entry.ownerUserId;
+        canViewDashboard = entry.canViewDashboard !== false;
+        userRole = entry.role || userRole;
+        if (entry.ownerDomain) ownerDomain = entry.ownerDomain;
+        if (entry.ownerEmail) ownerEmail = entry.ownerEmail;
+      }
+    } catch (e) {}
+  }
+
+  // Pour le compte propriétaire, utiliser directement session.user.id comme identifiant
   const finalOwnerUserId = isVerifiedTeamMember ? verifiedOwnerUserId : authUserId;
+  const finalDomainName = ownerDomain || meta.owner_domain || meta.domain_name || meta.domain || userEmail.split("@")[0];
 
   const user = {
     id: authUserId,
     authUserId: authUserId,
     memberId: meta.member_id || undefined,
     email: userEmail,
-    domainName: meta.owner_domain || meta.domain_name || meta.domain || userEmail.split("@")[0],
+    domainName: finalDomainName,
     fullName: meta.full_name || (isVerifiedTeamMember ? "Collaborateur" : "Exploitant"),
     role: userRole,
     isTeamMember: isVerifiedTeamMember,
     canViewDashboard: isVerifiedTeamMember ? canViewDashboard : true,
     ownerUserId: finalOwnerUserId,
-    ownerDomain: meta.owner_domain || undefined,
-    ownerEmail: meta.owner_email || undefined,
+    ownerDomain: ownerDomain || finalDomainName,
+    ownerEmail: ownerEmail || meta.owner_email || undefined,
     activity_type: meta.activity_type || meta.activityType,
     active_mode: meta.active_mode || meta.activeMode,
     loggedInAt: new Date().toISOString()
@@ -7504,6 +7556,36 @@ async function syncTeamUserToSupabaseAuth(member) {
   }
 }
 
+// Récupération des collaborateurs du domaine depuis Supabase (table team_memberships)
+window.fetchTeamMembersFromCloud = async function(ownerUserId, ownerEmail) {
+  const sb = window.supabaseClient;
+  if (!sb || !ownerUserId) return [];
+  try {
+    const { data: members, error } = await sb
+      .from("team_memberships")
+      .select("member_user_id, invited_email, role, can_view_dashboard, status, created_at")
+      .eq("owner_user_id", ownerUserId);
+    if (error || !Array.isArray(members) || members.length === 0) return [];
+    return members.map(m => {
+      const emailName = (m.invited_email || "").split("@")[0] || "Salarié";
+      const cleanName = emailName.charAt(0).toUpperCase() + emailName.slice(1);
+      return {
+        id: m.member_user_id || `USR-${(m.invited_email || "").replace(/[^a-zA-Z0-9]/g, "")}`,
+        name: cleanName,
+        email: m.invited_email || "",
+        role: m.role || "Tractoriste / Chauffeur d'engins",
+        roleCategory: getRoleCategory(m.role || "Tractoriste"),
+        canViewDashboard: m.can_view_dashboard !== false,
+        status: m.status === "accepted" ? "Actif" : "En attente",
+        color: "#2563eb"
+      };
+    });
+  } catch (err) {
+    console.warn("Notice fetchTeamMembersFromCloud :", err);
+    return [];
+  }
+};
+
 function openAddTeamMemberModal() {
   const form = document.getElementById("team-member-form");
   if (form) form.reset();
@@ -7725,6 +7807,24 @@ async function adminUpdateMemberPassword(memberId, memberEmail, newPassword, ext
     return false;
   }
 
+  const authUser = getAuthUser();
+  const ownerUid = getAuthUserId();
+  const ownerDom = (authUser && (authUser.ownerDomain || authUser.domainName)) || "Domaine Viticole";
+  const ownerEm = (authUser && (authUser.ownerEmail || authUser.email)) || "";
+
+  // Synchronisation relationnelle dans team_memberships
+  if (sb && memberEmail && ownerUid) {
+    try {
+      sb.from("team_memberships").upsert({
+        owner_user_id: ownerUid,
+        invited_email: memberEmail.trim().toLowerCase(),
+        role: extra.role || "Tractoriste / Chauffeur d'engins",
+        can_view_dashboard: extra.canViewDashboard !== false,
+        status: "accepted"
+      }, { onConflict: "owner_user_id, invited_email" }).then(() => {}).catch(e => console.warn(e));
+    } catch (e) {}
+  }
+
   try {
     const { data, error } = await sb.functions.invoke("admin-update-user-password", {
       body: {
@@ -7738,7 +7838,10 @@ async function adminUpdateMemberPassword(memberId, memberEmail, newPassword, ext
         canViewDashboard: extra.canViewDashboard,
         phone: extra.phone,
         certifications: extra.certifications,
-        notes: extra.notes
+        notes: extra.notes,
+        ownerUserId: ownerUid,
+        ownerDomain: ownerDom,
+        ownerEmail: ownerEm
       }
     });
 

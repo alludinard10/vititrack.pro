@@ -120,6 +120,9 @@ serve(async (req: Request) => {
 
     if (!targetUser) {
       if (body && body.createIfNotFound && targetEmail) {
+        const targetDomain = body.ownerDomain || adminMeta.domain_name || adminMeta.owner_domain || "Domaine Viticole";
+        const targetOwnerEmail = body.ownerEmail || adminUser.email || "";
+
         // Création d'un nouveau collaborateur directement dans Supabase Auth
         const newMemberMeta = {
           full_name: body.fullName || targetEmail.split("@")[0],
@@ -128,12 +131,21 @@ serve(async (req: Request) => {
           is_team_member: true,
           can_view_dashboard: body.canViewDashboard === true,
           owner_user_id: adminId,
-          owner_domain: adminMeta.domain_name || adminMeta.owner_domain || "Domaine Viticole",
-          owner_email: adminUser.email || "",
+          owner_domain: targetDomain,
+          owner_email: targetOwnerEmail,
           phone: body.phone || "",
           certifications: body.certifications || "",
           notes: body.notes || "",
           status: "Actif",
+        };
+
+        const newAppMeta = {
+          owner_user_id: adminId,
+          is_team_member: true,
+          can_view_dashboard: body.canViewDashboard === true,
+          role: body.role || "Tractoriste / Chauffeur d'engins",
+          owner_domain: targetDomain,
+          owner_email: targetOwnerEmail
         };
 
         const { data: createData, error: createErr } = await supabaseAdmin.auth.admin.createUser({
@@ -141,6 +153,7 @@ serve(async (req: Request) => {
           password: newPassword.trim(),
           email_confirm: true,
           user_metadata: newMemberMeta,
+          app_metadata: newAppMeta
         });
 
         if (createErr) {
@@ -148,6 +161,24 @@ serve(async (req: Request) => {
             status: 500,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
+        }
+
+        // Synchronisation immédiate dans la table team_memberships (statut accepted)
+        try {
+          if (createData?.user?.id) {
+            await supabaseAdmin.from("team_memberships").upsert({
+              owner_user_id: adminId,
+              member_user_id: createData.user.id,
+              role: body.role || "Tractoriste / Chauffeur d'engins",
+              can_view_dashboard: body.canViewDashboard === true,
+              status: "accepted",
+              invited_by: adminId,
+              invited_email: targetEmail.trim().toLowerCase(),
+              accepted_at: new Date().toISOString()
+            }, { onConflict: "member_user_id" });
+          }
+        } catch (tmErr) {
+          console.warn("Notice sync team_memberships create:", tmErr);
         }
 
         return new Response(
@@ -192,10 +223,32 @@ serve(async (req: Request) => {
     // Nettoyage en passant de toute mention héritée de plain_password dans user_metadata
     const updatedMeta = { ...targetMeta };
     delete updatedMeta.plain_password;
+    updatedMeta.is_team_member = true;
+    updatedMeta.owner_user_id = adminId;
+    if (body.ownerDomain || adminMeta.domain_name || adminMeta.owner_domain) {
+      updatedMeta.owner_domain = body.ownerDomain || adminMeta.domain_name || adminMeta.owner_domain;
+    }
+    if (body.ownerEmail || adminUser.email) {
+      updatedMeta.owner_email = body.ownerEmail || adminUser.email;
+    }
+    if (body.canViewDashboard !== undefined) updatedMeta.can_view_dashboard = body.canViewDashboard === true;
+    if (body.role) updatedMeta.role = body.role;
+    if (body.fullName) updatedMeta.full_name = body.fullName;
+
+    const updatedAppMeta = {
+      ...(targetUser.app_metadata || {}),
+      owner_user_id: adminId,
+      is_team_member: true,
+      can_view_dashboard: updatedMeta.can_view_dashboard,
+      role: updatedMeta.role,
+      owner_domain: updatedMeta.owner_domain,
+      owner_email: updatedMeta.owner_email
+    };
 
     const { data: updateData, error: updateErr } = await supabaseAdmin.auth.admin.updateUserById(targetUser.id, {
       password: newPassword.trim(),
       user_metadata: updatedMeta,
+      app_metadata: updatedAppMeta
     });
 
     if (updateErr) {
@@ -203,6 +256,22 @@ serve(async (req: Request) => {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // Synchronisation immédiate dans la table team_memberships (statut accepted)
+    try {
+      await supabaseAdmin.from("team_memberships").upsert({
+        owner_user_id: adminId,
+        member_user_id: targetUser.id,
+        role: updatedMeta.role || "Tractoriste / Chauffeur d'engins",
+        can_view_dashboard: updatedMeta.can_view_dashboard !== false,
+        status: "accepted",
+        invited_by: adminId,
+        invited_email: (targetUser.email || targetEmail).trim().toLowerCase(),
+        accepted_at: new Date().toISOString()
+      }, { onConflict: "member_user_id" });
+    } catch (tmErr) {
+      console.warn("Notice sync team_memberships update:", tmErr);
     }
 
     return new Response(
