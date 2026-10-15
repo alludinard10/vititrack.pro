@@ -2975,35 +2975,157 @@
                VUE EXPLOITATION 6 : ÉQUIPES DU DOMAINE (RUBRIQUE 6)
                ------------------------------------------------------------------ -->
           <div class="app-view exp-view" id="view-exp-equipe" style="display: none;">
-            <div class="view-header">
+            <div class="view-header" style="flex-wrap: wrap; gap: 1rem; align-items: center; justify-content: space-between;">
               <div>
-                <div class="exp-view-badge">👥 RESSOURCES HUMAINES</div>
-                <h1 class="view-heading">Équipes & Salariés du Domaine</h1>
-                <p class="view-subheading">Gestion des équipes terrain, chefs d'équipe, tractoristes et salariés viticoles.</p>
+                <div class="exp-view-badge">👥 GESTION DES RESSOURCES HUMAINES</div>
+                <h1 class="view-heading">Équipes, Salariés & Chefs d'Équipe</h1>
+                <p class="view-subheading">Organisation des équipes de travail manuel et mécanique, affectations flexibles et espace terrain chef d'équipe.</p>
               </div>
-              <div class="services-view-actions">
-                <button type="button" class="btn btn-exp-primary btn-sm" onclick="openAddWorkerModal()">
+              <div class="services-view-actions" style="display: flex; gap: 0.65rem; align-items: center; flex-wrap: wrap;">
+                <button type="button" class="btn btn-exp-primary btn-sm" id="exp-btn-add-team-main" onclick="openAddTeamModal()">
                   <span class="btn-icon">＋</span>
+                  <span>Nouvelle équipe</span>
+                </button>
+                <button type="button" class="btn btn-outline btn-sm" id="exp-btn-add-worker-main" onclick="openAddWorkerModal()">
+                  <span class="btn-icon">👤</span>
                   <span>Nouveau collaborateur</span>
                 </button>
               </div>
             </div>
 
-            <!-- Bandeau préparatoire Équipes & Chefs d'Équipe (Étape 2) -->
-            <div class="exp-card" style="margin-bottom: 1.5rem; padding: 1.25rem 1.5rem; background: linear-gradient(135deg, rgba(82, 183, 136, 0.1), rgba(123, 44, 191, 0.08)); border: 1px solid rgba(82, 183, 136, 0.25);">
-              <div style="display: flex; align-items: flex-start; gap: 1rem; flex-wrap: wrap;">
-                <div style="font-size: 1.85rem; line-height: 1;">👥</div>
-                <div style="flex: 1; min-width: 260px;">
-                  <h4 style="font-size: 1.05rem; font-weight: 800; color: #fff; margin: 0 0 0.35rem 0;">Organisation des Équipes & Chefs d'Équipe</h4>
-                  <p style="font-size: 0.88rem; color: #b7c7be; margin: 0; line-height: 1.5;">
-                    Ce module permettra d'organiser vos salariés en équipes dédiées (ex: <em>Équipe Taille</em>, <em>Équipe Travail du Sol</em>), de désigner un chef d'équipe responsable et de leur affecter directement les missions du planning. Retrouvez ci-dessous l'ensemble des salariés et collaborateurs actifs du domaine.
-                  </p>
+            <!-- Grille KPI Équipes & Ressources Humaines -->
+            <div class="kpi-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 1.5rem;">
+              <div class="kpi-card" style="border-left: 4px solid #52b788;">
+                <div class="kpi-header">
+                  <span class="kpi-title">Équipes actives</span>
+                  <span class="kpi-icon" style="background: rgba(82, 183, 136, 0.15); color: #52b788;">🏷️</span>
                 </div>
+                <div class="kpi-value" id="exp-kpi-teams-active">0</div>
+                <div class="kpi-subtext" id="exp-kpi-teams-sub">Organisées pour le terrain</div>
+              </div>
+              <div class="kpi-card" style="border-left: 4px solid #f7b731;">
+                <div class="kpi-header">
+                  <span class="kpi-title">Chefs d'équipe</span>
+                  <span class="kpi-icon" style="background: rgba(247, 183, 49, 0.15); color: #f7b731;">👑</span>
+                </div>
+                <div class="kpi-value" id="exp-kpi-teams-leaders">0</div>
+                <div class="kpi-subtext">Responsables chantiers</div>
+              </div>
+              <div class="kpi-card" style="border-left: 4px solid #4a90e2;">
+                <div class="kpi-header">
+                  <span class="kpi-title">Salariés actifs</span>
+                  <span class="kpi-icon" style="background: rgba(74, 144, 226, 0.15); color: #4a90e2;">👥</span>
+                </div>
+                <div class="kpi-value" id="exp-kpi-teams-workers">0</div>
+                <div class="kpi-subtext" id="exp-kpi-teams-workers-sub">Main-d'œuvre du domaine</div>
+              </div>
+              <div class="kpi-card" style="border-left: 4px solid #9b59b6;">
+                <div class="kpi-header">
+                  <span class="kpi-title">Tractoristes</span>
+                  <span class="kpi-icon" style="background: rgba(155, 89, 182, 0.15); color: #9b59b6;">🚜</span>
+                </div>
+                <div class="kpi-value" id="exp-kpi-teams-drivers">0</div>
+                <div class="kpi-subtext">Travaux mécaniques</div>
               </div>
             </div>
 
-            <div id="exp-workers-cards-container" class="exp-cards-grid">
-              <!-- Rendu dynamique via renderWorkersView() -->
+            <!-- Barre de sous-onglets Équipes / Salariés / Chef d'équipe mobile -->
+            <div class="exp-subtabs-nav" style="display: flex; gap: 0.5rem; margin-bottom: 1.25rem; border-bottom: 1px solid rgba(82, 183, 136, 0.2); padding-bottom: 0.5rem; flex-wrap: wrap;">
+              <button type="button" class="exp-subtab-btn active" id="exp-tab-btn-teams" onclick="switchTeamsViewTab('teams')">
+                <span style="font-size: 1.05rem;">🏷️</span>
+                <span>Équipes du Domaine</span>
+                <span class="exp-tab-badge" id="exp-badge-count-teams">0</span>
+              </button>
+              <button type="button" class="exp-subtab-btn" id="exp-tab-btn-workers" onclick="switchTeamsViewTab('workers')">
+                <span style="font-size: 1.05rem;">👤</span>
+                <span>Répertoire des Salariés</span>
+                <span class="exp-tab-badge" id="exp-badge-count-workers">0</span>
+              </button>
+              <button type="button" class="exp-subtab-btn" id="exp-tab-btn-leader" onclick="switchTeamsViewTab('leader')">
+                <span style="font-size: 1.05rem;">📱</span>
+                <span>Espace Chef d'Équipe (Terrain)</span>
+              </button>
+            </div>
+
+            <!-- SOUS-PANNEAU 1 : ÉQUIPES DU DOMAINE -->
+            <div id="exp-teams-panel" class="exp-tab-panel active">
+              <div class="exp-card" style="margin-bottom: 1.25rem; padding: 0.85rem 1.25rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem;">
+                <div style="display: flex; align-items: center; gap: 0.75rem; flex: 1; min-width: 260px;">
+                  <span style="font-size: 1.15rem; color: #52b788;">🔍</span>
+                  <input type="text" id="exp-teams-search-input" class="epure-input" placeholder="Rechercher une équipe, un chef d'équipe, un travail..." style="padding: 0.45rem 0.75rem; font-size: 0.88rem;" oninput="onTeamsSearchInput(this.value)">
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.65rem; flex-wrap: wrap;">
+                  <span style="font-size: 0.82rem; color: #95a89e;">Statut :</span>
+                  <select id="exp-teams-filter-status" class="form-select-simple" style="padding: 0.4rem 0.75rem; font-size: 0.84rem;" onchange="onTeamsStatusFilterChange(this.value)">
+                    <option value="active">Actives uniquement</option>
+                    <option value="all">Toutes les équipes</option>
+                    <option value="archived">Archivées uniquement</option>
+                  </select>
+                  <button type="button" class="btn btn-exp-primary btn-xs" onclick="openAddTeamModal()">
+                    <span>＋ Nouvelle équipe</span>
+                  </button>
+                </div>
+              </div>
+
+              <div id="exp-teams-cards-container" class="exp-cards-grid">
+                <!-- Rendu dynamique via renderTeamsView() -->
+              </div>
+            </div>
+
+            <!-- SOUS-PANNEAU 2 : RÉPERTOIRE DES SALARIÉS -->
+            <div id="exp-workers-panel" class="exp-tab-panel" style="display: none;">
+              <div class="exp-card" style="margin-bottom: 1.25rem; padding: 0.85rem 1.25rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem;">
+                <div style="display: flex; align-items: center; gap: 0.75rem; flex: 1; min-width: 260px;">
+                  <span style="font-size: 1.15rem; color: #52b788;">🔍</span>
+                  <input type="text" id="exp-workers-search-input" class="epure-input" placeholder="Rechercher par nom, prénom, rôle, email..." style="padding: 0.45rem 0.75rem; font-size: 0.88rem;" oninput="onWorkersSearchInput(this.value)">
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.65rem; flex-wrap: wrap;">
+                  <span style="font-size: 0.82rem; color: #95a89e;">Fonction :</span>
+                  <select id="exp-workers-filter-role" class="form-select-simple" style="padding: 0.4rem 0.75rem; font-size: 0.84rem;" onchange="onWorkersRoleFilterChange(this.value)">
+                    <option value="all">Tous les rôles</option>
+                    <option value="Chef d'équipe">Chefs d'équipe</option>
+                    <option value="Tractoriste">Tractoristes</option>
+                    <option value="Ouvrier viticole">Ouvriers viticoles</option>
+                    <option value="Chef de culture">Chefs de culture</option>
+                    <option value="Saisonnier">Saisonniers</option>
+                    <option value="Gérant">Gérants / Exploitants</option>
+                  </select>
+                  <button type="button" class="btn btn-exp-primary btn-xs" onclick="openAddWorkerModal()">
+                    <span>＋ Nouveau salarié</span>
+                  </button>
+                </div>
+              </div>
+
+              <div id="exp-workers-cards-container" class="exp-cards-grid">
+                <!-- Rendu dynamique via renderWorkersView() -->
+              </div>
+            </div>
+
+            <!-- SOUS-PANNEAU 3 : ESPACE CHEF D'ÉQUIPE (MOBILE / TERRAIN) -->
+            <div id="exp-leader-panel" class="exp-tab-panel" style="display: none;">
+              <div class="exp-card" style="margin-bottom: 1.25rem; padding: 1rem 1.25rem; background: linear-gradient(135deg, rgba(247, 183, 49, 0.12), rgba(82, 183, 136, 0.08)); border: 1px solid rgba(247, 183, 49, 0.25);">
+                <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+                  <div style="display: flex; align-items: center; gap: 0.85rem;">
+                    <div style="font-size: 1.85rem;">📱</div>
+                    <div>
+                      <h4 style="margin: 0; font-size: 1.05rem; font-weight: 800; color: #fff;">Interface Mobile Terrain — Chef d'Équipe</h4>
+                      <p style="margin: 0.2rem 0 0 0; font-size: 0.85rem; color: #b7c7be;">
+                        Vue épurée et optimisée smartphone permettant au responsable d'équipe de consulter ses ouvriers, leurs coordonnées et les consignes directes.
+                      </p>
+                    </div>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 0.65rem;">
+                    <label for="exp-leader-select" style="font-size: 0.85rem; color: #fff; font-weight: 700;">Chef d'équipe :</label>
+                    <select id="exp-leader-select" class="form-select-simple" style="padding: 0.45rem 0.85rem; font-size: 0.88rem; background: #13241d; border-color: rgba(247, 183, 49, 0.4);" onchange="onLeaderSelectChange(this.value)">
+                      <!-- Rempli dynamiquement -->
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div id="exp-leader-view-container">
+                <!-- Rendu dynamique via renderTeamLeaderMobileView() -->
+              </div>
             </div>
           </div>
 
@@ -6150,7 +6272,7 @@
 
   <!-- ==================== MODAL EXPLOITATION 6 : SALARIÉ / COLLABORATEUR ==================== -->
   <div class="modal-overlay" id="modal-exp-worker" aria-hidden="true" role="dialog" aria-modal="true">
-    <div class="modal-dialog" style="max-width: 520px;">
+    <div class="modal-dialog" style="max-width: 540px;">
       <div class="modal-content">
         <div class="modal-header">
           <div class="modal-header-icon epure-header-icon" style="background: rgba(123, 44, 191, 0.2); color: #c77dff;">
@@ -6158,7 +6280,7 @@
           </div>
           <div>
             <h3 class="modal-title" id="exp-worker-modal-title">Nouveau Collaborateur</h3>
-            <p class="modal-subtitle">Ressources humaines & coûts horaires de la main-d'œuvre</p>
+            <p class="modal-subtitle">Fiche salarié, fonction viticole, coordonnées et taux horaire</p>
           </div>
           <button type="button" class="modal-close-btn" onclick="closeWorkerModal()" aria-label="Fermer">✕</button>
         </div>
@@ -6183,14 +6305,15 @@
 
             <div class="form-row">
               <div class="form-group flex-1">
-                <label for="exp-worker-role" class="form-label">Rôle viticole</label>
+                <label for="exp-worker-role" class="form-label">Fonction viticole</label>
                 <select id="exp-worker-role" class="form-select-simple">
-                  <option value="Tractoriste">Tractoriste</option>
-                  <option value="Ouvrier viticole">Ouvrier viticole</option>
-                  <option value="Chef de culture">Chef de culture</option>
-                  <option value="Gérant">Gérant / Exploitant</option>
-                  <option value="Saisonnier">Saisonnier</option>
-                  <option value="Apprenti">Apprenti</option>
+                  <option value="Chef d'équipe">👑 Chef d'équipe</option>
+                  <option value="Tractoriste">🚜 Tractoriste</option>
+                  <option value="Ouvrier viticole">🌿 Ouvrier viticole</option>
+                  <option value="Chef de culture">🍇 Chef de culture</option>
+                  <option value="Saisonnier">⏳ Saisonnier</option>
+                  <option value="Gérant">🏢 Gérant / Exploitant</option>
+                  <option value="Apprenti">🎓 Apprenti</option>
                 </select>
               </div>
               <div class="form-group flex-1">
@@ -6205,20 +6328,41 @@
               </div>
             </div>
 
+            <!-- Coordonnées terrain -->
+            <div class="form-row">
+              <div class="form-group flex-1">
+                <label for="exp-worker-phone" class="form-label">Téléphone portable</label>
+                <input type="tel" id="exp-worker-phone" class="epure-input" placeholder="Ex: 06 12 34 56 78">
+              </div>
+              <div class="form-group flex-1">
+                <label for="exp-worker-email" class="form-label">Email (facultatif)</label>
+                <input type="email" id="exp-worker-email" class="epure-input" placeholder="Ex: thomas@domaine.fr">
+              </div>
+            </div>
+
             <div class="form-group">
               <label for="exp-worker-hourly-cost" class="form-label">
                 <span>Coût horaire chargé (€/h)</span> <span class="required">*</span>
               </label>
               <input type="number" step="0.5" min="0" id="exp-worker-hourly-cost" class="epure-input" placeholder="Ex: 26.50" required>
               <div style="font-size: 0.78rem; color: #95a89e; margin-top: 0.35rem;">
-                Ce taux horaire sera figé (snapshot) lors de chaque saisie d'intervention terrain.
+                🔒 Taux horaire confidentiel utilisé pour le calcul de rentabilité (masqué pour les salariés et chefs d'équipe).
               </div>
+            </div>
+
+            <!-- Affectation d'équipe initiale ou en cours -->
+            <div class="form-group">
+              <label for="exp-worker-team-id" class="form-label">Équipe d'affectation</label>
+              <select id="exp-worker-team-id" class="form-select-simple">
+                <option value="">-- Sans équipe (affectation ultérieure) --</option>
+                <!-- Rempli dynamiquement -->
+              </select>
             </div>
 
             <div style="display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; background: rgba(0,0,0,0.25); border-radius: 8px;">
               <input type="checkbox" id="exp-worker-is-active" checked style="width: 18px; height: 18px;">
               <label for="exp-worker-is-active" style="color: #fff; font-size: 0.88rem; cursor: pointer; margin: 0;">
-                Membre actif de l'exploitation
+                Salarié actif sur l'exploitation
               </label>
             </div>
           </div>
@@ -6226,7 +6370,180 @@
           <div class="modal-footer" style="padding: 1rem 1.5rem; display: flex; justify-content: flex-end; gap: 0.75rem; border-top: 1px solid rgba(82, 183, 136, 0.15);">
             <button type="button" class="btn btn-outline btn-sm" onclick="closeWorkerModal()">Annuler</button>
             <button type="submit" class="btn btn-exp-primary btn-sm">
-              💾 Enregistrer le collaborateur
+              💾 Enregistrer la fiche salarié
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL EXPLOITATION 6-B : ÉQUIPE DU DOMAINE ==================== -->
+  <div class="modal-overlay" id="modal-exp-team" aria-hidden="true" role="dialog" aria-modal="true">
+    <div class="modal-dialog" style="max-width: 580px;">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div class="modal-header-icon epure-header-icon" style="background: rgba(82, 183, 136, 0.2); color: #52b788;">
+            🏷️
+          </div>
+          <div>
+            <h3 class="modal-title" id="exp-team-modal-title">Nouvelle Équipe</h3>
+            <p class="modal-subtitle">Organisation des équipes de travail, chef d'équipe et salariés affectés</p>
+          </div>
+          <button type="button" class="modal-close-btn" onclick="closeTeamModal()" aria-label="Fermer">✕</button>
+        </div>
+
+        <form id="form-exp-team" onsubmit="event.preventDefault(); saveTeam();" novalidate>
+          <input type="hidden" id="exp-team-edit-id" value="">
+          <div class="modal-body" style="padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem;">
+            <!-- Nom et couleur -->
+            <div class="form-row">
+              <div class="form-group flex-2">
+                <label for="exp-team-name" class="form-label">
+                  <span>Nom de l'équipe</span> <span class="required">*</span>
+                </label>
+                <input type="text" id="exp-team-name" class="epure-input" placeholder="Ex: Équipe 1 : Taille" required>
+              </div>
+              <div class="form-group flex-1">
+                <label for="exp-team-color" class="form-label">Couleur badge</label>
+                <select id="exp-team-color" class="form-select-simple">
+                  <option value="#52b788">🟢 Vert émeraude</option>
+                  <option value="#f7b731">🟡 Jaune ambre</option>
+                  <option value="#4a90e2">🔵 Bleu ciel</option>
+                  <option value="#9b59b6">🟣 Violet pourpre</option>
+                  <option value="#e74c3c">🔴 Rouge rubis</option>
+                  <option value="#1abc9c">🔷 Turquoise</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Type de travaux et Chef d'équipe -->
+            <div class="form-row">
+              <div class="form-group flex-1">
+                <label for="exp-team-work-type" class="form-label">Travaux habituels</label>
+                <input type="text" id="exp-team-work-type" class="epure-input" placeholder="Ex: Taille de la vigne, Sol, Palissage...">
+              </div>
+              <div class="form-group flex-1">
+                <label for="exp-team-leader-id" class="form-label">Chef d'équipe responsable</label>
+                <select id="exp-team-leader-id" class="form-select-simple">
+                  <option value="">-- Sans chef d'équipe attitré --</option>
+                  <!-- Rempli dynamiquement -->
+                </select>
+              </div>
+            </div>
+
+            <!-- Salariés affectés à l'équipe -->
+            <div class="form-group">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+                <label class="form-label" style="margin: 0;">
+                  <span>Salariés affectés à l'équipe</span>
+                </label>
+                <span id="exp-team-members-selected-count" style="font-size: 0.8rem; color: #52b788; font-weight: 700;">0 sélectionné(s)</span>
+              </div>
+              <div id="exp-team-workers-checklist" style="max-height: 200px; overflow-y: auto; background: rgba(0,0,0,0.3); border: 1px solid rgba(82, 183, 136, 0.2); border-radius: 8px; padding: 0.75rem; display: flex; flex-direction: column; gap: 0.5rem;">
+                <!-- Rempli dynamiquement -->
+              </div>
+              <div style="font-size: 0.78rem; color: #95a89e; margin-top: 0.35rem;">
+                💡 Les salariés peuvent appartenir à plusieurs équipes ou changer d'équipe selon les jours.
+              </div>
+            </div>
+
+            <!-- Consignes / Notes -->
+            <div class="form-group">
+              <label for="exp-team-notes" class="form-label">Consignes & remarques permanentes</label>
+              <textarea id="exp-team-notes" class="epure-input" rows="2" placeholder="Ex: Équipe dédiée aux parcelles en coteaux, port des EPI obligatoire..."></textarea>
+            </div>
+
+            <!-- Statut actif / archivé -->
+            <div style="display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; background: rgba(0,0,0,0.25); border-radius: 8px;">
+              <input type="checkbox" id="exp-team-is-active" checked style="width: 18px; height: 18px;">
+              <label for="exp-team-is-active" style="color: #fff; font-size: 0.88rem; cursor: pointer; margin: 0;">
+                Équipe active (disponible pour la planification et le terrain)
+              </label>
+            </div>
+          </div>
+
+          <div class="modal-footer" style="padding: 1rem 1.5rem; display: flex; justify-content: flex-end; gap: 0.75rem; border-top: 1px solid rgba(82, 183, 136, 0.15);">
+            <button type="button" class="btn btn-outline btn-sm" onclick="closeTeamModal()">Annuler</button>
+            <button type="submit" class="btn btn-exp-primary btn-sm">
+              💾 Enregistrer l'équipe
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL EXPLOITATION 6-C : AFFECTATION DATÉE SALARIÉ / ÉQUIPE ==================== -->
+  <div class="modal-overlay" id="modal-exp-assign-worker" aria-hidden="true" role="dialog" aria-modal="true">
+    <div class="modal-dialog" style="max-width: 520px;">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div class="modal-header-icon epure-header-icon" style="background: rgba(74, 144, 226, 0.2); color: #4a90e2;">
+            🔄
+          </div>
+          <div>
+            <h3 class="modal-title" id="exp-assign-worker-modal-title">Changer d'Équipe / Affectation Datée</h3>
+            <p class="modal-subtitle">Affectation flexible d'un salarié à une équipe avec conservation de l'historique</p>
+          </div>
+          <button type="button" class="modal-close-btn" onclick="closeAssignWorkerModal()" aria-label="Fermer">✕</button>
+        </div>
+
+        <form id="form-exp-assign-worker" onsubmit="event.preventDefault(); saveWorkerTeamAssignment();" novalidate>
+          <input type="hidden" id="exp-assign-worker-target-id" value="">
+          <div class="modal-body" style="padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem;">
+            <div class="form-group">
+              <label class="form-label">Salarié concerné</label>
+              <div id="exp-assign-worker-name-display" style="padding: 0.65rem 0.85rem; background: rgba(0,0,0,0.25); border: 1px solid rgba(82, 183, 136, 0.2); border-radius: 8px; font-weight: 700; color: #fff;">
+                --
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="exp-assign-team-select" class="form-label">
+                <span>Équipe de destination</span> <span class="required">*</span>
+              </label>
+              <select id="exp-assign-team-select" class="form-select-simple" required>
+                <!-- Rempli dynamiquement -->
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="exp-assign-role-in-team" class="form-label">Rôle dans cette équipe</label>
+              <select id="exp-assign-role-in-team" class="form-select-simple">
+                <option value="member">Membre d'équipe</option>
+                <option value="leader">Chef d'équipe</option>
+                <option value="substitute">Renfort / Remplaçant</option>
+              </select>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group flex-1">
+                <label for="exp-assign-from-date" class="form-label">
+                  <span>Date d'affectation</span> <span class="required">*</span>
+                </label>
+                <input type="date" id="exp-assign-from-date" class="epure-input" required>
+              </div>
+              <div class="form-group flex-1">
+                <label for="exp-assign-to-date" class="form-label">Date de fin (facultatif)</label>
+                <input type="date" id="exp-assign-to-date" class="epure-input">
+                <div style="font-size: 0.74rem; color: #95a89e; margin-top: 0.25rem;">Laisser vide si continue</div>
+              </div>
+            </div>
+
+            <!-- Historique des affectations précédentes -->
+            <div class="form-group">
+              <label class="form-label">Historique des affectations de ce salarié</label>
+              <div id="exp-assign-worker-history-list" style="max-height: 140px; overflow-y: auto; background: rgba(0,0,0,0.2); border: 1px solid rgba(82, 183, 136, 0.15); border-radius: 8px; padding: 0.65rem; font-size: 0.82rem; color: #b7c7be;">
+                <!-- Rempli dynamiquement -->
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-footer" style="padding: 1rem 1.5rem; display: flex; justify-content: flex-end; gap: 0.75rem; border-top: 1px solid rgba(82, 183, 136, 0.15);">
+            <button type="button" class="btn btn-outline btn-sm" onclick="closeAssignWorkerModal()">Annuler</button>
+            <button type="submit" class="btn btn-exp-primary btn-sm">
+              💾 Valider l'affectation
             </button>
           </div>
         </form>
