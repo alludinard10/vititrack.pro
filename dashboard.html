@@ -2950,20 +2950,42 @@
 
                 <!-- 1. CHOISIR LE TRAVAIL -->
                 <div class="form-section-box">
-                  <div class="form-section-header">
-                    <span class="form-step-num">1</span>
-                    <h3 class="form-section-title">Choisir le travail viticole</h3>
+                  <div class="form-section-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+                    <div style="display: flex; align-items: center; gap: 0.65rem;">
+                      <span class="form-step-num">1</span>
+                      <h3 class="form-section-title">Choisir le travail viticole</h3>
+                    </div>
+                    <button type="button" class="btn btn-outline btn-xs" onclick="openAddTaskModalForIntervention()" style="color: #c77dff; border-color: rgba(199, 125, 255, 0.4); font-weight: 700; display: inline-flex; align-items: center; gap: 0.35rem;" title="Créer et insérer un nouveau travail viticole">
+                      <span class="btn-icon">＋</span>
+                      <span>Nouveau travail viticole</span>
+                    </button>
                   </div>
+
+                  <!-- Filtres rapides par nature de travail -->
+                  <div style="display: flex; gap: 0.45rem; margin-top: 0.65rem; margin-bottom: 0.65rem; align-items: center; flex-wrap: wrap;">
+                    <span style="font-size: 0.78rem; color: #95a89e; font-weight: 700; text-transform: uppercase;">Filtrer :</span>
+                    <button type="button" class="btn btn-xs exp-task-filter-btn active" id="exp-task-filter-all" onclick="filterInterventionTasks('all')">Tous les travaux</button>
+                    <button type="button" class="btn btn-xs btn-outline exp-task-filter-btn" id="exp-task-filter-manuel" onclick="filterInterventionTasks('manuel')">🧤 Travaux manuels</button>
+                    <button type="button" class="btn btn-xs btn-outline exp-task-filter-btn" id="exp-task-filter-mecanique" onclick="filterInterventionTasks('mecanique')">🚜 Travaux mécaniques</button>
+                  </div>
+
+                  <!-- Notification dynamique lors de l'insertion d'un travail -->
+                  <div id="exp-int-task-feedback" style="display: none; padding: 0.55rem 0.85rem; margin-bottom: 0.65rem; background: rgba(123, 44, 191, 0.2); border: 1px solid rgba(199, 125, 255, 0.4); border-radius: 8px; color: #e0aaff; font-size: 0.84rem;"></div>
 
                   <!-- Chips d'accès rapide en 1 clic -->
                   <div class="quick-tasks-chips" id="exp-int-quick-chips">
                     <!-- Populated dynamically via JS -->
                   </div>
 
-                  <div style="margin-top: 0.75rem;">
-                    <select id="exp-int-task" class="form-select-simple" onchange="onInterventionTaskChange(this.value)" required>
-                      <!-- Populated dynamically -->
-                    </select>
+                  <div style="margin-top: 0.75rem; display: flex; gap: 0.5rem; align-items: center;">
+                    <div style="flex: 1;">
+                      <select id="exp-int-task" class="form-select-simple" onchange="onInterventionTaskChange(this.value)" required style="width: 100%;">
+                        <!-- Populated dynamically -->
+                      </select>
+                    </div>
+                    <button type="button" class="btn btn-outline btn-sm" onclick="openAddTaskModalForIntervention()" title="Créer et insérer un nouveau travail viticole" style="color: #c77dff; border-color: rgba(199, 125, 255, 0.4); white-space: nowrap; font-weight: 700; display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.55rem 0.85rem;">
+                      <span>＋ Insérer</span>
+                    </button>
                   </div>
                 </div>
 
