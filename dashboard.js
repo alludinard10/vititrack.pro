@@ -1961,7 +1961,7 @@ function setupEventListeners() {
   setupModalCloser("planned-modal", "planned-modal-close-btn", "planned-modal-cancel-btn", closePlannedModal);
   setupModalCloser("client-dossier-modal", "dossier-modal-close-btn", "dossier-modal-dismiss-btn", closeClientDossier);
   setupModalCloser("subscription-modal", "subscription-modal-close-btn", "sub-modal-close-btn", closeSubscriptionModal);
-  setupModalCloser("team-modal", "team-modal-close-btn", null, closeTeamModal);
+  setupModalCloser("team-modal", "team-modal-close-btn", "team-modal-cancel-btn", closeTeamModal);
   setupModalCloser("team-member-modal", null, null, closeTeamMemberModal);
   setupModalCloser("harvest-modal", "harvest-modal-close-btn", null, closeHarvestModal);
   setupModalCloser("harvest-yield-modal", null, null, closeYieldModal);
@@ -7296,9 +7296,16 @@ function closeTeamModal() {
   const modal = document.getElementById("team-modal");
   if (modal) {
     modal.classList.remove("open");
+    modal.classList.remove("active");
     modal.setAttribute("aria-hidden", "true");
-    unlockBodyScroll();
   }
+  const expModal = document.getElementById("modal-exp-team");
+  if (expModal) {
+    expModal.classList.remove("active");
+    expModal.classList.remove("open");
+    expModal.setAttribute("aria-hidden", "true");
+  }
+  unlockBodyScroll();
 }
 
 function renderTeamList() {
