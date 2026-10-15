@@ -2675,55 +2675,149 @@
           <div class="app-view exp-view" id="view-exp-travaux" style="display: none;">
             <div class="view-header">
               <div>
-                <div class="exp-view-badge">🚜 SUIVI DE CAMPAGNE</div>
-                <h1 class="view-heading">Travaux & Chantiers du Domaine</h1>
-                <p class="view-subheading">Suivi détaillé des opérations culturales de la campagne (taille, sols, traitements, relevage, vendanges).</p>
+                <div class="exp-view-badge">🚜 ÉTAPE 3 : TRAVAUX VITICOLES & CHANTIERS</div>
+                <h1 class="view-heading">Travaux à Faire & Suivi Parcellaire</h1>
+                <p class="view-subheading">Programmation des travaux manuels et mécaniques, gestion des passages multiples et calcul direct des surfaces restantes.</p>
               </div>
-              <div class="services-view-actions">
-                <button type="button" class="btn btn-outline btn-sm" onclick="openManageTasksModal()" title="Gérer la bibliothèque de travaux">
-                  <span>⚙️ Bibliothèque des travaux</span>
+              <div class="services-view-actions" style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                <button type="button" class="btn btn-outline btn-sm" onclick="openManageTasksModal()" title="Gérer le catalogue des travaux">
+                  <span>🏷️ Types de travaux</span>
                 </button>
-                <button type="button" class="btn btn-exp-primary btn-sm" onclick="openAssignTaskModal()">
+                <button type="button" class="btn btn-outline btn-sm" onclick="openPlanificationNotice()" title="Préparation de la planification étape 4" style="border-color: rgba(199, 125, 255, 0.4); color: #c77dff;">
+                  <span>🗓️ Planifier (À venir : Étape 4)</span>
+                </button>
+                <button type="button" class="btn btn-exp-primary btn-sm" onclick="openAssignTaskModal()" id="btn-exp-new-job">
                   <span class="btn-icon">＋</span>
-                  <span>Affecter un travail</span>
+                  <span>Nouveau travail</span>
                 </button>
               </div>
             </div>
 
-            <!-- Sélecteur de campagne & résumé d'avancement -->
-            <div class="exp-card" style="margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; padding: 1.25rem 1.5rem;">
-              <div>
-                <div style="font-size: 0.8rem; font-weight: 700; color: #c77dff; text-transform: uppercase;">Campagne sélectionnée</div>
-                <h2 style="font-size: 1.35rem; font-weight: 800; color: #fff; margin: 0.2rem 0;" id="exp-travaux-campaign-name">Campagne 2026</h2>
-                <div style="font-size: 0.85rem; color: #95a89e;" id="exp-travaux-campaign-sub">Calcul de l'avancement pondéré par la surface</div>
+            <!-- Bandeau Campagne & KPIs Globaux -->
+            <div class="exp-card" style="margin-bottom: 1.5rem; padding: 1.25rem 1.5rem;">
+              <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.25rem; border-bottom: 1px solid rgba(82, 183, 136, 0.15); padding-bottom: 1rem;">
+                <div>
+                  <div style="font-size: 0.78rem; font-weight: 700; color: #c77dff; text-transform: uppercase; letter-spacing: 0.05em;">Campagne viticole active</div>
+                  <h2 style="font-size: 1.35rem; font-weight: 800; color: #fff; margin: 0.15rem 0;" id="exp-travaux-campaign-name">Campagne 2026</h2>
+                  <div style="font-size: 0.82rem; color: #95a89e;" id="exp-travaux-campaign-sub">Avancement calculé à partir des interventions réelles • Surfaces à 4 décimales</div>
+                </div>
+                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                  <button type="button" class="btn btn-outline btn-sm" onclick="openCampaignModal()">
+                    🔄 Changer de campagne
+                  </button>
+                </div>
               </div>
-              <div style="display: flex; gap: 0.5rem;">
-                <button type="button" class="btn btn-outline btn-sm" onclick="openCampaignModal()">
-                  🔄 Changer de campagne
-                </button>
+
+              <!-- Grille des 5 KPIs Clés -->
+              <div class="kpi-grid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem;">
+                <div class="kpi-card" style="background: rgba(0,0,0,0.25); border-radius: 10px; padding: 1rem;">
+                  <div class="kpi-label" style="font-size: 0.78rem; color: #95a89e;">📋 Travaux programmés</div>
+                  <div class="kpi-value" style="font-size: 1.6rem; font-weight: 800; color: #fff;" id="exp-travaux-kpi-count">0</div>
+                  <div class="kpi-sub" style="font-size: 0.75rem; color: #c77dff;" id="exp-travaux-kpi-count-sub">0 manuel(s) • 0 mécanique(s)</div>
+                </div>
+                <div class="kpi-card" style="background: rgba(0,0,0,0.25); border-radius: 10px; padding: 1rem;">
+                  <div class="kpi-label" style="font-size: 0.78rem; color: #95a89e;">🌿 Surface totale concernée</div>
+                  <div class="kpi-value" style="font-size: 1.6rem; font-weight: 800; color: #52b788;" id="exp-travaux-kpi-surface-total">0.0000 ha</div>
+                  <div class="kpi-sub" style="font-size: 0.75rem; color: #95a89e;">Cumul des parcelles</div>
+                </div>
+                <div class="kpi-card" style="background: rgba(0,0,0,0.25); border-radius: 10px; padding: 1rem;">
+                  <div class="kpi-label" style="font-size: 0.78rem; color: #95a89e;">✅ Surface réalisée</div>
+                  <div class="kpi-value" style="font-size: 1.6rem; font-weight: 800; color: #52b788;" id="exp-travaux-kpi-surface-done">0.0000 ha</div>
+                  <div class="kpi-sub" style="font-size: 0.75rem; color: #95a89e;">Interventions réelles</div>
+                </div>
+                <div class="kpi-card" style="background: rgba(0,0,0,0.25); border-radius: 10px; padding: 1rem;">
+                  <div class="kpi-label" style="font-size: 0.78rem; color: #95a89e;">⏳ Surface restante</div>
+                  <div class="kpi-value" style="font-size: 1.6rem; font-weight: 800; color: #f4a261;" id="exp-travaux-kpi-surface-remaining">0.0000 ha</div>
+                  <div class="kpi-sub" style="font-size: 0.75rem; color: #f4a261;">À réaliser</div>
+                </div>
+                <div class="kpi-card" style="background: rgba(0,0,0,0.25); border-radius: 10px; padding: 1rem;">
+                  <div class="kpi-label" style="font-size: 0.78rem; color: #95a89e;">📊 Avancement global</div>
+                  <div class="kpi-value" style="font-size: 1.6rem; font-weight: 800; color: #c77dff;" id="exp-travaux-kpi-progress-pct">0%</div>
+                  <div class="kpi-sub" style="font-size: 0.75rem; color: #c77dff;">Surfaces achevées</div>
+                </div>
               </div>
             </div>
 
-            <!-- Grille d'avancement des travaux par surface -->
-            <div class="table-card" style="margin-bottom: 1.5rem;">
+            <!-- Barre de Recherche & Filtres Avancés -->
+            <div class="exp-card" style="margin-bottom: 1.5rem; padding: 1rem 1.25rem;">
+              <div style="display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; justify-content: space-between;">
+                <!-- Recherche texte -->
+                <div style="flex: 1; min-width: 240px; position: relative;">
+                  <input type="text" id="exp-travaux-search-input" class="epure-input" placeholder="🔍 Rechercher un travail, passage, parcelle, consigne..." oninput="filterTravauxView()" style="padding-left: 2.2rem;">
+                  <span style="position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%); font-size: 0.95rem; opacity: 0.6; pointer-events: none;">🔍</span>
+                </div>
+
+                <!-- Filtre Nature (Manuel / Mécanique) -->
+                <div style="min-width: 170px;">
+                  <select id="exp-travaux-filter-nature" class="form-select-simple" onchange="filterTravauxView()">
+                    <option value="all">Tous les types</option>
+                    <option value="manuel">🧤 Travaux manuels</option>
+                    <option value="mecanique">🚜 Travaux mécaniques</option>
+                  </select>
+                </div>
+
+                <!-- Filtre Statut -->
+                <div style="min-width: 160px;">
+                  <select id="exp-travaux-filter-status" class="form-select-simple" onchange="filterTravauxView()">
+                    <option value="all">Tous les statuts</option>
+                    <option value="todo">⏳ À faire</option>
+                    <option value="in_progress">🚜 En cours</option>
+                    <option value="completed">✅ Terminé</option>
+                  </select>
+                </div>
+
+                <!-- Filtre Parcelle -->
+                <div style="min-width: 180px;">
+                  <select id="exp-travaux-filter-parcelle" class="form-select-simple" onchange="filterTravauxView()">
+                    <option value="all">Toutes les parcelles</option>
+                    <!-- Dynamique -->
+                  </select>
+                </div>
+
+                <!-- Bascule Vue Cartes / Tableau -->
+                <div style="display: flex; gap: 0.35rem; background: rgba(0,0,0,0.3); padding: 3px; border-radius: 8px; border: 1px solid rgba(82, 183, 136, 0.2);">
+                  <button type="button" id="btn-exp-view-mode-cards" class="btn btn-xs active" onclick="setTravauxViewMode('cards')" style="padding: 0.4rem 0.65rem;" title="Vue Chantiers">
+                    📑 Chantiers
+                  </button>
+                  <button type="button" id="btn-exp-view-mode-table" class="btn btn-xs" onclick="setTravauxViewMode('table')" style="padding: 0.4rem 0.65rem;" title="Vue Détaillée par parcelle">
+                    📊 Parcelles
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- VUE 1 : Cartes des Chantiers & Passages -->
+            <div id="exp-travaux-jobs-section" style="margin-bottom: 1.5rem;">
+              <div id="exp-travaux-jobs-container" style="display: flex; flex-direction: column; gap: 1rem;">
+                <!-- Rendu dynamique des chantiers (travaux + passages) -->
+              </div>
+            </div>
+
+            <!-- VUE 2 : Tableau détaillé des travaux par parcelle -->
+            <div id="exp-travaux-table-section" class="table-card" style="display: none; margin-bottom: 1.5rem;">
               <div class="table-card-header">
-                <h3 class="table-title">Avancement Global par Travail Viticole</h3>
-                <p class="table-subtitle">Surface terminée / Surface concernée × 100</p>
+                <div>
+                  <h3 class="table-title">Suivi Détaillé Ligne par Ligne</h3>
+                  <p class="table-subtitle">Surfaces totales, réalisées et restantes calculées en direct</p>
+                </div>
               </div>
-              <div id="exp-travaux-progress-container" style="padding: 1.25rem; display: flex; flex-direction: column; gap: 1rem;">
+              <div id="exp-travaux-parcelles-container">
                 <!-- Rendu dynamique -->
               </div>
             </div>
 
-            <!-- Tableau détaillé des travaux par parcelle -->
+            <!-- Synthèse d'avancement global par opération -->
             <div class="table-card">
-              <div class="table-card-header">
+              <div class="table-card-header" style="cursor: pointer;" onclick="toggleTravauxGlobalProgress()">
                 <div>
-                  <h3 class="table-title">Suivi Détaillé des Travaux par Parcelle</h3>
-                  <p class="table-subtitle">Statuts en direct (À faire, En cours, Terminé)</p>
+                  <h3 class="table-title" style="display: flex; align-items: center; gap: 0.5rem;">
+                    <span>📈 Progression Globale du Domaine par Travail</span>
+                    <span id="exp-travaux-progress-toggle-icon" style="font-size: 0.85rem; color: #95a89e;">▼</span>
+                  </h3>
+                  <p class="table-subtitle">Surface terminée / Surface totale concernée × 100 (pondération surfacique)</p>
                 </div>
               </div>
-              <div id="exp-travaux-parcelles-container">
+              <div id="exp-travaux-progress-container" style="padding: 1.25rem; display: flex; flex-direction: column; gap: 1rem;">
                 <!-- Rendu dynamique -->
               </div>
             </div>
@@ -6096,8 +6190,17 @@
 
             <div class="form-row">
               <div class="form-group flex-1">
+                <label for="exp-task-work-type" class="form-label">Nature du travail</label>
+                <select id="exp-task-work-type" class="form-select-simple">
+                  <option value="manuel">🧤 Travail manuel</option>
+                  <option value="mecanique">🚜 Travail mécanique</option>
+                </select>
+              </div>
+              <div class="form-group flex-1">
                 <label for="exp-task-category" class="form-label">Catégorie</label>
                 <select id="exp-task-category" class="form-select-simple">
+                  <option value="Travaux manuels">Travaux manuels</option>
+                  <option value="Travaux mécaniques">Travaux mécaniques</option>
                   <option value="Taille & Végétation">Taille & Végétation</option>
                   <option value="Travaux en Vert">Travaux en Vert</option>
                   <option value="Travaux du Sol">Travaux du Sol</option>
@@ -6199,73 +6302,257 @@
     </div>
   </div>
 
-  <!-- ==================== MODAL EXPLOITATION 5 : AFFECTER UN TRAVAIL SUR PARCELLE ==================== -->
+  <!-- ==================== MODAL EXPLOITATION 5 : PROGRAMMER UN TRAVAIL À FAIRE (ÉTAPE 3) ==================== -->
   <div class="modal-overlay" id="modal-exp-assign-task" aria-hidden="true" role="dialog" aria-modal="true">
-    <div class="modal-dialog" style="max-width: 620px;">
+    <div class="modal-dialog" style="max-width: 680px;">
       <div class="modal-content">
         <div class="modal-header">
           <div class="modal-header-icon epure-header-icon" style="background: rgba(123, 44, 191, 0.2); color: #c77dff;">
             🚜
           </div>
           <div>
-            <h3 class="modal-title">Affecter un travail viticole</h3>
-            <p class="modal-subtitle">Programmer une opération sur les parcelles du domaine</p>
+            <h3 class="modal-title" id="exp-assign-modal-title">Nouveau travail à faire</h3>
+            <p class="modal-subtitle">Programmez une opération manuelle ou mécanique sur vos parcelles</p>
           </div>
           <button type="button" class="modal-close-btn" onclick="closeAssignTaskModal()" aria-label="Fermer">✕</button>
         </div>
 
         <form id="form-exp-assign-task" onsubmit="event.preventDefault(); saveAssignTask();" novalidate>
-          <div class="modal-body" style="padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem;">
-            <!-- Choix du Travail -->
+          <input type="hidden" id="exp-assign-edit-group-id" value="">
+          <div class="modal-body" style="padding: 1.5rem; display: flex; flex-direction: column; gap: 1.15rem;">
+            
+            <!-- Ligne 1 : Type de travail + Bouton création type -->
             <div class="form-group">
-              <label for="exp-assign-task-id" class="form-label">
-                <span>Opération culturale</span> <span class="required">*</span>
-              </label>
-              <select id="exp-assign-task-id" class="form-select-simple" required>
-                <!-- Populated dynamically -->
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.35rem;">
+                <label for="exp-assign-task-id" class="form-label" style="margin: 0;">
+                  <span>Type de travail</span> <span class="required">*</span>
+                </label>
+                <button type="button" class="btn btn-outline btn-xs" onclick="openTaskModal()" style="font-size: 0.75rem; padding: 0.2rem 0.5rem;">
+                  ＋ Créer un type de travail
+                </button>
+              </div>
+              <select id="exp-assign-task-id" class="form-select-simple" required onchange="onAssignTaskSelected()">
+                <!-- Populated dynamically with optgroup Travaux manuels & Travaux mécaniques -->
               </select>
             </div>
 
-            <!-- Choix des Parcelles -->
-            <div class="form-group">
-              <label class="form-label">
-                <span>Parcelle(s) concernée(s)</span> <span class="required">*</span>
-              </label>
-              <div id="exp-assign-parcelles-checklist" style="max-height: 180px; overflow-y: auto; background: rgba(0,0,0,0.3); border: 1px solid rgba(82, 183, 136, 0.2); border-radius: 8px; padding: 0.75rem; display: flex; flex-direction: column; gap: 0.5rem;">
-                <!-- Populated dynamically -->
-              </div>
-            </div>
-
-            <!-- Statut & Date -->
+            <!-- Ligne 2 : Numéro de passage & Priorité -->
             <div class="form-row">
               <div class="form-group flex-1">
-                <label for="exp-assign-status" class="form-label">Statut</label>
-                <select id="exp-assign-status" class="form-select-simple">
-                  <option value="todo">⏳ À faire</option>
-                  <option value="in_progress">🚜 En cours</option>
-                  <option value="completed">✅ Terminé (100% surface)</option>
+                <label for="exp-assign-passage" class="form-label">
+                  <span>Numéro de passage</span> <span class="required">*</span>
+                </label>
+                <div style="position: relative;">
+                  <input type="number" id="exp-assign-passage" class="epure-input" value="1" min="1" max="20" step="1" required style="padding-left: 2.2rem;">
+                  <span style="position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%); font-size: 0.9rem; color: #c77dff;">№</span>
+                </div>
+                <div style="font-size: 0.75rem; color: #95a89e; margin-top: 0.25rem;">Ex: 1 pour Passage 1, 2 pour Passage 2...</div>
+              </div>
+
+              <div class="form-group flex-1">
+                <label for="exp-assign-priority" class="form-label">Priorité</label>
+                <select id="exp-assign-priority" class="form-select-simple">
+                  <option value="normale" selected>🟡 Normale</option>
+                  <option value="haute">🟠 Haute</option>
+                  <option value="urgente">🔴 Urgente</option>
+                  <option value="basse">🟢 Basse</option>
                 </select>
               </div>
+
               <div class="form-group flex-1">
-                <label for="exp-assign-planned-date" class="form-label">Date prévue</label>
+                <label for="exp-assign-planned-date" class="form-label">Date souhaitée (facultative)</label>
                 <input type="date" id="exp-assign-planned-date" class="epure-input">
               </div>
             </div>
 
-            <!-- Notes -->
+            <!-- Ligne 3 : Sélection des Parcelles avec Recherche et Tout Cocher -->
             <div class="form-group">
-              <label for="exp-assign-notes" class="form-label">Consignes & remarques</label>
-              <input type="text" id="exp-assign-notes" class="epure-input" placeholder="Ex: Priorité coteau sud, passage croisé...">
+              <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.5rem;">
+                <label class="form-label" style="margin: 0;">
+                  <span>Sélection des parcelles concernées</span> <span class="required">*</span>
+                </label>
+                <div style="display: flex; gap: 0.4rem;">
+                  <button type="button" class="btn btn-outline btn-xs" onclick="toggleAllParcellesInModal(true)" style="padding: 0.25rem 0.6rem; font-size: 0.78rem;">
+                    ☑️ Tout cocher
+                  </button>
+                  <button type="button" class="btn btn-outline btn-xs" onclick="toggleAllParcellesInModal(false)" style="padding: 0.25rem 0.6rem; font-size: 0.78rem;">
+                    ◻️ Tout décocher
+                  </button>
+                </div>
+              </div>
+
+              <!-- Champ de recherche de parcelle instantané -->
+              <div style="margin-bottom: 0.5rem; position: relative;">
+                <input type="text" id="exp-assign-parcelles-search" class="epure-input" placeholder="🔍 Filtrer les parcelles par nom, cépage, lieu-dit..." oninput="filterParcellesInModal()" style="font-size: 0.85rem; padding: 0.45rem 0.75rem 0.45rem 2rem;">
+                <span style="position: absolute; left: 0.65rem; top: 50%; transform: translateY(-50%); font-size: 0.85rem; opacity: 0.6; pointer-events: none;">🔍</span>
+              </div>
+
+              <!-- Liste cochable scrollable -->
+              <div id="exp-assign-parcelles-checklist" style="max-height: 200px; overflow-y: auto; background: rgba(0,0,0,0.35); border: 1px solid rgba(82, 183, 136, 0.25); border-radius: 8px; padding: 0.75rem; display: flex; flex-direction: column; gap: 0.5rem;">
+                <!-- Populated dynamically -->
+              </div>
+
+              <!-- Bandeau dynamique Surface Totale Calculée en direct -->
+              <div id="exp-assign-surface-summary-badge" style="margin-top: 0.5rem; padding: 0.65rem 0.9rem; background: rgba(123, 44, 191, 0.15); border: 1px solid rgba(199, 125, 255, 0.3); border-radius: 8px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">
+                <div style="font-size: 0.85rem; color: #fff; display: flex; align-items: center; gap: 0.4rem;">
+                  <span>📊</span>
+                  <span id="exp-assign-count-text"><strong>0 parcelle</strong> sélectionnée</span>
+                </div>
+                <div style="font-size: 0.92rem; font-weight: 800; color: #52b788;" id="exp-assign-surface-text">
+                  Surface totale : 0.0000 ha
+                </div>
+              </div>
+            </div>
+
+            <!-- Ligne 4 : Consignes particulières -->
+            <div class="form-group">
+              <label for="exp-assign-notes" class="form-label">Consignes particulières & recommandations terrain</label>
+              <textarea id="exp-assign-notes" class="epure-input" rows="2" placeholder="Ex: Hauteur de rognage 1,15 m, passage soigné en tête de rang, priorité coteaux sud..."></textarea>
             </div>
           </div>
 
           <div class="modal-footer" style="padding: 1rem 1.5rem; display: flex; justify-content: flex-end; gap: 0.75rem; border-top: 1px solid rgba(82, 183, 136, 0.15);">
             <button type="button" class="btn btn-outline btn-sm" onclick="closeAssignTaskModal()">Annuler</button>
-            <button type="submit" class="btn btn-exp-primary btn-sm">
-              💾 Affecter le travail
+            <button type="submit" class="btn btn-exp-primary btn-sm" id="btn-submit-assign-task">
+              💾 Enregistrer le travail
             </button>
           </div>
         </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODALE DÉTAILS D'UN TRAVAIL / CHANTIER (ÉTAPE 3) ==================== -->
+  <div class="modal-overlay" id="modal-exp-job-details" aria-hidden="true" role="dialog" aria-modal="true">
+    <div class="modal-dialog" style="max-width: 760px;">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div class="modal-header-icon epure-header-icon" style="background: rgba(82, 183, 136, 0.2); color: #52b788;">
+            📋
+          </div>
+          <div>
+            <h3 class="modal-title" id="exp-job-detail-title">Détails du travail viticole</h3>
+            <p class="modal-subtitle" id="exp-job-detail-sub">Suivi d'avancement et parcelles concernées</p>
+          </div>
+          <button type="button" class="modal-close-btn" onclick="closeJobDetailsModal()" aria-label="Fermer">✕</button>
+        </div>
+
+        <div class="modal-body" style="padding: 1.5rem; display: flex; flex-direction: column; gap: 1.25rem;">
+          <!-- Synthèse métriques du travail -->
+          <div class="exp-card" style="padding: 1rem 1.25rem; background: rgba(0,0,0,0.3); border-color: rgba(82, 183, 136, 0.2);">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.75rem;">
+              <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                <span id="exp-job-detail-nature-badge" class="status-badge" style="background: rgba(123, 44, 191, 0.2); color: #c77dff;">🚜 Mécanique</span>
+                <span id="exp-job-detail-passage-badge" class="status-badge" style="background: rgba(255, 255, 255, 0.1); color: #fff;">Passage 1</span>
+                <span id="exp-job-detail-priority-badge" class="status-badge">🟡 Normale</span>
+                <span id="exp-job-detail-status-badge" class="status-badge to-bill">⏳ À faire</span>
+              </div>
+              <div style="font-size: 0.85rem; color: #95a89e;" id="exp-job-detail-date">Date prévue : —</div>
+            </div>
+
+            <!-- Avancement surfacique -->
+            <div style="margin-bottom: 0.5rem;">
+              <div style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 0.25rem;">
+                <span style="color: #95a89e;">Avancement surfacique</span>
+                <strong style="color: #c77dff;" id="exp-job-detail-pct">0%</strong>
+              </div>
+              <div class="progress-track" style="height: 8px;">
+                <div class="progress-fill" id="exp-job-detail-progress-bar" style="width: 0%;"></div>
+              </div>
+            </div>
+
+            <!-- Grille 3 chiffres -->
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; text-align: center; margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid rgba(255,255,255,0.06);">
+              <div>
+                <div style="font-size: 0.72rem; color: #95a89e;">Surface totale</div>
+                <div style="font-size: 1.05rem; font-weight: 800; color: #fff;" id="exp-job-detail-surf-total">0.0000 ha</div>
+              </div>
+              <div>
+                <div style="font-size: 0.72rem; color: #95a89e;">Surface réalisée</div>
+                <div style="font-size: 1.05rem; font-weight: 800; color: #52b788;" id="exp-job-detail-surf-done">0.0000 ha</div>
+              </div>
+              <div>
+                <div style="font-size: 0.72rem; color: #95a89e;">Surface restante</div>
+                <div style="font-size: 1.05rem; font-weight: 800; color: #f4a261;" id="exp-job-detail-surf-remaining">0.0000 ha</div>
+              </div>
+            </div>
+
+            <!-- Consignes -->
+            <div id="exp-job-detail-notes-box" style="margin-top: 0.75rem; padding: 0.6rem 0.85rem; background: rgba(255,255,255,0.03); border-radius: 6px; font-size: 0.82rem; color: #cbd5e1;">
+              <strong>Consignes :</strong> <span id="exp-job-detail-notes-text">Aucune consigne saisie.</span>
+            </div>
+          </div>
+
+          <!-- Liste des parcelles concernées -->
+          <div>
+            <h4 style="margin: 0 0 0.5rem 0; font-size: 0.95rem; color: #fff;">🌿 Parcelles concernées (<span id="exp-job-detail-parcelles-count">0</span>)</h4>
+            <div id="exp-job-detail-parcelles-table" style="max-height: 240px; overflow-y: auto;">
+              <!-- Rendu dynamique -->
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer" style="padding: 1rem 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; border-top: 1px solid rgba(82, 183, 136, 0.15);">
+          <div style="display: flex; gap: 0.5rem;">
+            <button type="button" class="btn btn-outline btn-xs" id="btn-job-detail-edit" onclick="editJobFromDetails()" style="color: #c77dff; border-color: rgba(199, 125, 255, 0.3);">
+              ✏️ Modifier
+            </button>
+            <button type="button" class="btn btn-outline btn-xs" id="btn-job-detail-delete" onclick="deleteJobFromDetails()" style="color: #e63946; border-color: rgba(230, 57, 70, 0.3);">
+              🗑️ Supprimer / Archiver
+            </button>
+          </div>
+          <div style="display: flex; gap: 0.5rem;">
+            <button type="button" class="btn btn-outline btn-sm" onclick="openPlanificationNotice()">
+              🗓️ Planifier (Étape 4)
+            </button>
+            <button type="button" class="btn btn-exp-primary btn-sm" onclick="closeJobDetailsModal()">
+              Fermer
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODALE INFORMATION PLANIFICATION (PRÉPARATION ÉTAPE 4) ==================== -->
+  <div class="modal-overlay" id="modal-exp-planification-notice" aria-hidden="true" role="dialog" aria-modal="true">
+    <div class="modal-dialog" style="max-width: 520px;">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div class="modal-header-icon epure-header-icon" style="background: rgba(199, 125, 255, 0.2); color: #c77dff;">
+            🗓️
+          </div>
+          <div>
+            <h3 class="modal-title">Module Planification</h3>
+            <p class="modal-subtitle">Fonctionnalité prévue pour l'Étape 4</p>
+          </div>
+          <button type="button" class="modal-close-btn" onclick="closePlanificationNotice()" aria-label="Fermer">✕</button>
+        </div>
+        <div class="modal-body" style="padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem; color: #cbd5e1; font-size: 0.9rem; line-height: 1.5;">
+          <p>
+            Vous êtes actuellement à <strong>l'Étape 3 : Travaux à faire & passages multiples</strong>.
+          </p>
+          <div style="background: rgba(123, 44, 191, 0.12); border: 1px solid rgba(199, 125, 255, 0.3); border-radius: 8px; padding: 1rem;">
+            <h4 style="margin: 0 0 0.4rem 0; color: #c77dff; font-size: 0.95rem;">🚀 Prochaine étape : Planification (Étape 4)</h4>
+            <p style="margin: 0; font-size: 0.85rem; color: #e5ece8;">
+              Le moteur complet de planification permettra :
+            </p>
+            <ul style="margin: 0.5rem 0 0 1rem; padding: 0; font-size: 0.83rem; color: #95a89e;">
+              <li>L'assignation des travaux aux équipes et tractoristes</li>
+              <li>L'affectation du matériel et des engins</li>
+              <li>Le calendrier prévisionnel des chantiers</li>
+              <li>La bascule automatique vers les chantiers réalisés</li>
+            </ul>
+          </div>
+          <p style="font-size: 0.84rem; color: #95a89e; margin: 0;">
+            Tous les travaux et passages que vous enregistrez ici sont conservés et seront immédiatement sélectionnables dans le module Planification dès son déploiement.
+          </p>
+        </div>
+        <div class="modal-footer" style="padding: 1rem 1.5rem; display: flex; justify-content: flex-end; border-top: 1px solid rgba(82, 183, 136, 0.15);">
+          <button type="button" class="btn btn-exp-primary btn-sm" onclick="closePlanificationNotice()">
+            Compris
+          </button>
+        </div>
       </div>
     </div>
   </div>
