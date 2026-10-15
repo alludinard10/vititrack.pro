@@ -2460,6 +2460,7 @@
                   0.0000 <span style="font-size: 1rem; color: #95a89e; font-weight: 500;">ha</span>
                 </div>
                 <div style="font-size: 0.82rem; color: #95a89e;" id="exp-kpi-parcelles-count">0 parcelle(s) active(s)</div>
+                <div style="font-size: 0.82rem; color: #52b788; font-weight: 700; margin-top: 0.25rem;" id="exp-dash-kpi-surface-worked">0.0000 ha validés</div>
               </div>
 
               <!-- Coût engagé campagne -->
@@ -2928,198 +2929,110 @@
                VUE EXPLOITATION 5 : SAISIE D'INTERVENTION TERRAIN (RUBRIQUE 5)
                ------------------------------------------------------------------ -->
           <div class="app-view exp-view" id="view-exp-interventions" style="display: none;">
-            <div class="view-header">
+            <!-- 1. En-tête de la Rubrique -->
+            <div class="view-header" style="flex-wrap: wrap; gap: 1rem; align-items: center; justify-content: space-between;">
               <div>
                 <div style="display: flex; align-items: center; gap: 0.65rem; margin-bottom: 0.35rem;">
-                  <span class="exp-view-badge">⚡ SAISIE CULTURELLE TERRAIN</span>
-                  <span id="exp-int-offline-badge" class="status-badge billed" style="font-size: 0.75rem;">⚡ Mode Direct</span>
+                  <span class="exp-view-badge">🚜 RUBRIQUE 5 — SUIVI DES INTERVENTIONS</span>
+                  <span id="exp-int-offline-badge" class="status-badge billed" style="font-size: 0.75rem;">⚡ Suivi Réel</span>
                 </div>
-                <h1 class="view-heading" id="exp-int-heading">Saisie d'Intervention Terrain</h1>
-                <p class="view-subheading">Enregistrez vos travaux en quelques secondes depuis les rangs de vigne.</p>
+                <h1 class="view-heading" id="exp-int-heading">Journal & Suivi des Interventions</h1>
+                <p class="view-subheading">Déclarez les chantiers effectués, contrôlez les surfaces réalisées et validez les interventions pour actualiser l'avancement en temps réel.</p>
               </div>
-              <div class="services-view-actions">
+              <div class="services-view-actions" style="display: flex; gap: 0.65rem; align-items: center; flex-wrap: wrap;">
+                <button type="button" class="btn btn-exp-primary btn-md" id="btn-exp-open-intervention-modal" onclick="openInterventionModal()" style="font-weight: 800; font-size: 0.95rem; box-shadow: 0 4px 14px rgba(123, 44, 191, 0.45);">
+                  <span class="btn-icon">＋</span>
+                  <span>Saisir une intervention</span>
+                </button>
                 <button type="button" class="btn btn-outline btn-sm" onclick="switchExploitationView('dashboard')">
-                  ← Retour au tableau de bord
+                  ← Tableau de bord
                 </button>
               </div>
             </div>
 
-            <div class="table-card" style="max-width: 900px; margin: 0 auto; padding: 1.75rem;">
-              <form id="form-exp-intervention" onsubmit="event.preventDefault(); saveExploitationIntervention();">
-                <input type="hidden" id="exp-int-edit-id" value="">
+            <!-- 2. Barre des 5 KPIs Clés des Interventions -->
+            <div class="kpi-grid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); margin-bottom: 1.25rem;">
+              <div class="kpi-card" style="border-left: 4px solid #c77dff;">
+                <div class="kpi-title">📅 Aujourd'hui</div>
+                <div class="kpi-value" id="exp-int-kpi-today">0</div>
+                <div class="kpi-subtext" style="color: #95a89e;">Chantier(s) du jour</div>
+              </div>
 
-                <!-- 1. CHOISIR LE TRAVAIL -->
-                <div class="form-section-box">
-                  <div class="form-section-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
-                    <div style="display: flex; align-items: center; gap: 0.65rem;">
-                      <span class="form-step-num">1</span>
-                      <h3 class="form-section-title">Choisir le travail viticole</h3>
-                    </div>
-                    <button type="button" class="btn btn-outline btn-xs" onclick="openAddTaskModalForIntervention()" style="color: #c77dff; border-color: rgba(199, 125, 255, 0.4); font-weight: 700; display: inline-flex; align-items: center; gap: 0.35rem;" title="Créer et insérer un nouveau travail viticole">
-                      <span class="btn-icon">＋</span>
-                      <span>Nouveau travail viticole</span>
-                    </button>
-                  </div>
+              <div class="kpi-card" style="border-left: 4px solid #f4a261;">
+                <div class="kpi-title">🚜 En cours & Brouillons</div>
+                <div class="kpi-value" id="exp-int-kpi-in-progress">0</div>
+                <div class="kpi-subtext" style="color: #f4a261;">Chantiers partiels</div>
+              </div>
 
-                  <!-- Filtres rapides par nature de travail -->
-                  <div style="display: flex; gap: 0.45rem; margin-top: 0.65rem; margin-bottom: 0.65rem; align-items: center; flex-wrap: wrap;">
-                    <span style="font-size: 0.78rem; color: #95a89e; font-weight: 700; text-transform: uppercase;">Filtrer :</span>
-                    <button type="button" class="btn btn-xs exp-task-filter-btn active" id="exp-task-filter-all" onclick="filterInterventionTasks('all')">Tous les travaux</button>
-                    <button type="button" class="btn btn-xs btn-outline exp-task-filter-btn" id="exp-task-filter-manuel" onclick="filterInterventionTasks('manuel')">🧤 Travaux manuels</button>
-                    <button type="button" class="btn btn-xs btn-outline exp-task-filter-btn" id="exp-task-filter-mecanique" onclick="filterInterventionTasks('mecanique')">🚜 Travaux mécaniques</button>
-                  </div>
+              <div class="kpi-card" style="border-left: 4px solid #ffd166;">
+                <div class="kpi-title">⏳ À valider</div>
+                <div class="kpi-value" id="exp-int-kpi-to-validate" style="color: #ffd166;">0</div>
+                <div class="kpi-subtext" style="color: #ffd166;">Soumises par équipes</div>
+              </div>
 
-                  <!-- Notification dynamique lors de l'insertion d'un travail -->
-                  <div id="exp-int-task-feedback" style="display: none; padding: 0.55rem 0.85rem; margin-bottom: 0.65rem; background: rgba(123, 44, 191, 0.2); border: 1px solid rgba(199, 125, 255, 0.4); border-radius: 8px; color: #e0aaff; font-size: 0.84rem;"></div>
+              <div class="kpi-card" style="border-left: 4px solid #52b788;">
+                <div class="kpi-title">✅ Validées</div>
+                <div class="kpi-value" id="exp-int-kpi-validated" style="color: #52b788;">0</div>
+                <div class="kpi-subtext" style="color: #52b788;">Interventions effectives</div>
+              </div>
 
-                  <!-- Chips d'accès rapide en 1 clic -->
-                  <div class="quick-tasks-chips" id="exp-int-quick-chips">
-                    <!-- Populated dynamically via JS -->
-                  </div>
+              <div class="kpi-card" style="border-left: 4px solid #48cae4;">
+                <div class="kpi-title">🌿 Surface Validée</div>
+                <div class="kpi-value" id="exp-int-kpi-surface">0,0000 ha</div>
+                <div class="kpi-subtext" style="color: #48cae4;">Travail réel validé</div>
+              </div>
+            </div>
 
-                  <div style="margin-top: 0.75rem; display: flex; gap: 0.5rem; align-items: center;">
-                    <div style="flex: 1;">
-                      <select id="exp-int-task" class="form-select-simple" onchange="onInterventionTaskChange(this.value)" required style="width: 100%;">
-                        <!-- Populated dynamically -->
-                      </select>
-                    </div>
-                    <button type="button" class="btn btn-outline btn-sm" onclick="openAddTaskModalForIntervention()" title="Créer et insérer un nouveau travail viticole" style="color: #c77dff; border-color: rgba(199, 125, 255, 0.4); white-space: nowrap; font-weight: 700; display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.55rem 0.85rem;">
-                      <span>＋ Insérer</span>
-                    </button>
-                  </div>
+            <!-- 3. Navigation par Onglets de Section (Exigence Étape 5) -->
+            <div class="exp-tabs-nav" style="display: flex; gap: 0.5rem; border-bottom: 1px solid rgba(82, 183, 136, 0.2); padding-bottom: 0.75rem; margin-bottom: 1.25rem; flex-wrap: wrap;">
+              <button type="button" class="btn btn-sm exp-int-tab-btn active" id="exp-int-tab-today" onclick="switchInterventionSectionTab('today')">
+                <span>📅 Interventions du jour</span>
+              </button>
+              <button type="button" class="btn btn-sm btn-outline exp-int-tab-btn" id="exp-int-tab-in-progress" onclick="switchInterventionSectionTab('in_progress')">
+                <span>🚜 En cours (Brouillons & Partiels)</span>
+              </button>
+              <button type="button" class="btn btn-sm btn-outline exp-int-tab-btn" id="exp-int-tab-to-validate" onclick="switchInterventionSectionTab('to_validate')">
+                <span>⏳ À valider</span>
+                <span class="badge" id="exp-int-tab-badge-to-validate" style="background: rgba(255, 209, 102, 0.2); color: #ffd166; margin-left: 0.35rem; font-size: 0.72rem; padding: 2px 6px; border-radius: 999px;">0</span>
+              </button>
+              <button type="button" class="btn btn-sm btn-outline exp-int-tab-btn" id="exp-int-tab-validated" onclick="switchInterventionSectionTab('validated')">
+                <span>✅ Validées / Terminées</span>
+              </button>
+              <button type="button" class="btn btn-sm btn-outline exp-int-tab-btn" id="exp-int-tab-all" onclick="switchInterventionSectionTab('all')">
+                <span>📋 Toutes les interventions</span>
+              </button>
+            </div>
+
+            <!-- 4. Barre de Filtres Interactifs -->
+            <div class="dossier-filter-bar" style="margin-bottom: 1.25rem; display: flex; gap: 0.75rem; align-items: center; justify-content: space-between; flex-wrap: wrap; background: rgba(17, 25, 22, 0.85); padding: 0.85rem 1.15rem; border-radius: 12px; border: 1px solid rgba(82, 183, 136, 0.18);">
+              <div style="display: flex; gap: 0.65rem; align-items: center; flex-wrap: wrap; flex: 1;">
+                <div style="position: relative; min-width: 220px; flex: 1;">
+                  <input type="text" id="exp-int-search-input" class="epure-input" placeholder="🔍 Rechercher parcelle, travail, salarié..." oninput="onInterventionsSearchInput(this.value)" style="width: 100%; font-size: 0.84rem; padding-left: 0.75rem;">
                 </div>
+                <select id="exp-int-filter-period" class="form-select-simple" onchange="onInterventionsPeriodFilterChange(this.value)" style="font-size: 0.82rem; padding: 0.45rem 0.75rem;">
+                  <option value="all">Toutes les dates</option>
+                  <option value="today">Aujourd'hui</option>
+                  <option value="this_week">Cette semaine</option>
+                  <option value="this_month">Ce mois-ci</option>
+                  <option value="campaign">Campagne en cours</option>
+                </select>
+                <select id="exp-int-filter-task" class="form-select-simple" onchange="onInterventionsTaskFilterChange(this.value)" style="font-size: 0.82rem; padding: 0.45rem 0.75rem;">
+                  <option value="all">Tous les travaux</option>
+                </select>
+                <select id="exp-int-filter-team" class="form-select-simple" onchange="onInterventionsTeamFilterChange(this.value)" style="font-size: 0.82rem; padding: 0.45rem 0.75rem;">
+                  <option value="all">Toutes les équipes</option>
+                </select>
+              </div>
+              <div>
+                <button type="button" class="btn btn-outline btn-xs" onclick="resetInterventionsFilters()" style="font-size: 0.75rem;">
+                  ✕ Réinitialiser
+                </button>
+              </div>
+            </div>
 
-                <!-- 2. CHOISIR LA OU LES PARCELLES & SURFACES -->
-                <div class="form-section-box" style="margin-top: 1.25rem;">
-                  <div class="form-section-header" style="justify-content: space-between;">
-                    <div style="display: flex; align-items: center; gap: 0.65rem;">
-                      <span class="form-step-num">2</span>
-                      <h3 class="form-section-title">Choisir la ou les parcelles</h3>
-                    </div>
-                    <div style="display: flex; gap: 0.4rem;">
-                      <button type="button" class="btn btn-outline btn-xs" onclick="toggleAllInterventionParcelles(true)">Tout cocher</button>
-                      <button type="button" class="btn btn-outline btn-xs" onclick="toggleAllInterventionParcelles(false)">Tout décocher</button>
-                    </div>
-                  </div>
-
-                  <div id="exp-int-parcelles-checklist" style="display: flex; flex-direction: column; gap: 0.65rem; margin-top: 0.75rem;">
-                    <!-- Populated dynamically -->
-                  </div>
-
-                  <!-- Bandeau Surface Totale Travaillée -->
-                  <div id="exp-int-total-surface-banner" style="margin-top: 1rem; padding: 0.85rem 1rem; background: rgba(123, 44, 191, 0.15); border: 1px solid rgba(199, 125, 255, 0.35); border-radius: 8px; display: flex; align-items: center; justify-content: space-between;">
-                    <span style="font-size: 0.88rem; color: #e5ece8;">Surface totale du chantier :</span>
-                    <strong id="exp-int-total-surface-val" style="font-size: 1.15rem; color: #fff; font-family: var(--font-heading);">0.0000 ha</strong>
-                  </div>
-                </div>
-
-                <!-- 3. TEMPS & MAIN D'ŒUVRE -->
-                <div class="form-section-box" style="margin-top: 1.25rem;">
-                  <div class="form-section-header">
-                    <span class="form-step-num">3</span>
-                    <h3 class="form-section-title">Date, Durée & Main-d'œuvre</h3>
-                  </div>
-
-                  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 0.75rem;">
-                    <div>
-                      <label class="form-label" for="exp-int-date">Date de réalisation *</label>
-                      <input type="date" id="exp-int-date" class="epure-input" required>
-                    </div>
-                    <div>
-                      <label class="form-label" for="exp-int-duration">Durée du chantier (heures) *</label>
-                      <div style="display: flex; gap: 0.35rem; align-items: center;">
-                        <input type="number" step="0.25" min="0.1" id="exp-int-duration" class="epure-input" placeholder="ex: 2.5" required oninput="syncEquipmentDuration(this.value)">
-                        <div style="display: flex; gap: 0.2rem;">
-                          <button type="button" class="btn btn-outline btn-xs" onclick="addInterventionDuration(0.5)">+30m</button>
-                          <button type="button" class="btn btn-outline btn-xs" onclick="addInterventionDuration(1)">+1h</button>
-                          <button type="button" class="btn btn-outline btn-xs" onclick="addInterventionDuration(2)">+2h</button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1rem; margin-top: 1rem;">
-                    <div>
-                      <label class="form-label" for="exp-int-workers-select">Salarié(s) présent(s)</label>
-                      <div id="exp-int-workers-checklist" style="display: flex; flex-wrap: wrap; gap: 0.5rem; background: rgba(0,0,0,0.25); padding: 0.65rem; border-radius: 8px;">
-                        <!-- Populated dynamically -->
-                      </div>
-                    </div>
-                    <div>
-                      <label class="form-label" for="exp-int-worker-count">Nombre de personnes</label>
-                      <input type="number" min="1" id="exp-int-worker-count" class="epure-input" value="1">
-                    </div>
-                  </div>
-                </div>
-
-                <!-- 4. MATÉRIEL UTILISÉ -->
-                <div class="form-section-box" style="margin-top: 1.25rem;">
-                  <div class="form-section-header">
-                    <span class="form-step-num">4</span>
-                    <h3 class="form-section-title">Matériel & Engins</h3>
-                  </div>
-
-                  <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1rem; margin-top: 0.75rem;">
-                    <div>
-                      <label class="form-label" for="exp-int-equipment">Engin / Outil utilisé</label>
-                      <select id="exp-int-equipment" class="form-select-simple">
-                        <!-- Populated dynamically -->
-                      </select>
-                    </div>
-                    <div>
-                      <label class="form-label" for="exp-int-equipment-hours">Heures machine</label>
-                      <input type="number" step="0.25" min="0" id="exp-int-equipment-hours" class="epure-input" placeholder="ex: 2.5">
-                    </div>
-                  </div>
-                </div>
-
-                <!-- 5. INTRANTS & PRODUITS (OPTIONNEL) -->
-                <div class="form-section-box" style="margin-top: 1.25rem;">
-                  <div class="form-section-header" style="justify-content: space-between;">
-                    <div style="display: flex; align-items: center; gap: 0.65rem;">
-                      <span class="form-step-num">5</span>
-                      <h3 class="form-section-title">Intrants & Produits (Optionnel)</h3>
-                    </div>
-                    <label style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.82rem; color: #e5ece8; cursor: pointer;">
-                      <input type="checkbox" id="exp-int-use-input" onchange="toggleInterventionInputSection(this.checked)" style="width: 16px; height: 16px;">
-                      <span>Utiliser un intrant</span>
-                    </label>
-                  </div>
-
-                  <div id="exp-int-inputs-container" style="display: none; grid-template-columns: 2fr 1fr; gap: 1rem; margin-top: 0.75rem;">
-                    <div>
-                      <label class="form-label" for="exp-int-input-select">Produit utilisé</label>
-                      <select id="exp-int-input-select" class="form-select-simple" onchange="onInterventionInputChange(this.value)">
-                        <!-- Populated dynamically -->
-                      </select>
-                    </div>
-                    <div>
-                      <label class="form-label" for="exp-int-input-qty">Quantité appliquée (<span id="exp-int-input-unit-label">L</span>)</label>
-                      <input type="number" step="0.1" min="0" id="exp-int-input-qty" class="epure-input" placeholder="ex: 10">
-                    </div>
-                  </div>
-                </div>
-
-                <!-- 6. OBSERVATIONS -->
-                <div class="form-section-box" style="margin-top: 1.25rem;">
-                  <div class="form-section-header">
-                    <span class="form-step-num">6</span>
-                    <h3 class="form-section-title">Observations & Notes terrain</h3>
-                  </div>
-
-                  <div style="margin-top: 0.75rem;">
-                    <textarea id="exp-int-notes" class="epure-input" rows="2" placeholder="Conditions météo, volume bouillie, consignes particulières..."></textarea>
-                  </div>
-                </div>
-
-                <!-- VALIDATION PRINCIPALE -->
-                <div style="margin-top: 1.75rem; display: flex; justify-content: flex-end; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
-                  <button type="button" class="btn btn-outline" onclick="switchExploitationView('dashboard')">Annuler</button>
-                  <button type="submit" id="btn-exp-save-intervention" class="btn btn-exp-primary btn-lg" style="font-size: 1rem; padding: 0.85rem 1.75rem;">
-                    🍇 Enregistrer l'intervention (< 30s)
-                  </button>
-                </div>
-              </form>
+            <!-- 5. Conteneur de Liste des Interventions -->
+            <div id="exp-interventions-list-container" style="display: flex; flex-direction: column; gap: 0.85rem;">
+              <!-- Rendu dynamique par JS -->
             </div>
           </div>
 
@@ -7502,10 +7415,241 @@
     </div>
   </div>
 
+  <!-- ==================== MODAL EXPLOITATION : SAISIE D'INTERVENTION RÉELLE (ÉTAPE 5) ==================== -->
+  <div class="modal-overlay" id="modal-exp-intervention-form" aria-hidden="true" role="dialog" aria-modal="true">
+    <div class="modal-dialog" style="max-width: 840px;">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div class="modal-header-icon epure-header-icon" style="background: rgba(82, 183, 136, 0.2); color: #52b788;">
+            🚜
+          </div>
+          <div>
+            <h3 class="modal-title" id="exp-int-modal-title">Saisir une intervention réelle</h3>
+            <p class="modal-subtitle" id="exp-int-modal-subtitle">Déclarer les parcelles travaillées et les surfaces effectivement réalisées</p>
+          </div>
+          <button type="button" class="modal-close-btn" onclick="closeInterventionModal()" aria-label="Fermer">✕</button>
+        </div>
+
+        <form id="form-exp-intervention" onsubmit="event.preventDefault();">
+          <input type="hidden" id="modal-int-id" value="">
+          <input type="hidden" id="modal-int-source-job-id" value="">
+          <input type="hidden" id="modal-int-source-plan-id" value="">
+
+          <div class="modal-body" style="padding: 1.5rem; display: flex; flex-direction: column; gap: 1.25rem; max-height: calc(85vh - 140px); overflow-y: auto;">
+
+            <!-- Bloc 1 : Travail viticole & Planification -->
+            <div class="form-section-box" style="background: rgba(0,0,0,0.2); border: 1px solid rgba(82, 183, 136, 0.2); border-radius: 10px; padding: 1.15rem;">
+              <div style="font-weight: 800; color: #fff; font-size: 0.92rem; margin-bottom: 0.85rem; display: flex; align-items: center; justify-content: space-between;">
+                <span>1. Travail viticole & Planification</span>
+                <span class="required">*</span>
+              </div>
+              <div style="display: grid; grid-template-columns: 2fr 1.5fr 0.8fr; gap: 0.85rem;">
+                <div class="form-group" style="margin: 0;">
+                  <label for="modal-int-task-select" class="form-label" style="font-size: 0.82rem;">Travail effectué (Travaux à faire)</label>
+                  <select id="modal-int-task-select" class="form-select-simple" onchange="onInterventionModalJobChange(this.value)" style="width: 100%;">
+                    <option value="">— Sélectionner un chantier —</option>
+                  </select>
+                </div>
+                <div class="form-group" style="margin: 0;">
+                  <label for="modal-int-plan-select" class="form-label" style="font-size: 0.82rem;">Planification liée (facultatif)</label>
+                  <select id="modal-int-plan-select" class="form-select-simple" onchange="onInterventionModalPlanSelect(this.value)" style="width: 100%;">
+                    <option value="">(Intervention non planifiée)</option>
+                  </select>
+                </div>
+                <div class="form-group" style="margin: 0;">
+                  <label for="modal-int-passage" class="form-label" style="font-size: 0.82rem;">Passage N°</label>
+                  <input type="number" id="modal-int-passage" class="epure-input" min="1" value="1" onchange="onInterventionModalPassageChange(this.value)" style="width: 100%;">
+                </div>
+              </div>
+            </div>
+
+            <!-- Bloc 2 : Parcelles réalisées & Surfaces travaillées -->
+            <div class="form-section-box" style="background: rgba(0,0,0,0.2); border: 1px solid rgba(82, 183, 136, 0.2); border-radius: 10px; padding: 1.15rem;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem; flex-wrap: wrap; gap: 0.5rem;">
+                <div style="font-weight: 800; color: #fff; font-size: 0.92rem; display: flex; align-items: center; gap: 0.5rem;">
+                  <span>2. Parcelles réalisées & Surfaces effectivement travaillées</span>
+                  <span class="required">*</span>
+                </div>
+                <div style="display: flex; gap: 0.4rem;">
+                  <button type="button" class="btn btn-outline btn-xs" onclick="toggleAllModalInterventionParcelles(true)">Tout cocher</button>
+                  <button type="button" class="btn btn-outline btn-xs" onclick="toggleAllModalInterventionParcelles(false)">Tout décocher</button>
+                </div>
+              </div>
+
+              <!-- Message d'alerte / dépassement -->
+              <div id="modal-int-error-alert" style="display: none; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 0.85rem; color: #fca5a5; font-size: 0.84rem;">
+                <strong id="modal-int-error-title">⚠️ Erreur de validation de surface :</strong>
+                <div id="modal-int-error-text" style="margin-top: 0.25rem;"></div>
+              </div>
+
+              <!-- Liste parcelles dynamique -->
+              <div id="modal-int-parcelles-checklist" style="max-height: 240px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.5rem; padding: 0.5rem; background: rgba(0,0,0,0.25); border-radius: 8px; border: 1px solid rgba(82, 183, 136, 0.12);">
+                <!-- Dynamic parcel rows with target surf, validated surf, input surf -->
+              </div>
+
+              <!-- Barre récapitulative surface réalisée -->
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.85rem; padding: 0.75rem 1rem; background: rgba(82, 183, 136, 0.12); border-radius: 8px; border: 1px solid rgba(82, 183, 136, 0.25); flex-wrap: wrap; gap: 0.5rem;">
+                <div style="font-size: 0.85rem; color: #b7c7be;">
+                  <span id="modal-int-parcelles-count-badge">0 parcelle(s) cochée(s)</span>
+                  <span id="modal-int-partial-count-badge" style="margin-left: 0.5rem; color: #ffd166;"></span>
+                </div>
+                <div style="font-size: 0.98rem; font-weight: 800; color: #52b788; font-family: var(--font-heading);" id="modal-int-total-surface-badge">
+                  Surface réalisée : 0.0000 ha
+                </div>
+              </div>
+            </div>
+
+            <!-- Bloc 3 : Date & Horaires -->
+            <div class="form-section-box" style="background: rgba(0,0,0,0.2); border: 1px solid rgba(82, 183, 136, 0.2); border-radius: 10px; padding: 1.15rem;">
+              <div style="font-weight: 800; color: #fff; font-size: 0.92rem; margin-bottom: 0.85rem; display: flex; align-items: center; gap: 0.5rem;">
+                <span>3. Date de réalisation & Horaires</span>
+                <span class="required">*</span>
+              </div>
+              <div style="display: grid; grid-template-columns: 1.5fr 1fr 1fr; gap: 0.85rem;">
+                <div class="form-group" style="margin: 0;">
+                  <label for="modal-int-date" class="form-label" style="font-size: 0.82rem;">Date d'intervention</label>
+                  <input type="date" id="modal-int-date" class="epure-input" required>
+                </div>
+                <div class="form-group" style="margin: 0;">
+                  <label for="modal-int-start-time" class="form-label" style="font-size: 0.82rem;">Heure début (facultatif)</label>
+                  <input type="time" id="modal-int-start-time" class="epure-input">
+                </div>
+                <div class="form-group" style="margin: 0;">
+                  <label for="modal-int-end-time" class="form-label" style="font-size: 0.82rem;">Heure fin (facultatif)</label>
+                  <input type="time" id="modal-int-end-time" class="epure-input">
+                </div>
+              </div>
+            </div>
+
+            <!-- Bloc 4 : Équipe & Salariés -->
+            <div class="form-section-box" style="background: rgba(0,0,0,0.2); border: 1px solid rgba(82, 183, 136, 0.2); border-radius: 10px; padding: 1.15rem;">
+              <div style="font-weight: 800; color: #fff; font-size: 0.92rem; margin-bottom: 0.85rem; display: flex; align-items: center; justify-content: space-between;">
+                <span>4. Équipe & Salariés présents</span>
+              </div>
+              <div style="display: grid; grid-template-columns: 1.2fr 2fr; gap: 0.85rem;">
+                <div class="form-group" style="margin: 0;">
+                  <label for="modal-int-team-select" class="form-label" style="font-size: 0.82rem;">Équipe ayant réalisé le travail</label>
+                  <select id="modal-int-team-select" class="form-select-simple" onchange="onInterventionModalTeamChange(this.value)" style="width: 100%;">
+                    <option value="">— Sélectionner une équipe —</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="form-label" style="font-size: 0.82rem; margin-bottom: 0.35rem;">Salariés présents lors de l'intervention :</label>
+                  <div id="modal-int-workers-list" style="max-height: 120px; overflow-y: auto; display: flex; flex-wrap: wrap; gap: 0.4rem; padding: 0.4rem; background: rgba(0,0,0,0.25); border-radius: 8px; border: 1px solid rgba(82, 183, 136, 0.12);">
+                    <!-- Dynamic worker checkboxes -->
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Bloc 5 : Observations -->
+            <div class="form-section-box" style="background: rgba(0,0,0,0.2); border: 1px solid rgba(82, 183, 136, 0.2); border-radius: 10px; padding: 1.15rem;">
+              <label for="modal-int-notes" class="form-label" style="font-size: 0.82rem; font-weight: 800; color: #fff; margin-bottom: 0.5rem; display: block;">
+                5. Observations & Incidents (facultatif)
+              </label>
+              <textarea id="modal-int-notes" class="epure-input" rows="2" placeholder="Ex: Conditions météo venteuses, fin de parcelle B2 arrêtée pour panne sécateur, passage propre..."></textarea>
+            </div>
+
+            <!-- Bloc 6 : Motif de modification (uniquement si modification d'une intervention validée) -->
+            <div id="modal-int-correction-box" style="display: none; background: rgba(251, 191, 36, 0.1); border: 1px solid rgba(251, 191, 36, 0.3); border-radius: 10px; padding: 1.15rem;">
+              <label for="modal-int-correction-reason" class="form-label" style="font-size: 0.82rem; font-weight: 800; color: #fbbf24; margin-bottom: 0.5rem; display: block;">
+                ✏️ Motif de correction obligatoire (Intervention déjà validée)
+              </label>
+              <input type="text" id="modal-int-correction-reason" class="epure-input" placeholder="Précisez la raison de la modification (ex: erreur de saisie parcelle, rectification de surface...)">
+            </div>
+
+          </div>
+
+          <div class="modal-footer" style="padding: 1rem 1.5rem; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(82, 183, 136, 0.15); flex-wrap: wrap; gap: 0.65rem;">
+            <button type="button" class="btn btn-outline btn-sm" id="btn-delete-exp-int" onclick="deleteInterventionModalConfirm()" style="display: none; color: #f87171; border-color: rgba(248, 113, 113, 0.3);">
+              🗑️ Supprimer
+            </button>
+            <div style="display: flex; gap: 0.65rem; margin-left: auto; flex-wrap: wrap;">
+              <button type="button" class="btn btn-outline btn-sm" onclick="closeInterventionModal()">Annuler</button>
+              <button type="button" class="btn btn-outline btn-sm" id="btn-save-exp-int-draft" onclick="saveExploitationInterventionModal('draft')" style="border-color: rgba(255, 209, 102, 0.4); color: #ffd166;">
+                💾 Enregistrer brouillon
+              </button>
+              <button type="button" class="btn btn-outline btn-sm" id="btn-save-exp-int-submit" onclick="saveExploitationInterventionModal('submitted')" style="border-color: rgba(199, 125, 255, 0.4); color: #c77dff;">
+                📤 Soumettre
+              </button>
+              <button type="button" class="btn btn-exp-primary btn-sm" id="btn-save-exp-int-validate" onclick="saveExploitationInterventionModal('validated')">
+                ✅ Valider l'intervention
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL EXPLOITATION : REJET D'UNE INTERVENTION (ÉTAPE 5) ==================== -->
+  <div class="modal-overlay" id="modal-exp-intervention-reject" aria-hidden="true" role="dialog" aria-modal="true">
+    <div class="modal-dialog" style="max-width: 500px;">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div class="modal-header-icon epure-header-icon" style="background: rgba(239, 68, 68, 0.2); color: #f87171;">
+            ❌
+          </div>
+          <div>
+            <h3 class="modal-title" style="color: #f87171;">Rejeter l'intervention</h3>
+            <p class="modal-subtitle">Indiquez au chef d'équipe le motif précis du rejet</p>
+          </div>
+          <button type="button" class="modal-close-btn" onclick="closeRejectInterventionModal()" aria-label="Fermer">✕</button>
+        </div>
+
+        <form id="form-exp-intervention-reject" onsubmit="event.preventDefault(); confirmRejectIntervention();">
+          <input type="hidden" id="modal-reject-int-id" value="">
+          <div class="modal-body" style="padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem;">
+            <div class="form-group" style="margin: 0;">
+              <label for="modal-reject-reason" class="form-label" style="font-size: 0.85rem; font-weight: 700;">Motif du rejet (obligatoire) :</label>
+              <textarea id="modal-reject-reason" class="epure-input" rows="3" placeholder="Ex: Surface travaillée déclarée excessive, mauvaise parcelle sélectionnée, travail incomplet..." required></textarea>
+            </div>
+            <div style="font-size: 0.78rem; color: #95a89e;">
+              L'intervention passera au statut « Rejetée ». Le chef d'équipe pourra la corriger et la soumettre à nouveau.
+            </div>
+          </div>
+
+          <div class="modal-footer" style="padding: 1rem 1.5rem; display: flex; justify-content: flex-end; gap: 0.65rem; border-top: 1px solid rgba(82, 183, 136, 0.15);">
+            <button type="button" class="btn btn-outline btn-sm" onclick="closeRejectInterventionModal()">Annuler</button>
+            <button type="submit" class="btn btn-sm" style="background: #ef4444; color: #fff; font-weight: 700; border: none; padding: 0.45rem 1rem; border-radius: 6px;">
+              Confirmer le rejet
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL EXPLOITATION : DÉTAIL & AUDIT TRAIL INTERVENTION (ÉTAPE 5) ==================== -->
+  <div class="modal-overlay" id="modal-exp-intervention-details" aria-hidden="true" role="dialog" aria-modal="true">
+    <div class="modal-dialog" style="max-width: 760px;">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div class="modal-header-icon epure-header-icon" style="background: rgba(82, 183, 136, 0.2); color: #52b788;">
+            📋
+          </div>
+          <div>
+            <h3 class="modal-title" id="modal-int-detail-title">Détail de l'Intervention</h3>
+            <p class="modal-subtitle" id="modal-int-detail-subtitle">Historique, surfaces réalisées et traçabilité</p>
+          </div>
+          <button type="button" class="modal-close-btn" onclick="closeInterventionDetailsModal()" aria-label="Fermer">✕</button>
+        </div>
+
+        <div class="modal-body" id="modal-int-detail-body" style="padding: 1.5rem; display: flex; flex-direction: column; gap: 1.25rem; max-height: calc(85vh - 140px); overflow-y: auto;">
+          <!-- Dynamically populated -->
+        </div>
+
+        <div class="modal-footer" id="modal-int-detail-footer" style="padding: 1rem 1.5rem; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(82, 183, 136, 0.15); flex-wrap: wrap; gap: 0.65rem;">
+          <!-- Dynamic action buttons based on status -->
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js?v=3.1"></script>
   <script src="stripe-config.js?v=3.1"></script>
-  <script src="dashboard.js?v=3.1"></script>
-  <script src="exploitation.js?v=3.1"></script>
+  <script src="dashboard.js?v=5.1"></script>
+  <script src="exploitation.js?v=5.1"></script>
 </body>
 </html>

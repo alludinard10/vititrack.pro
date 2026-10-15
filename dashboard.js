@@ -270,6 +270,18 @@ const DEFAULT_SERVICES = [
 
 // ==================== APPLICATION STATE ====================
 let clients = [];
+try {
+  Object.defineProperty(window, 'clients', {
+    get() { return clients; },
+    set(v) { clients = v; },
+    configurable: true
+  });
+  Object.defineProperty(window, 'appClients', {
+    get() { return clients; },
+    set(v) { clients = v; },
+    configurable: true
+  });
+} catch (e) {}
 let interventions = [];
 let services = [];
 let plannedWorks = [];
