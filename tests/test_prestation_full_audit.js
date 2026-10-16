@@ -1,8 +1,28 @@
 const http = require('http');
+const fs = require('fs');
+const path = require('path');
 
-const SUPABASE_URL = "https://zygxjkckwaskukhnltck.supabase.co";
-const SERVICE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp5Z3hqa2Nrd2Fza3VraG5sdGNrIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4OTU1OTkzNywiZXhwIjoyMTA1MTM1OTM3fQ.0o5Qy4eM9aUMYRGxRbtz_dqHVayRe7LBqdLaiF9S5m8";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp5Z3hqa2Nrd2Fza3VraG5sdGNrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk1NTk5MzcsImV4cCI6MjEwNTEzNTkzN30.myxRc_bkrD3oewB4rv6T1jsIfCcp8JFbbn9Hr_Qk-eA";
+// Chargement sécurisé de l'environnement depuis .env (non versionné)
+function loadEnv() {
+  const envPath = path.resolve(__dirname, '../.env');
+  if (fs.existsSync(envPath)) {
+    const lines = fs.readFileSync(envPath, 'utf8').split('\n');
+    for (const line of lines) {
+      const match = line.match(/^\s*([\w.-]+)\s*=\s*(.*)?\s*$/);
+      if (match) {
+        let val = (match[2] || '').trim();
+        if (val.startsWith('"') && val.endsWith('"')) val = val.slice(1, -1);
+        if (val.startsWith("'") && val.endsWith("'")) val = val.slice(1, -1);
+        process.env[match[1]] = val;
+      }
+    }
+  }
+}
+loadEnv();
+
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://zygxjkckwaskukhnltck.supabase.co";
+const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp5Z3hqa2Nrd2Fza3VraG5sdGNrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk1NTk5MzcsImV4cCI6MjEwNTEzNTkzN30.myxRc_bkrD3oewB4rv6T1jsIfCcp8JFbbn9Hr_Qk-eA";
 
 async function getRealSupabaseSession(email) {
   const genRes = await fetch(`${SUPABASE_URL}/auth/v1/admin/generate_link`, {

@@ -16,3 +16,5 @@ tests/test_verify_restoration.js
 tests/test_live_post_migration.js
 tests/test_carto_security.js
 supabase/*cartographie*.sql
+backups/
+scratch/
