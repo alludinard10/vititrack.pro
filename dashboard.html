@@ -10,7 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css?v=2.2">
   <link rel="stylesheet" href="dashboard.css?v=2.2">
-  <link rel="stylesheet" href="exploitation.css?v=1.0">
+  <link rel="stylesheet" href="exploitation.css?v=2.0">
   <!-- Bulletproof Immediate Theme Initializer & Controller -->
   <script>
     window.applyTheme = function(theme, save) {
@@ -84,8 +84,7 @@
       window.applyTheme(saved, false);
     });
   </script>
-</head>
-<body class="dashboard-body">
+<body class="dashboard-body" data-app-mode="prestation">
 
   <div class="app-layout">
     <!-- ==================== SIDEBAR ==================== -->
@@ -106,9 +105,9 @@
         </div>
       </div>
 
-      <!-- Commutateur de Mode Rapide dans la Sidebar (visible si profil 'both') -->
-      <div class="sidebar-mode-switcher-wrap">
-        <div class="viti-mode-switcher" id="sidebar-mode-switcher">
+      <!-- Commutateur de Mode Rapide dans la Sidebar (masqué temporairement - Exploitation en pause) -->
+      <div class="sidebar-mode-switcher-wrap" style="display: none !important;">
+        <div class="viti-mode-switcher" id="sidebar-mode-switcher" style="display: none !important;">
           <button type="button" class="mode-btn mode-prestation" data-mode="prestation">
             <span class="mode-icon">🚜</span>
             <span class="mode-label">Prestation</span>
@@ -228,8 +227,8 @@
           </a>
         </div>
 
-        <!-- NAVIGATION 2 : MODE EXPLOITATION VITICOLE (8 Rubriques Unifiées) -->
-        <div id="sidebar-nav-exploitation">
+        <!-- NAVIGATION 2 : MODE EXPLOITATION VITICOLE (8 Rubriques Unifiées - Masqué temporairement) -->
+        <div id="sidebar-nav-exploitation" style="display: none !important;">
           <div class="nav-section-title">EXPLOITATION DU DOMAINE</div>
           
           <!-- 1. Tableau de bord -->
@@ -332,8 +331,8 @@
             <span></span>
           </button>
 
-          <!-- Commutateur de Mode VitiTrack (Prestation ↔ Exploitation pour profils 'both') -->
-          <div class="viti-mode-switcher" id="topbar-mode-switcher" title="Basculer entre Prestation et Exploitation">
+          <!-- Commutateur de Mode VitiTrack (Masqué temporairement - Exploitation en pause) -->
+          <div class="viti-mode-switcher" id="topbar-mode-switcher" title="Basculer entre Prestation et Exploitation" style="display: none !important;">
             <button type="button" class="mode-btn mode-prestation" data-mode="prestation" aria-label="Mode Prestation">
               <span class="mode-icon">🚜</span>
               <span class="mode-label">Prestation</span>
@@ -2383,8 +2382,8 @@
 
         </div> <!-- /#prestation-views-container -->
 
-        <!-- ==================== CONTENEUR ENVIRONNEMENT 2 : EXPLOITATION VITICOLE ==================== -->
-        <div id="exploitation-views-container">
+        <!-- ==================== CONTENEUR ENVIRONNEMENT 2 : EXPLOITATION VITICOLE (Masqué temporairement) ==================== -->
+        <div id="exploitation-views-container" style="display: none !important;">
 
           <!-- ------------------------------------------------------------------
                VUE EXPLOITATION 1 : TABLEAU DE BORD DU DOMAINE
@@ -7649,7 +7648,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js?v=3.1"></script>
   <script src="stripe-config.js?v=3.1"></script>
-  <script src="dashboard.js?v=5.2"></script>
-  <script src="exploitation.js?v=5.3"></script>
+  <script src="dashboard.js?v=5.4"></script>
+  <script src="exploitation.js?v=5.4"></script>
 </body>
 </html>
