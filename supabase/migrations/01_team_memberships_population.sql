@@ -30,6 +30,7 @@ CREATE TABLE IF NOT EXISTS public.team_memberships (
 CREATE INDEX IF NOT EXISTS idx_team_memberships_member_uid ON public.team_memberships(member_user_id);
 CREATE INDEX IF NOT EXISTS idx_team_memberships_owner_uid ON public.team_memberships(owner_user_id);
 CREATE INDEX IF NOT EXISTS idx_team_memberships_email ON public.team_memberships(lower(invited_email));
+CREATE UNIQUE INDEX IF NOT EXISTS uq_team_memberships_member_uid ON public.team_memberships(member_user_id);
 CREATE UNIQUE INDEX IF NOT EXISTS uq_team_memberships_owner_member ON public.team_memberships(owner_user_id, member_user_id);
 CREATE UNIQUE INDEX IF NOT EXISTS uq_team_memberships_owner_email ON public.team_memberships(owner_user_id, lower(invited_email));
 
