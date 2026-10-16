@@ -240,4 +240,47 @@ CREATE POLICY "planned_works_delete_policy" ON public.planned_works
   FOR DELETE TO authenticated
   USING (user_id = public.get_current_owner_user_id());
 
+-- ------------------------------------------------------------------------------
+-- 7. POLITIQUES RLS SUR PUBLIC.TEAM_MEMBERSHIPS (GESTION DES RATTACHEMENTS)
+-- ------------------------------------------------------------------------------
+ALTER TABLE public.team_memberships ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "team_memberships_select_policy" ON public.team_memberships;
+CREATE POLICY "team_memberships_select_policy" ON public.team_memberships
+  FOR SELECT TO authenticated
+  USING (
+    owner_user_id = auth.uid()::text 
+    OR member_user_id = auth.uid() 
+    OR lower(invited_email) = lower(auth.jwt() ->> 'email')
+  );
+
+DROP POLICY IF EXISTS "team_memberships_insert_policy" ON public.team_memberships;
+CREATE POLICY "team_memberships_insert_policy" ON public.team_memberships
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    owner_user_id = auth.uid()::text 
+    AND invited_by = auth.uid()::text
+    AND NOT public.is_current_user_worker() -- Seul le gérant propriétaire peut inviter
+  );
+
+DROP POLICY IF EXISTS "team_memberships_update_policy" ON public.team_memberships;
+CREATE POLICY "team_memberships_update_policy" ON public.team_memberships
+  FOR UPDATE TO authenticated
+  USING (
+    owner_user_id = auth.uid()::text 
+    AND NOT public.is_current_user_worker()
+  )
+  WITH CHECK (
+    owner_user_id = auth.uid()::text 
+    AND NOT public.is_current_user_worker()
+  );
+
+DROP POLICY IF EXISTS "team_memberships_delete_policy" ON public.team_memberships;
+CREATE POLICY "team_memberships_delete_policy" ON public.team_memberships
+  FOR DELETE TO authenticated
+  USING (
+    owner_user_id = auth.uid()::text 
+    OR member_user_id = auth.uid()
+  );
+
 COMMIT;
