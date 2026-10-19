@@ -166,6 +166,12 @@ Vititrack pro/
     - *Menu déroulant « Domaines / Clients »* : sélecteur avec recherche instantanée, boutons « Tout cocher / Tout décocher », pastilles de statut, et sélection simultanée de multiples domaines avec affichage dynamique des domaines choisis sur le bouton déclencheur.
     - *Menu déroulant « Parcelles associées »* : activé dès la sélection d'au moins un client, liste déroulante groupée par domaine avec cases à cocher, recherche de parcelles, boutons « Tout / Aucun », et calcul en direct du nombre de parcelles et de la surface cumulée totale (**précision à 4 décimales**).
     - *Bandeau récapitulatif en temps réel* : affiche instantanément le nombre de clients, le nombre de parcelles et la superficie globale sélectionnée.
+  - **Sélection multi-prestations superposées (Prestation 1 & Prestation 2)** :
+    - Évite tout menu déroulant complexe à encoches pour les prestations : affichage direct de champs superposés ergonomiques.
+    - **Prestation 1 (Obligatoire)** : Sélection de la tâche principale parmi le catalogue viticole structuré par catégorie.
+    - **Prestation 2 (Optionnelle)** : Champ positionné juste en-dessous, permettant de planifier une 2nde tâche simultanément sur le même chantier sans refaire toute la saisie (ex: Taille + Broyage).
+    - **Bouton « ＋ Ajouter une 3ème prestation »** : Permet si besoin de déployer dynamiquement une 3ème prestation avec bouton de retrait immédiat.
+    - **Génération unitaire irréprochable** : Lors de la validation, un travail planifié distinct est généré pour chaque prestation choisie, permettant un suivi indépendant, un chiffrage précis selon le tarif catalogue et une validation/conversion autonome en intervention.
   - Génération automatique des chantiers prévus par client avec report de la surface de leurs parcelles.
   - **Action de conversion en 1 clic & Sécurité d'annulation** : transforme un travail planifié en intervention réelle avec pré-remplissage complet (client, parcelles cochées, prestation, volume, dates).
     - **Annulation sécurisée** : Si l'utilisateur clique sur « Annuler » ou ferme la modale, le travail planifié **reste strictement intact dans la liste des travaux à réaliser**.

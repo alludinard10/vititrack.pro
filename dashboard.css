@@ -4896,6 +4896,141 @@ button.filter-dropdown-pill {
   color: var(--color-primary-lighter);
 }
 
+/* Conteneur et sélecteurs superposés des prestations de planification */
+.planned-services-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: var(--radius-md);
+  padding: 0.85rem;
+  margin-bottom: 0.85rem;
+}
+
+.planned-service-label {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-bottom: 0.35rem;
+}
+
+.planned-service-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.5rem;
+  border-radius: 9999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.planned-service-badge.badge-primary {
+  background: rgba(82, 183, 136, 0.2);
+  border: 1px solid rgba(82, 183, 136, 0.45);
+  color: #52b788;
+}
+
+.planned-service-badge.badge-secondary {
+  background: rgba(224, 170, 62, 0.15);
+  border: 1px solid rgba(224, 170, 62, 0.35);
+  color: #e0aa3e;
+}
+
+.badge-optional {
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+
+.planned-service-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.35rem;
+}
+
+.btn-add-service-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: rgba(82, 183, 136, 0.08);
+  border: 1px dashed rgba(82, 183, 136, 0.45);
+  color: var(--color-primary-lighter);
+  padding: 0.35rem 0.75rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+  justify-content: center;
+}
+
+.btn-add-service-row:hover {
+  background: rgba(82, 183, 136, 0.18);
+  border-color: var(--color-primary-light);
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+.btn-remove-service-row {
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #fca5a5;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-remove-service-row:hover {
+  background: rgba(239, 68, 68, 0.25);
+  color: #fff;
+}
+
+/* Thème clair prestations planification */
+[data-theme="light"] .planned-services-container {
+  background: #f8faf8;
+  border-color: rgba(45, 106, 79, 0.18);
+}
+
+[data-theme="light"] .planned-service-badge.badge-primary {
+  background: rgba(45, 106, 79, 0.12);
+  border-color: rgba(45, 106, 79, 0.3);
+  color: #2d6a4f;
+}
+
+[data-theme="light"] .planned-service-badge.badge-secondary {
+  background: rgba(180, 83, 9, 0.1);
+  border-color: rgba(180, 83, 9, 0.25);
+  color: #b45309;
+}
+
+[data-theme="light"] .badge-optional {
+  color: #6b7280;
+}
+
+[data-theme="light"] .btn-add-service-row {
+  background: rgba(45, 106, 79, 0.06);
+  border-color: rgba(45, 106, 79, 0.35);
+  color: #2d6a4f;
+}
+
+[data-theme="light"] .btn-add-service-row:hover {
+  background: rgba(45, 106, 79, 0.12);
+  border-color: #2d6a4f;
+  color: #14241d;
+}
+
+[data-theme="light"] .btn-remove-service-row {
+  background: #fee2e2;
+  border-color: #fca5a5;
+  color: #b91c1c;
+}
+
 /* Thème Clair pour menus déroulants de planification */
 [data-theme="light"] .modal-dropdown-trigger {
   background: #ffffff;

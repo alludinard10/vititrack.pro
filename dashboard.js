@@ -2390,6 +2390,30 @@ function setupEventListeners() {
   const plannedForm = document.getElementById("create-planned-form");
   if (plannedForm) plannedForm.addEventListener("submit", handleCreatePlannedSubmit);
 
+  // Boutons d'ajout et de suppression de ligne de prestation dans la modale de planification
+  const btnAddPlannedService = document.getElementById("btn-add-planned-service");
+  const groupPlannedService3 = document.getElementById("group-planned-service-3");
+  const btnRemovePlannedService3 = document.getElementById("btn-remove-planned-service-3");
+  const wrapBtnAddPlannedService = document.getElementById("wrap-btn-add-planned-service");
+
+  if (btnAddPlannedService && groupPlannedService3) {
+    btnAddPlannedService.addEventListener("click", () => {
+      groupPlannedService3.style.display = "block";
+      if (wrapBtnAddPlannedService) wrapBtnAddPlannedService.style.display = "none";
+      const s3 = document.getElementById("input-planned-service-3");
+      if (s3) s3.focus();
+    });
+  }
+
+  if (btnRemovePlannedService3 && groupPlannedService3) {
+    btnRemovePlannedService3.addEventListener("click", () => {
+      const s3 = document.getElementById("input-planned-service-3");
+      if (s3) s3.value = "";
+      groupPlannedService3.style.display = "none";
+      if (wrapBtnAddPlannedService) wrapBtnAddPlannedService.style.display = "block";
+    });
+  }
+
   // Vendanges Forms & Buttons
   const harvestForm = document.getElementById("harvest-form");
   if (harvestForm) harvestForm.addEventListener("submit", handleHarvestFormSubmit);
@@ -5829,7 +5853,6 @@ function exportCSV() {
 function populateTaskSelects() {
   const inputTask = document.getElementById("input-task");
   const filterTask = document.getElementById("filter-task");
-  const inputPlannedService = document.getElementById("input-planned-service");
 
   // Fallback to DEFAULT_SERVICES if services array is empty so the user is never blocked
   const availableServices = (services && services.length > 0) ? services : (typeof DEFAULT_SERVICES !== "undefined" ? DEFAULT_SERVICES : []);
@@ -5875,15 +5898,43 @@ function populateTaskSelects() {
     if (currentVal) filterTask.value = currentVal;
   }
 
-  if (inputPlannedService) {
-    inputPlannedService.innerHTML = '<option value="">Sélectionner une prestation...</option>';
+  const inputPlannedService = document.getElementById("input-planned-service");
+  const inputPlannedService2 = document.getElementById("input-planned-service-2");
+  const inputPlannedService3 = document.getElementById("input-planned-service-3");
+
+  const populateSinglePlannedSelect = (selectElem, defaultLabel) => {
+    if (!selectElem) return;
+    const currentVal = selectElem.value;
+    selectElem.innerHTML = `<option value="">${defaultLabel}</option>`;
+
+    // Group services by category
+    const categories = {};
     availableServices.forEach(s => {
-      const opt = document.createElement("option");
-      opt.value = s.name;
-      opt.textContent = s.name;
-      inputPlannedService.appendChild(opt);
+      const cat = s.category || "Autres";
+      if (!categories[cat]) categories[cat] = [];
+      categories[cat].push(s);
     });
-  }
+
+    Object.keys(categories).forEach(cat => {
+      const optgroup = document.createElement("optgroup");
+      optgroup.label = cat;
+      categories[cat].forEach(s => {
+        const opt = document.createElement("option");
+        opt.value = s.name;
+        const showPrice = canCurrentUserViewDashboard();
+        const rateLabel = s.rateType === "hourly" ? `${s.price} €/h` : (s.rateType === "surface" ? `${s.price} €/ha` : (s.rateType === "kilo" ? `${s.price} €/kg` : `${s.price} € forfait`));
+        opt.textContent = showPrice ? `${s.name} (${rateLabel})` : s.name;
+        optgroup.appendChild(opt);
+      });
+      selectElem.appendChild(optgroup);
+    });
+
+    if (currentVal) selectElem.value = currentVal;
+  };
+
+  populateSinglePlannedSelect(inputPlannedService, "Sélectionner la prestation 1...");
+  populateSinglePlannedSelect(inputPlannedService2, "-- Aucune (Prestation unique) --");
+  populateSinglePlannedSelect(inputPlannedService3, "-- Aucune --");
 
   // Mettre à jour la liste multi-sélection des prestations avec encoches
   renderTaskMultiSelectFilter();
@@ -6832,6 +6883,16 @@ function openPlannedModal(prefillDate = null, defaultService = null) {
   populateTaskSelects();
   populatePlannedWorkerSelect();
 
+  // Réinitialiser les champs Prestation 2 et Prestation 3
+  const serviceInput2 = document.getElementById("input-planned-service-2");
+  const serviceInput3 = document.getElementById("input-planned-service-3");
+  const groupService3 = document.getElementById("group-planned-service-3");
+  const wrapAddBtn = document.getElementById("wrap-btn-add-planned-service");
+  if (serviceInput2) serviceInput2.value = "";
+  if (serviceInput3) serviceInput3.value = "";
+  if (groupService3) groupService3.style.display = "none";
+  if (wrapAddBtn) wrapAddBtn.style.display = "block";
+
   if (dateInput) {
     const today = new Date().toISOString().split("T")[0];
     dateInput.value = prefillDate || today;
@@ -6926,14 +6987,19 @@ function handleCreatePlannedSubmit(e) {
     return;
   }
 
-  const service = document.getElementById("input-planned-service")?.value;
+  const service1 = document.getElementById("input-planned-service")?.value?.trim();
+  const service2 = document.getElementById("input-planned-service-2")?.value?.trim();
+  const service3 = document.getElementById("input-planned-service-3")?.value?.trim();
+
+  // Liste ordonnée et dédoublonnée des prestations sélectionnées
+  const selectedServices = Array.from(new Set([service1, service2, service3].filter(Boolean)));
   const date = document.getElementById("input-planned-date")?.value;
   const worker = document.getElementById("input-planned-worker")?.value || "Non assigné";
   const userQuantity = parseFloat(document.getElementById("input-planned-quantity")?.value || 0);
   const notes = document.getElementById("input-planned-notes")?.value || "";
 
-  if (!service || !date) {
-    showToast("Veuillez renseigner la prestation et la date prévue.", "warning");
+  if (selectedServices.length === 0 || !date) {
+    showToast("Veuillez sélectionner au moins une prestation viticole et renseigner la date prévue.", "warning");
     return;
   }
 
@@ -6971,20 +7037,22 @@ function handleCreatePlannedSubmit(e) {
       workQuantity = pData.surface > 0 ? parseFloat(pData.surface.toFixed(4)) : userQuantity;
     }
 
-    const newPlanned = {
-      id: generateUniqueId("PLN"),
-      clientId: cId,
-      clientName,
-      parcel: parcelText,
-      service,
-      date,
-      worker,
-      quantity: workQuantity,
-      notes
-    };
+    selectedServices.forEach(srvName => {
+      const newPlanned = {
+        id: generateUniqueId("PLN"),
+        clientId: cId,
+        clientName,
+        parcel: parcelText,
+        service: srvName,
+        date,
+        worker,
+        quantity: workQuantity,
+        notes
+      };
 
-    plannedWorks.unshift(newPlanned);
-    createdWorks.push(newPlanned);
+      plannedWorks.unshift(newPlanned);
+      createdWorks.push(newPlanned);
+    });
   });
 
   savePlannedWorks();
@@ -6994,9 +7062,11 @@ function handleCreatePlannedSubmit(e) {
   if (typeof renderVendangesKPIs === "function") renderVendangesKPIs();
 
   if (createdWorks.length === 1) {
-    showToast(`Travail à faire « ${service} » planifié pour ${createdWorks[0].clientName} (${createdWorks[0].parcel}) !`, "success");
+    showToast(`Travail à faire « ${selectedServices[0]} » planifié pour ${createdWorks[0].clientName} (${createdWorks[0].parcel}) !`, "success");
+  } else if (clientEntries.length === 1 && selectedServices.length > 1) {
+    showToast(`${selectedServices.length} prestations planifiées pour ${createdWorks[0].clientName} : ${selectedServices.map(s => `« ${s} »`).join(" et ")} !`, "success");
   } else {
-    showToast(`${createdWorks.length} travaux « ${service} » planifiés pour ${createdWorks.length} domaines viticoles !`, "success");
+    showToast(`${createdWorks.length} travaux planifiés (${selectedServices.length} prestation(s) pour ${clientEntries.length} domaine(s)) !`, "success");
   }
 }
 
@@ -7060,6 +7130,14 @@ window.convertPlannedWork = function(id) {
 
   if (taskSelect) {
     taskSelect.value = planned.service;
+    if (!taskSelect.value && planned.service) {
+      for (let i = 0; i < taskSelect.options.length; i++) {
+        if (taskSelect.options[i].value && planned.service.toLowerCase().includes(taskSelect.options[i].value.toLowerCase())) {
+          taskSelect.selectedIndex = i;
+          break;
+        }
+      }
+    }
     taskSelect.dispatchEvent(new Event("change"));
   }
 
