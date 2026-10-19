@@ -163,22 +163,46 @@ serve(async (req: Request) => {
           });
         }
 
-        // Synchronisation immédiate dans la table team_memberships (statut accepted)
-        try {
-          if (createData?.user?.id) {
-            await supabaseAdmin.from("team_memberships").upsert({
-              owner_user_id: adminId,
-              member_user_id: createData.user.id,
-              role: body.role || "Tractoriste / Chauffeur d'engins",
-              can_view_dashboard: body.canViewDashboard === true,
-              status: "accepted",
-              invited_by: adminId,
-              invited_email: targetEmail.trim().toLowerCase(),
-              accepted_at: new Date().toISOString()
-            }, { onConflict: "member_user_id" });
+        // Synchronisation immédiate et obligatoire dans la table team_memberships (statut accepted)
+        if (createData?.user?.id) {
+          const { error: tmErr } = await supabaseAdmin.from("team_memberships").upsert({
+            owner_user_id: adminId,
+            member_user_id: createData.user.id,
+            role: body.role || "Tractoriste / Chauffeur d'engins",
+            can_view_dashboard: body.canViewDashboard === true,
+            status: "accepted",
+            invited_by: adminId,
+            invited_email: targetEmail.trim().toLowerCase(),
+            accepted_at: new Date().toISOString()
+          }, { onConflict: "member_user_id" });
+
+          if (tmErr) {
+            console.error("❌ Échec critique team_memberships lors de la création :", tmErr);
+            // ROLLBACK SÉCURISÉ : Suppression immédiate du compte Auth pour éviter tout compte orphelin sans entreprise
+            let rollbackSuccess = false;
+            try {
+              const { error: delErr } = await supabaseAdmin.auth.admin.deleteUser(createData.user.id);
+              if (!delErr) {
+                rollbackSuccess = true;
+              } else {
+                console.error("⚠️ Échec suppression compte orphelin :", delErr);
+                // Récupération d'urgence : Désactivation du compte pour interdire toute connexion
+                await supabaseAdmin.auth.admin.updateUserById(createData.user.id, {
+                  ban_duration: "876000h",
+                  user_metadata: { orphan_error: tmErr.message || "Rattachement entreprise échoué" }
+                });
+              }
+            } catch (rollbackEx) {
+              console.error("⚠️ Exception lors du rollback :", rollbackEx);
+            }
+
+            return new Response(JSON.stringify({ 
+              error: `Échec du rattachement à l'entreprise : ${tmErr.message || tmErr}. Le compte a été ${rollbackSuccess ? "supprimé" : "désactivé"} par sécurité.` 
+            }), {
+              status: 500,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
           }
-        } catch (tmErr) {
-          console.warn("Notice sync team_memberships create:", tmErr);
         }
 
         return new Response(
@@ -259,19 +283,25 @@ serve(async (req: Request) => {
     }
 
     // Synchronisation immédiate dans la table team_memberships (statut accepted)
-    try {
-      await supabaseAdmin.from("team_memberships").upsert({
-        owner_user_id: adminId,
-        member_user_id: targetUser.id,
-        role: updatedMeta.role || "Tractoriste / Chauffeur d'engins",
-        can_view_dashboard: updatedMeta.can_view_dashboard !== false,
-        status: "accepted",
-        invited_by: adminId,
-        invited_email: (targetUser.email || targetEmail).trim().toLowerCase(),
-        accepted_at: new Date().toISOString()
-      }, { onConflict: "member_user_id" });
-    } catch (tmErr) {
-      console.warn("Notice sync team_memberships update:", tmErr);
+    const { error: tmUpdateErr } = await supabaseAdmin.from("team_memberships").upsert({
+      owner_user_id: adminId,
+      member_user_id: targetUser.id,
+      role: updatedMeta.role || "Tractoriste / Chauffeur d'engins",
+      can_view_dashboard: updatedMeta.can_view_dashboard !== false,
+      status: "accepted",
+      invited_by: adminId,
+      invited_email: (targetUser.email || targetEmail).trim().toLowerCase(),
+      accepted_at: new Date().toISOString()
+    }, { onConflict: "member_user_id" });
+
+    if (tmUpdateErr) {
+      console.error("❌ Échec team_memberships lors de la mise à jour :", tmUpdateErr);
+      return new Response(JSON.stringify({ 
+        error: `Erreur lors du rattachement dans team_memberships : ${tmUpdateErr.message || tmUpdateErr}` 
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     return new Response(

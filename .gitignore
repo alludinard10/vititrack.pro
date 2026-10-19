@@ -18,3 +18,7 @@ tests/test_carto_security.js
 supabase/*cartographie*.sql
 backups/
 scratch/
+tests/test_live_supabase_security_check.js
+tests/verify_phase1_team_memberships.js
+scripts/apply_phase1_migration.js
+tests/test_phase2_rls_simulation_and_prep.js

@@ -1,10 +1,10 @@
 -- ==============================================================================
--- VITITRACK PRESTATION — ÉTAPE B : MIGRATION 02
--- POLITIQUES ROW LEVEL SECURITY (RLS) MULTI-UTILISATEURS & ISOLATION ENTREPRISES
+-- VITITRACK PRESTATION — ÉTAPE B : MIGRATION 02 (VERSION SÉCURISÉE CIBLÉE)
+-- POLITIQUES ROW LEVEL SECURITY (RLS) MULTI-UTILISATEURS & RESTRICTIONS SALARIÉS
 -- ==============================================================================
 -- IMPORTANT : Ce script est PRÉPARÉ LOCALEMENT.
 -- Il ne doit être exécuté sur Supabase qu'après validation explicite de l'utilisateur.
--- RLS reste activée à 100% sur toutes les tables (aucun contournement de sécurité).
+-- RLS reste activée à 100% sur toutes les tables.
 -- ==============================================================================
 
 BEGIN;
@@ -42,7 +42,7 @@ $$;
 REVOKE ALL ON FUNCTION public.get_current_owner_user_id() FROM public, anon;
 GRANT EXECUTE ON FUNCTION public.get_current_owner_user_id() TO authenticated;
 
--- Détermine si l'utilisateur est un collaborateur / salarié (non propriétaire)
+-- Détermine si l'utilisateur est un collaborateur / salarié (non propriétaire de l'espace)
 CREATE OR REPLACE FUNCTION public.is_current_user_worker()
 RETURNS boolean
 LANGUAGE sql
@@ -74,7 +74,7 @@ AS $$
      WHERE (member_user_id = auth.uid() OR lower(invited_email) = lower(auth.jwt() ->> 'email'))
        AND status = 'accepted'
      LIMIT 1),
-    NOT public.is_current_user_worker() -- Le gérant a toujours accès
+    NOT public.is_current_user_worker() -- Le gérant exploitant a toujours accès
   );
 $$;
 
@@ -87,12 +87,15 @@ GRANT EXECUTE ON FUNCTION public.can_current_user_view_dashboard() TO authentica
 -- ------------------------------------------------------------------------------
 ALTER TABLE public.clients ENABLE ROW LEVEL SECURITY;
 
+-- Lecture partagée Domaine
 DROP POLICY IF EXISTS "clients_select_policy" ON public.clients;
 CREATE POLICY "clients_select_policy" ON public.clients
   FOR SELECT TO authenticated
   USING (user_id = public.get_current_owner_user_id());
 
+-- Ajout client : Gérant ou Salarié avec accès dashboard
 DROP POLICY IF EXISTS "clients_insert_policy" ON public.clients;
+DROP POLICY IF EXISTS "clients_owner_all" ON public.clients;
 CREATE POLICY "clients_insert_policy" ON public.clients
   FOR INSERT TO authenticated
   WITH CHECK (
@@ -100,6 +103,7 @@ CREATE POLICY "clients_insert_policy" ON public.clients
     AND (NOT public.is_current_user_worker() OR public.can_current_user_view_dashboard())
   );
 
+-- Modification client : Gérant ou Salarié avec accès dashboard
 DROP POLICY IF EXISTS "clients_update_policy" ON public.clients;
 CREATE POLICY "clients_update_policy" ON public.clients
   FOR UPDATE TO authenticated
@@ -109,12 +113,13 @@ CREATE POLICY "clients_update_policy" ON public.clients
     AND (NOT public.is_current_user_worker() OR public.can_current_user_view_dashboard())
   );
 
+-- Suppression STRICTEMENT RÉSERVÉE au gérant propriétaire
 DROP POLICY IF EXISTS "clients_delete_policy" ON public.clients;
 CREATE POLICY "clients_delete_policy" ON public.clients
   FOR DELETE TO authenticated
   USING (
     user_id = public.get_current_owner_user_id() 
-    AND NOT public.is_current_user_worker() -- Seul le gérant supprime des clients
+    AND NOT public.is_current_user_worker()
   );
 
 
@@ -123,12 +128,15 @@ CREATE POLICY "clients_delete_policy" ON public.clients
 -- ------------------------------------------------------------------------------
 ALTER TABLE public.parcelles ENABLE ROW LEVEL SECURITY;
 
+-- Lecture partagée Domaine
 DROP POLICY IF EXISTS "parcelles_select_policy" ON public.parcelles;
 CREATE POLICY "parcelles_select_policy" ON public.parcelles
   FOR SELECT TO authenticated
   USING (user_id = public.get_current_owner_user_id());
 
+-- Ajout parcelle : Gérant ou Salarié avec accès dashboard
 DROP POLICY IF EXISTS "parcelles_insert_policy" ON public.parcelles;
+DROP POLICY IF EXISTS "parcelles_owner_all" ON public.parcelles;
 CREATE POLICY "parcelles_insert_policy" ON public.parcelles
   FOR INSERT TO authenticated
   WITH CHECK (
@@ -136,18 +144,20 @@ CREATE POLICY "parcelles_insert_policy" ON public.parcelles
     AND (NOT public.is_current_user_worker() OR public.can_current_user_view_dashboard())
   );
 
+-- Modification parcelle : Gérant ou Salarié avec accès dashboard
 DROP POLICY IF EXISTS "parcelles_update_policy" ON public.parcelles;
 CREATE POLICY "parcelles_update_policy" ON public.parcelles
   FOR UPDATE TO authenticated
   USING (user_id = public.get_current_owner_user_id())
   WITH CHECK (user_id = public.get_current_owner_user_id());
 
+-- Suppression STRICTEMENT RÉSERVÉE au gérant propriétaire
 DROP POLICY IF EXISTS "parcelles_delete_policy" ON public.parcelles;
 CREATE POLICY "parcelles_delete_policy" ON public.parcelles
   FOR DELETE TO authenticated
   USING (
     user_id = public.get_current_owner_user_id() 
-    AND NOT public.is_current_user_worker() -- Seul le gérant supprime des parcelles
+    AND NOT public.is_current_user_worker()
   );
 
 
@@ -164,6 +174,7 @@ CREATE POLICY "interventions_select_policy" ON public.interventions
 
 -- Saisie d'intervention autorisée pour le gérant et tous les salariés du domaine
 DROP POLICY IF EXISTS "interventions_insert_policy" ON public.interventions;
+DROP POLICY IF EXISTS "interventions_owner_all" ON public.interventions;
 CREATE POLICY "interventions_insert_policy" ON public.interventions
   FOR INSERT TO authenticated
   WITH CHECK (user_id = public.get_current_owner_user_id());
@@ -175,7 +186,7 @@ CREATE POLICY "interventions_update_policy" ON public.interventions
   USING (user_id = public.get_current_owner_user_id())
   WITH CHECK (user_id = public.get_current_owner_user_id());
 
--- Suppression STRICTEMENT RÉSERVÉE au gérant propriétaire
+-- Suppression STRICTEMENT RÉSERVÉE au gérant propriétaire (interdite aux salariés)
 DROP POLICY IF EXISTS "interventions_delete_policy" ON public.interventions;
 CREATE POLICY "interventions_delete_policy" ON public.interventions
   FOR DELETE TO authenticated
@@ -186,7 +197,7 @@ CREATE POLICY "interventions_delete_policy" ON public.interventions
 
 
 -- ------------------------------------------------------------------------------
--- 5. POLITIQUES RLS SUR PUBLIC.SERVICES (CATALOGUE DES PRESTATIONS)
+-- 5. POLITIQUES RLS SUR PUBLIC.SERVICES (CATALOGUE DES PRESTATIONS & TARIFS)
 -- ------------------------------------------------------------------------------
 ALTER TABLE public.services ENABLE ROW LEVEL SECURITY;
 
@@ -196,22 +207,35 @@ CREATE POLICY "services_select_policy" ON public.services
   FOR SELECT TO authenticated
   USING (user_id = public.get_current_owner_user_id());
 
--- Modification des prix et prestations STRICTEMENT RÉSERVÉE au gérant
+-- Modification des prix et prestations STRICTEMENT RÉSERVÉE au gérant (interdite aux salariés)
 DROP POLICY IF EXISTS "services_insert_policy" ON public.services;
+DROP POLICY IF EXISTS "services_owner_all" ON public.services;
 CREATE POLICY "services_insert_policy" ON public.services
   FOR INSERT TO authenticated
-  WITH CHECK (user_id = public.get_current_owner_user_id() AND NOT public.is_current_user_worker());
+  WITH CHECK (
+    user_id = public.get_current_owner_user_id() 
+    AND NOT public.is_current_user_worker()
+  );
 
 DROP POLICY IF EXISTS "services_update_policy" ON public.services;
 CREATE POLICY "services_update_policy" ON public.services
   FOR UPDATE TO authenticated
-  USING (user_id = public.get_current_owner_user_id() AND NOT public.is_current_user_worker())
-  WITH CHECK (user_id = public.get_current_owner_user_id() AND NOT public.is_current_user_worker());
+  USING (
+    user_id = public.get_current_owner_user_id() 
+    AND NOT public.is_current_user_worker()
+  )
+  WITH CHECK (
+    user_id = public.get_current_owner_user_id() 
+    AND NOT public.is_current_user_worker()
+  );
 
 DROP POLICY IF EXISTS "services_delete_policy" ON public.services;
 CREATE POLICY "services_delete_policy" ON public.services
   FOR DELETE TO authenticated
-  USING (user_id = public.get_current_owner_user_id() AND NOT public.is_current_user_worker());
+  USING (
+    user_id = public.get_current_owner_user_id() 
+    AND NOT public.is_current_user_worker()
+  );
 
 
 -- ------------------------------------------------------------------------------
@@ -225,6 +249,7 @@ CREATE POLICY "planned_works_select_policy" ON public.planned_works
   USING (user_id = public.get_current_owner_user_id());
 
 DROP POLICY IF EXISTS "planned_works_insert_policy" ON public.planned_works;
+DROP POLICY IF EXISTS "planned_works_owner_all" ON public.planned_works;
 CREATE POLICY "planned_works_insert_policy" ON public.planned_works
   FOR INSERT TO authenticated
   WITH CHECK (user_id = public.get_current_owner_user_id());
@@ -240,12 +265,38 @@ CREATE POLICY "planned_works_delete_policy" ON public.planned_works
   FOR DELETE TO authenticated
   USING (user_id = public.get_current_owner_user_id());
 
+
 -- ------------------------------------------------------------------------------
--- 7. POLITIQUES RLS SUR PUBLIC.TEAM_MEMBERSHIPS (GESTION DES RATTACHEMENTS)
+-- 7. POLITIQUES RLS SUR PUBLIC.SUBSCRIPTIONS (ABONNEMENT ET FACTURATION SAAS)
+-- ------------------------------------------------------------------------------
+-- SÉCURITÉ CRITIQUE STRIPE :
+-- La table subscriptions est en LECTURE SEULE pour les utilisateurs authentifiés.
+-- Aucune politique INSERT, UPDATE ou DELETE n'est accordée à authenticated :
+-- Seul le serveur Supabase (Edge Functions / Webhooks Stripe avec clé service_role)
+-- peut modifier les abonnements, les statuts et les clés Stripe.
+ALTER TABLE public.subscriptions ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "subscriptions_select_policy" ON public.subscriptions;
+DROP POLICY IF EXISTS "subscriptions_modify_policy" ON public.subscriptions;
+DROP POLICY IF EXISTS "subscriptions_owner_all" ON public.subscriptions;
+DROP POLICY IF EXISTS "Les utilisateurs peuvent consulter leur propre abonnement" ON public.subscriptions;
+DROP POLICY IF EXISTS "Seul le service_role peut modifier les abonnements" ON public.subscriptions;
+
+CREATE POLICY "subscriptions_select_policy" ON public.subscriptions
+  FOR SELECT TO authenticated
+  USING (
+    user_id = public.get_current_owner_user_id()::uuid 
+    AND (NOT public.is_current_user_worker() OR public.can_current_user_view_dashboard())
+  );
+
+
+-- ------------------------------------------------------------------------------
+-- 8. POLITIQUES RLS SUR PUBLIC.TEAM_MEMBERSHIPS (GESTION DES RATTACHEMENTS)
 -- ------------------------------------------------------------------------------
 ALTER TABLE public.team_memberships ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "team_memberships_select_policy" ON public.team_memberships;
+DROP POLICY IF EXISTS "team_memberships_owner_all" ON public.team_memberships;
 CREATE POLICY "team_memberships_select_policy" ON public.team_memberships
   FOR SELECT TO authenticated
   USING (
@@ -254,15 +305,17 @@ CREATE POLICY "team_memberships_select_policy" ON public.team_memberships
     OR lower(invited_email) = lower(auth.jwt() ->> 'email')
   );
 
+-- Seul le gérant propriétaire peut ajouter des membres
 DROP POLICY IF EXISTS "team_memberships_insert_policy" ON public.team_memberships;
 CREATE POLICY "team_memberships_insert_policy" ON public.team_memberships
   FOR INSERT TO authenticated
   WITH CHECK (
     owner_user_id = auth.uid()::text 
     AND invited_by = auth.uid()::text
-    AND NOT public.is_current_user_worker() -- Seul le gérant propriétaire peut inviter
+    AND NOT public.is_current_user_worker()
   );
 
+-- Seul le gérant propriétaire peut modifier les rôles ou les permissions
 DROP POLICY IF EXISTS "team_memberships_update_policy" ON public.team_memberships;
 CREATE POLICY "team_memberships_update_policy" ON public.team_memberships
   FOR UPDATE TO authenticated
@@ -275,6 +328,7 @@ CREATE POLICY "team_memberships_update_policy" ON public.team_memberships
     AND NOT public.is_current_user_worker()
   );
 
+-- Le gérant peut retirer un collaborateur ; un membre peut quitter l'équipe
 DROP POLICY IF EXISTS "team_memberships_delete_policy" ON public.team_memberships;
 CREATE POLICY "team_memberships_delete_policy" ON public.team_memberships
   FOR DELETE TO authenticated

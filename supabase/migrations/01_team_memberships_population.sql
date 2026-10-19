@@ -1,10 +1,11 @@
 -- ==============================================================================
--- VITITRACK PRESTATION — ÉTAPE B : MIGRATION 01
--- RATTACHEMENT RELATIONNEL DES COLLABORATEURS DANS TEAM_MEMBERSHIPS
+-- VITITRACK PRESTATION — PHASE 1 : MIGRATION 01 (DOMAINE LUDINARD EXCLUSIF)
+-- RATTACHEMENT RELATIONNEL DE PAUL LUDINARD À ALEXIS LUDINARD
 -- ==============================================================================
 -- IMPORTANT : Ce script est PRÉPARÉ LOCALEMENT.
 -- Il ne doit être exécuté sur Supabase qu'après validation explicite de l'utilisateur.
--- Aucune donnée existante n'est supprimée ou écrasée.
+-- Concerne EXCLUSIVEMENT le Domaine Ludinard.
+-- Aucune autre entreprise ni aucun autre utilisateur n'est modifié.
 -- ==============================================================================
 
 BEGIN;
@@ -34,61 +35,9 @@ CREATE UNIQUE INDEX IF NOT EXISTS uq_team_memberships_member_uid ON public.team_
 CREATE UNIQUE INDEX IF NOT EXISTS uq_team_memberships_owner_member ON public.team_memberships(owner_user_id, member_user_id);
 CREATE UNIQUE INDEX IF NOT EXISTS uq_team_memberships_owner_email ON public.team_memberships(owner_user_id, lower(invited_email));
 
--- 2. Insertion et rattachement des collaborateurs confirmés (Idempotent)
-
--- A. Équipe VISION VITICULTURE (Gérant: contact@vision-viticulture.fr / 5c878b2c-8fa7-465b-86c6-769f10f2fa07)
--- Collaborateur 1 : Victor De Muynck (Ouvrier viticole qualifié)
-INSERT INTO public.team_memberships (
-  owner_user_id,
-  member_user_id,
-  invited_email,
-  role,
-  can_view_dashboard,
-  status,
-  invited_by
-)
-VALUES (
-  '5c878b2c-8fa7-465b-86c6-769f10f2fa07',
-  '93ba8bee-a353-4b36-aa53-453290d13f63',
-  'victordemuynck69@gmail.com',
-  'Ouvrier viticole qualifié',
-  false,
-  'accepted',
-  '5c878b2c-8fa7-465b-86c6-769f10f2fa07'
-)
-ON CONFLICT (owner_user_id, member_user_id) DO UPDATE SET
-  role = EXCLUDED.role,
-  can_view_dashboard = EXCLUDED.can_view_dashboard,
-  status = 'accepted',
-  updated_at = now();
-
--- Collaborateur 2 : Florian Celce (Chef de culture / Responsable)
-INSERT INTO public.team_memberships (
-  owner_user_id,
-  member_user_id,
-  invited_email,
-  role,
-  can_view_dashboard,
-  status,
-  invited_by
-)
-VALUES (
-  '5c878b2c-8fa7-465b-86c6-769f10f2fa07',
-  'bbb2a1e6-e48e-4d6b-8c5c-ed7ce87e4d84',
-  'celcius_niv@hotmail.fr',
-  'Chef de culture / Responsable',
-  false,
-  'accepted',
-  '5c878b2c-8fa7-465b-86c6-769f10f2fa07'
-)
-ON CONFLICT (owner_user_id, member_user_id) DO UPDATE SET
-  role = EXCLUDED.role,
-  can_view_dashboard = EXCLUDED.can_view_dashboard,
-  status = 'accepted',
-  updated_at = now();
-
--- B. Équipe DOMAINE LUDINARD (Gérant: al.ludinard@gmail.com / c2d45d88-3214-4c93-9361-565d6ac24d1a)
--- Collaborateur : Paul Ludinard (Tractoriste / Chauffeur d'engins)
+-- 2. Insertion et rattachement exclusif : Domaine Ludinard
+-- Gérant titulaire : Alexis Ludinard (al.ludinard@gmail.com / c2d45d88-3214-4c93-9361-565d6ac24d1a)
+-- Collaborateur    : Paul Ludinard (paul.ludinard2006@gmail.com / 605ca04a-7947-4b84-8bfb-2f167c80e010)
 INSERT INTO public.team_memberships (
   owner_user_id,
   member_user_id,
@@ -112,16 +61,5 @@ ON CONFLICT (owner_user_id, member_user_id) DO UPDATE SET
   can_view_dashboard = EXCLUDED.can_view_dashboard,
   status = 'accepted',
   updated_at = now();
-
--- ==============================================================================
--- 3. CAS AMBIGUS EN ATTENTE DE VALIDATION MANUELLE DU CLIENT (NON INSÉRÉS) :
--- ==============================================================================
--- Cas A : SAA SERVICE (Steve Abodo Alinga : saa-service@outlook.fr / 4e698d5b-8988-47da-8898-ce1c14d037d2)
---         vs SAA Viti Solutions (saa.viticulture@outlook.fr / 047d20c6-c0d0-44b7-af87-daa126a5e625)
---         -> Confirmation requise avant rattachement.
--- Cas B : Comptes de tests techniques :
---         test-owner-carto@vititrack.local, alexandre.martin.viti@test.com, vititrack.test.checkout@gmail.com
---         -> Conservés isolés sans rattachement à des entreprises réelles.
--- ==============================================================================
 
 COMMIT;

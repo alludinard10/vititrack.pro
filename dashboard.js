@@ -1215,6 +1215,9 @@ async function initSupabaseSync() {
 
   console.log("🍇 [VitiTrack Pro] Supabase en ligne ! Chargement des données utilisateur...");
   await loadFromSupabase();
+  if (typeof initEnterpriseRealtime === "function") {
+    initEnterpriseRealtime();
+  }
 }
 
 async function loadFromSupabase() {
@@ -1400,10 +1403,398 @@ async function loadFromSupabase() {
     if (window.updateSupabaseBadge) {
       window.updateSupabaseBadge(true, "Cloud Supabase synchronisé");
     }
+
+    // Initialisation de la synchronisation Supabase Realtime par entreprise
+    if (typeof initEnterpriseRealtime === "function") {
+      initEnterpriseRealtime();
+    }
   } catch (e) {
     console.error("❌ [VitiTrack Pro] Erreur chargement Supabase :", e);
   }
 }
+
+// ==================== SUPABASE REALTIME MULTI-UTILISATEURS PAR ENTREPRISE ====================
+let enterpriseRealtimeChannel = null;
+
+function initEnterpriseRealtime() {
+  const sb = window.supabaseClient;
+  if (!sb) return;
+
+  const authUser = getAuthUser();
+  if (!authUser) return;
+
+  const ownerUserId = getAuthUserId();
+  if (!ownerUserId || !ownerUserId.includes("-")) return;
+
+  const channelName = `company-${ownerUserId.slice(0, 8)}`;
+
+  // Évite les doublons d'abonnements : si le canal est déjà actif pour cette entreprise, on le conserve
+  if (enterpriseRealtimeChannel && enterpriseRealtimeChannel.topic === `realtime:${channelName}`) {
+    const currentState = enterpriseRealtimeChannel.state;
+    if (currentState === "joined" || currentState === "subscribing") {
+      console.log(`🔌 [VitiTrack Realtime] Canal ${channelName} déjà actif (état: ${currentState}). Aucun doublon créé.`);
+      return;
+    }
+  }
+
+  // Clôture propre de l'ancien canal s'il était déjà actif pour une autre entreprise ou dans un état rompu
+  if (enterpriseRealtimeChannel) {
+    try {
+      sb.removeChannel(enterpriseRealtimeChannel);
+    } catch (e) {}
+    enterpriseRealtimeChannel = null;
+  }
+
+  console.log(`🔌 [VitiTrack Realtime] Abonnement aux modifications de l'entreprise : ${channelName}`);
+
+  enterpriseRealtimeChannel = sb
+    .channel(channelName)
+    // 1. Interventions réalisées par l'équipe
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "interventions", filter: `user_id=eq.${ownerUserId}` },
+      (payload) => handleRealtimeInterventionEvent(payload)
+    )
+    // 2. Travaux planifiés
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "planned_works", filter: `user_id=eq.${ownerUserId}` },
+      (payload) => handleRealtimePlannedWorkEvent(payload)
+    )
+    // 3. Fiches clients
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "clients", filter: `user_id=eq.${ownerUserId}` },
+      (payload) => handleRealtimeClientEvent(payload)
+    )
+    // 4. Parcelles cadastrales
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "parcelles", filter: `user_id=eq.${ownerUserId}` },
+      (payload) => handleRealtimeParcelEvent(payload)
+    )
+    // 5. Prestations & tarifs catalogue
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "services", filter: `user_id=eq.${ownerUserId}` },
+      (payload) => handleRealtimeServiceEvent(payload)
+    )
+    // 6. Suivi des vendanges
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "harvest_works", filter: `user_id=eq.${ownerUserId}` },
+      (payload) => handleRealtimeHarvestEvent(payload)
+    )
+    // 7. Suivi du palissage
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "palissage_works", filter: `user_id=eq.${ownerUserId}` },
+      (payload) => handleRealtimePalissageEvent(payload)
+    )
+    .subscribe((status) => {
+      console.log(`📡 [VitiTrack Realtime] Statut du canal ${channelName} :`, status);
+      if (status === "SUBSCRIBED") {
+        if (window.updateSupabaseBadge) {
+          window.updateSupabaseBadge(true, "Synchronisé en direct • Entreprise connectée");
+        }
+      }
+    });
+}
+
+function handleRealtimeInterventionEvent(payload) {
+  if (!payload || !payload.eventType) return;
+  const { eventType, new: newRow, old: oldRow } = payload;
+
+  if (eventType === "INSERT" && newRow) {
+    const existingIdx = (interventions || []).findIndex(i => i.id === newRow.id);
+    if (existingIdx === -1) {
+      interventions.unshift({
+        id: newRow.id,
+        datetime: newRow.datetime,
+        worker: newRow.worker || "",
+        clientId: newRow.client_id || "",
+        client: newRow.client,
+        parcelId: newRow.parcel_id || "",
+        parcel: newRow.parcel,
+        serviceId: newRow.service_id || "",
+        task: newRow.task,
+        rateType: newRow.rate_type || "hourly",
+        quantity: parseFloat(newRow.quantity || 0),
+        unit: newRow.unit || "",
+        unitPrice: parseFloat(newRow.unit_price || 0),
+        total: parseFloat(newRow.total || 0),
+        status: newRow.status || "À facturer",
+        notes: newRow.notes || ""
+      });
+      saveInterventionsLocally();
+      renderAll();
+      showToast(`🚜 Nouvelle intervention synchronisée : ${newRow.task} (${newRow.worker || "Équipe"})`, "info");
+    }
+  } else if (eventType === "UPDATE" && newRow) {
+    const idx = (interventions || []).findIndex(i => i.id === newRow.id);
+    if (idx !== -1) {
+      interventions[idx] = {
+        ...interventions[idx],
+        datetime: newRow.datetime,
+        worker: newRow.worker || "",
+        clientId: newRow.client_id || "",
+        client: newRow.client,
+        parcelId: newRow.parcel_id || "",
+        parcel: newRow.parcel,
+        serviceId: newRow.service_id || "",
+        task: newRow.task,
+        rateType: newRow.rate_type || "hourly",
+        quantity: parseFloat(newRow.quantity || 0),
+        unit: newRow.unit || "",
+        unitPrice: parseFloat(newRow.unit_price || 0),
+        total: parseFloat(newRow.total || 0),
+        status: newRow.status || "À facturer",
+        notes: newRow.notes || ""
+      };
+      saveInterventionsLocally();
+      renderAll();
+    }
+  } else if (eventType === "DELETE" && oldRow) {
+    interventions = (interventions || []).filter(i => i.id !== oldRow.id);
+    saveInterventionsLocally();
+    renderAll();
+  }
+}
+
+function handleRealtimePlannedWorkEvent(payload) {
+  if (!payload || !payload.eventType) return;
+  const { eventType, new: newRow, old: oldRow } = payload;
+
+  if (eventType === "INSERT" && newRow) {
+    const existingIdx = (plannedWorks || []).findIndex(pw => pw.id === newRow.id);
+    if (existingIdx === -1) {
+      plannedWorks.unshift({
+        id: newRow.id,
+        clientId: newRow.client_id || "",
+        clientName: newRow.client_name,
+        parcel: newRow.parcel,
+        service: newRow.service,
+        worker: newRow.worker || "Non assigné",
+        date: newRow.date || "",
+        quantity: parseFloat(newRow.quantity || 0),
+        status: newRow.status || "À réaliser",
+        notes: newRow.notes || ""
+      });
+      savePlannedWorksLocally();
+      renderAll();
+      showToast(`📋 Nouveau chantier planifié par un membre de l'équipe : ${newRow.service}`, "info");
+    }
+  } else if (eventType === "UPDATE" && newRow) {
+    const idx = (plannedWorks || []).findIndex(pw => pw.id === newRow.id);
+    if (idx !== -1) {
+      plannedWorks[idx] = {
+        ...plannedWorks[idx],
+        clientId: newRow.client_id || "",
+        clientName: newRow.client_name,
+        parcel: newRow.parcel,
+        service: newRow.service,
+        worker: newRow.worker || "Non assigné",
+        date: newRow.date || "",
+        quantity: parseFloat(newRow.quantity || 0),
+        status: newRow.status || "À réaliser",
+        notes: newRow.notes || ""
+      };
+      savePlannedWorksLocally();
+      renderAll();
+    }
+  } else if (eventType === "DELETE" && oldRow) {
+    plannedWorks = (plannedWorks || []).filter(pw => pw.id !== oldRow.id);
+    savePlannedWorksLocally();
+    renderAll();
+  }
+}
+
+function handleRealtimeClientEvent(payload) {
+  if (!payload || !payload.eventType) return;
+  const { eventType, new: newRow, old: oldRow } = payload;
+
+  if (eventType === "INSERT" && newRow) {
+    const existing = (clients || []).find(c => c.id === newRow.id);
+    if (!existing) {
+      clients.unshift({
+        id: newRow.id,
+        name: newRow.name,
+        commune: newRow.commune || "",
+        contact: newRow.contact || "",
+        phone: newRow.phone || "",
+        email: newRow.email || "",
+        notes: newRow.notes || "",
+        createdAt: newRow.created_at || new Date().toISOString(),
+        parcels: []
+      });
+      saveClientsLocally();
+      renderAll();
+    }
+  } else if (eventType === "UPDATE" && newRow) {
+    const idx = (clients || []).findIndex(c => c.id === newRow.id);
+    if (idx !== -1) {
+      clients[idx] = {
+        ...clients[idx],
+        name: newRow.name,
+        commune: newRow.commune || "",
+        contact: newRow.contact || "",
+        phone: newRow.phone || "",
+        email: newRow.email || "",
+        notes: newRow.notes || ""
+      };
+      saveClientsLocally();
+      renderAll();
+    }
+  } else if (eventType === "DELETE" && oldRow) {
+    clients = (clients || []).filter(c => c.id !== oldRow.id);
+    saveClientsLocally();
+    renderAll();
+  }
+}
+
+function handleRealtimeParcelEvent(payload) {
+  if (!payload || !payload.eventType) return;
+  const { eventType, new: newRow, old: oldRow } = payload;
+
+  if (eventType === "INSERT" && newRow) {
+    const client = (clients || []).find(c => c.id === newRow.client_id);
+    if (client) {
+      client.parcels = client.parcels || [];
+      if (!client.parcels.some(p => p.id === newRow.id)) {
+        client.parcels.push({
+          id: newRow.id,
+          name: newRow.name,
+          surface: parseFloat(newRow.surface || 0),
+          grape: newRow.grape || "Non spécifié",
+          soil: newRow.soil || "Non renseigné"
+        });
+        saveClientsLocally();
+        renderAll();
+      }
+    }
+  } else if (eventType === "UPDATE" && newRow) {
+    (clients || []).forEach(c => {
+      const pIdx = (c.parcels || []).findIndex(p => p.id === newRow.id);
+      if (pIdx !== -1) {
+        c.parcels[pIdx] = {
+          ...c.parcels[pIdx],
+          name: newRow.name,
+          surface: parseFloat(newRow.surface || 0),
+          grape: newRow.grape || "Non spécifié",
+          soil: newRow.soil || "Non renseigné"
+        };
+      }
+    });
+    saveClientsLocally();
+    renderAll();
+  } else if (eventType === "DELETE" && oldRow) {
+    (clients || []).forEach(c => {
+      c.parcels = (c.parcels || []).filter(p => p.id !== oldRow.id);
+    });
+    saveClientsLocally();
+    renderAll();
+  }
+}
+
+function handleRealtimeServiceEvent(payload) {
+  if (!payload || !payload.eventType) return;
+  const { eventType, new: newRow, old: oldRow } = payload;
+
+  if (eventType === "INSERT" && newRow) {
+    if (!(services || []).some(s => s.id === newRow.id)) {
+      services.push({
+        id: newRow.id,
+        name: newRow.name,
+        category: newRow.category,
+        rateType: newRow.rate_type,
+        price: parseFloat(newRow.price || 0),
+        description: newRow.description || ""
+      });
+      saveServicesLocally();
+      renderAll();
+    }
+  } else if (eventType === "UPDATE" && newRow) {
+    const idx = (services || []).findIndex(s => s.id === newRow.id);
+    if (idx !== -1) {
+      services[idx] = {
+        ...services[idx],
+        name: newRow.name,
+        category: newRow.category,
+        rateType: newRow.rate_type,
+        price: parseFloat(newRow.price || 0),
+        description: newRow.description || ""
+      };
+      saveServicesLocally();
+      renderAll();
+    }
+  } else if (eventType === "DELETE" && oldRow) {
+    services = (services || []).filter(s => s.id !== oldRow.id);
+    saveServicesLocally();
+    renderAll();
+  }
+}
+
+function handleRealtimeHarvestEvent(payload) {
+  if (!payload || !payload.eventType) return;
+  const { eventType, new: newRow, old: oldRow } = payload;
+  if (typeof harvestWorks === "undefined") return;
+
+  if (eventType === "INSERT" && newRow) {
+    if (!harvestWorks.some(h => h.id === newRow.id)) {
+      harvestWorks.push(newRow);
+      if (typeof saveHarvestWorksLocally === "function") saveHarvestWorksLocally();
+      if (typeof renderHarvestDashboard === "function") renderHarvestDashboard();
+    }
+  } else if (eventType === "UPDATE" && newRow) {
+    const idx = harvestWorks.findIndex(h => h.id === newRow.id);
+    if (idx !== -1) {
+      harvestWorks[idx] = { ...harvestWorks[idx], ...newRow };
+      if (typeof saveHarvestWorksLocally === "function") saveHarvestWorksLocally();
+      if (typeof renderHarvestDashboard === "function") renderHarvestDashboard();
+    }
+  } else if (eventType === "DELETE" && oldRow) {
+    harvestWorks = harvestWorks.filter(h => h.id !== oldRow.id);
+    if (typeof saveHarvestWorksLocally === "function") saveHarvestWorksLocally();
+    if (typeof renderHarvestDashboard === "function") renderHarvestDashboard();
+  }
+}
+
+function handleRealtimePalissageEvent(payload) {
+  if (!payload || !payload.eventType) return;
+  const { eventType, new: newRow, old: oldRow } = payload;
+  if (typeof palissageWorks === "undefined") return;
+
+  if (eventType === "INSERT" && newRow) {
+    if (!palissageWorks.some(p => p.id === newRow.id)) {
+      palissageWorks.push(newRow);
+      if (typeof savePalissageWorksLocally === "function") savePalissageWorksLocally();
+      if (typeof renderPalissageDashboard === "function") renderPalissageDashboard();
+    }
+  } else if (eventType === "UPDATE" && newRow) {
+    const idx = palissageWorks.findIndex(p => p.id === newRow.id);
+    if (idx !== -1) {
+      palissageWorks[idx] = { ...palissageWorks[idx], ...newRow };
+      if (typeof savePalissageWorksLocally === "function") savePalissageWorksLocally();
+      if (typeof renderPalissageDashboard === "function") renderPalissageDashboard();
+    }
+  } else if (eventType === "DELETE" && oldRow) {
+    palissageWorks = palissageWorks.filter(p => p.id !== oldRow.id);
+    if (typeof savePalissageWorksLocally === "function") savePalissageWorksLocally();
+    if (typeof renderPalissageDashboard === "function") renderPalissageDashboard();
+  }
+}
+
+// Reconnexion et rattrapage automatique (changement d'onglet ou retour réseau)
+window.addEventListener("online", () => {
+  console.log("🌐 [VitiTrack] Réseau reconnecté : actualisation Supabase et réabonnement...");
+  if (typeof loadFromSupabase === "function") loadFromSupabase();
+});
+
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") {
+    if (typeof loadFromSupabase === "function") loadFromSupabase();
+  }
+});
 
 // Bulk sync from local data to Supabase Cloud (with user_id isolation)
 window.migrateAllToSupabase = async function() {
@@ -7820,32 +8211,19 @@ function triggerMemberResetEmailFromModal(btnEl = null) {
 async function adminUpdateMemberPassword(memberId, memberEmail, newPassword, extra = {}) {
   if (!newPassword || newPassword.trim().length < 6) {
     showToast("Le mot de passe doit comporter au moins 6 caractères.", "warning");
-    return false;
+    return { success: false, error: "Le mot de passe doit comporter au moins 6 caractères." };
   }
 
   const sb = window.supabaseClient;
   if (!sb) {
     showToast("Service Supabase non connecté.", "warning");
-    return false;
+    return { success: false, error: "Service Supabase non connecté." };
   }
 
   const authUser = getAuthUser();
   const ownerUid = getAuthUserId();
   const ownerDom = (authUser && (authUser.ownerDomain || authUser.domainName)) || "Domaine Viticole";
   const ownerEm = (authUser && (authUser.ownerEmail || authUser.email)) || "";
-
-  // Synchronisation relationnelle dans team_memberships
-  if (sb && memberEmail && ownerUid) {
-    try {
-      sb.from("team_memberships").upsert({
-        owner_user_id: ownerUid,
-        invited_email: memberEmail.trim().toLowerCase(),
-        role: extra.role || "Tractoriste / Chauffeur d'engins",
-        can_view_dashboard: extra.canViewDashboard !== false,
-        status: "accepted"
-      }, { onConflict: "owner_user_id, invited_email" }).then(() => {}).catch(e => console.warn(e));
-    } catch (e) {}
-  }
 
   try {
     const { data, error } = await sb.functions.invoke("admin-update-user-password", {
@@ -7857,7 +8235,7 @@ async function adminUpdateMemberPassword(memberId, memberEmail, newPassword, ext
         fullName: extra.name,
         role: extra.role,
         roleCategory: extra.roleCategory,
-        canViewDashboard: extra.canViewDashboard,
+        canViewDashboard: extra.canViewDashboard !== false,
         phone: extra.phone,
         certifications: extra.certifications,
         notes: extra.notes,
@@ -7869,18 +8247,29 @@ async function adminUpdateMemberPassword(memberId, memberEmail, newPassword, ext
 
     if (error) {
       console.warn("Notice admin-update-user-password :", error);
-      // Fallback informatif si l'Edge Function n'est pas encore déployée
-      showToast(`ℹ️ Mot de passe enregistré. Note : Utilisez le bouton "✉️ Envoyer un e-mail de réinitialisation" pour que le collaborateur définisse son propre mot de passe directement.`, "info");
-      return false;
+      let errMsg = "Erreur lors du traitement sur le serveur Supabase.";
+      if (data && data.error) errMsg = data.error;
+      else if (error.message) errMsg = error.message;
+      return { success: false, error: errMsg };
     }
 
     if (data && data.success) {
-      showToast(`🔐 Mot de passe de ${memberEmail} mis à jour dans Supabase Auth !`, "success");
-      return true;
+      return {
+        success: true,
+        userId: data.userId || memberId,
+        email: data.email || memberEmail,
+        created: data.created === true,
+        message: data.message
+      };
     }
+
+    return { 
+      success: false, 
+      error: (data && data.error) || "Réponse inattendue du serveur lors de la synchronisation." 
+    };
   } catch (err) {
     console.warn("Erreur adminUpdateMemberPassword :", err);
-    return false;
+    return { success: false, error: err.message || "Erreur de communication avec le serveur." };
   }
 }
 
@@ -8114,8 +8503,8 @@ function togglePasswordVisibility(inputId, btnEl) {
   }
 }
 
-function handleTeamMemberFormSubmit(e) {
-  if (e) e.preventDefault();
+async function handleTeamMemberFormSubmit(e) {
+  if (e && e.preventDefault) e.preventDefault();
 
   const id = document.getElementById("input-member-id")?.value;
   const name = document.getElementById("input-member-name")?.value?.trim();
@@ -8133,6 +8522,14 @@ function handleTeamMemberFormSubmit(e) {
     return;
   }
 
+  // Pour un nouvel utilisateur avec e-mail, un mot de passe d'au moins 6 caractères est requis pour le compte Supabase
+  if (!id && email && (!password || password.length < 6)) {
+    showToast("Pour activer l'accès de ce collaborateur sur mobile ou ordinateur, veuillez définir un mot de passe d'au moins 6 caractères.", "warning");
+    const pwdInput = document.getElementById("input-member-password");
+    if (pwdInput) pwdInput.focus();
+    return;
+  }
+
   const roleCategory = getRoleCategory(role);
 
   // Palette de couleurs pour les avatars
@@ -8145,13 +8542,86 @@ function handleTeamMemberFormSubmit(e) {
     autre: "#4b5563"
   };
 
-  if (id) {
-    // Modification d'un utilisateur existant
-    const idx = (teamUsers || []).findIndex(u => u.id === id);
-    if (idx !== -1) {
-      const prev = teamUsers[idx];
-      teamUsers[idx] = {
-        ...prev,
+  const submitBtn = document.getElementById("btn-save-member");
+  const submitTextSpan = document.getElementById("team-member-modal-submit-text");
+  const originalBtnText = submitTextSpan ? submitTextSpan.textContent : "💾 Enregistrer l'utilisateur";
+
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    if (submitTextSpan) submitTextSpan.textContent = "⏳ Enregistrement et synchronisation...";
+  }
+
+  try {
+    let finalUserId = id;
+
+    if (id) {
+      // Modification d'un utilisateur existant
+      const idx = (teamUsers || []).findIndex(u => u.id === id);
+      if (idx !== -1) {
+        // Si un mot de passe ou code PIN a été renseigné lors de la modification :
+        if (password && email) {
+          const res = await adminUpdateMemberPassword(id, email, password, {
+            name,
+            role,
+            roleCategory,
+            canViewDashboard,
+            phone,
+            certifications,
+            notes,
+            isNewUser: false
+          });
+
+          if (!res.success) {
+            showToast(`❌ Échec de la mise à jour Supabase : ${res.error}`, "error");
+            return; // Interrompt pour éviter toute divergence d'état
+          }
+        }
+
+        const prev = teamUsers[idx];
+        teamUsers[idx] = {
+          ...prev,
+          name,
+          role,
+          roleCategory,
+          status,
+          canViewDashboard,
+          email,
+          phone,
+          certifications,
+          notes
+        };
+        // Supprime tout mot de passe en clair du stockage local
+        delete teamUsers[idx].password;
+
+        showToast(`Utilisateur « ${name} » mis à jour avec succès !`, "success");
+      }
+    } else {
+      // Création d'un nouvel utilisateur : provisionnement Supabase Auth + team_memberships sécurisé
+      if (password && email) {
+        const res = await adminUpdateMemberPassword(null, email, password, {
+          name,
+          role,
+          roleCategory,
+          canViewDashboard,
+          phone,
+          certifications,
+          notes,
+          isNewUser: true
+        });
+
+        if (!res.success) {
+          showToast(`❌ Échec de création du compte : ${res.error}`, "error");
+          // On ne ferme pas la modale et on n'ajoute pas l'utilisateur en mémoire locale (zéro compte orphelin)
+          return;
+        }
+
+        finalUserId = res.userId || generateUniqueId("USR");
+      } else {
+        finalUserId = generateUniqueId("USR");
+      }
+
+      const newMember = {
+        id: finalUserId,
         name,
         role,
         roleCategory,
@@ -8160,65 +8630,29 @@ function handleTeamMemberFormSubmit(e) {
         email,
         phone,
         certifications,
-        notes
-      };
-      // Supprime tout mot de passe en clair du stockage local
-      delete teamUsers[idx].password;
-
-      // Si un mot de passe ou code PIN a été renseigné lors de la modification :
-      if (password) {
-        adminUpdateMemberPassword(id, email, password, {
-          name,
-          role,
-          roleCategory,
-          canViewDashboard,
-          phone,
-          certifications,
-          notes
-        });
-      }
-
-      showToast(`Utilisateur « ${name} » mis à jour !`, "success");
-    }
-  } else {
-    // Création d'un nouvel utilisateur
-    const newMember = {
-      id: generateUniqueId("USR"),
-      name,
-      role,
-      roleCategory,
-      status,
-      canViewDashboard,
-      email,
-      phone,
-      certifications,
-      notes,
-      color: roleColors[roleCategory] || "#2d6a4f"
-    };
-    teamUsers.push(newMember);
-
-    // Si mot de passe / PIN renseigné : provisionnement sur Supabase Auth
-    if (password && email) {
-      adminUpdateMemberPassword(newMember.id, email, password, {
-        name,
-        role,
-        roleCategory,
-        canViewDashboard,
-        phone,
-        certifications,
         notes,
-        isNewUser: true
-      });
+        color: roleColors[roleCategory] || "#2d6a4f"
+      };
+      delete newMember.password;
+      teamUsers.push(newMember);
+
+      showToast(`Utilisateur « ${name} » ajouté et rattaché à l'entreprise !`, "success");
     }
 
-    showToast(`Utilisateur « ${name} » ajouté à l'équipe !`, "success");
+    saveTeamUsers();
+    closeTeamMemberModal();
+    renderTeamList();
+    renderKPIs();
+    populatePlannedWorkerSelect();
+  } catch (err) {
+    console.error("Erreur enregistrement membre de l'équipe :", err);
+    showToast(`Erreur : ${err.message || err}`, "error");
+  } finally {
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      if (submitTextSpan) submitTextSpan.textContent = originalBtnText;
+    }
   }
-
-  saveTeamUsers();
-  closeTeamMemberModal();
-  renderTeamList();
-  renderKPIs();
-  populatePlannedWorkerSelect();
 }
 
 function deleteTeamMember(userId) {
